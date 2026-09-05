@@ -1,17 +1,30 @@
 import { z } from "zod";
 import {
+  AcceptInvitationBodySchema,
+  AcceptInvitationResponseSchema,
+  CreateInvitationBodySchema,
   CreateOrganizationBodySchema,
+  CreatedInvitationSchema,
+  InvitationsResponseSchema,
   OrganizationMembersResponseSchema,
   OrganizationSchema,
+  UpdateMemberBodySchema,
+  UpdateOrganizationBodySchema,
   UuidSchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
 import { createOrganizationsService } from "./service.js";
 
-export const organizationsRoutes: FastifyPluginAsyncZod = async (app) => {
+export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string }> = async (
+  app,
+  opts,
+) => {
   const service = createOrganizationsService(app.db);
-  const params = z.object({ organizationId: UuidSchema }).strict();
+  const orgParams = z.object({ organizationId: UuidSchema }).strict();
+  const memberParams = orgParams.extend({ userId: UuidSchema }).strict();
+  const invitationParams = orgParams.extend({ invitationId: UuidSchema }).strict();
+  const noContent = { 204: { type: "null" } } as const;
 
   app.post(
     "/v1/organizations",
@@ -24,19 +37,32 @@ export const organizationsRoutes: FastifyPluginAsyncZod = async (app) => {
       onRequest: [app.requireAuth],
       config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
     },
-    async (request, reply) => {
-      const organization = await service.create(request.actor, request.body, request.id);
-      return reply.code(201).send(organization);
-    },
+    async (request, reply) =>
+      reply.code(201).send(await service.create(request.actor, request.body, request.id)),
   );
 
   app.get(
     "/v1/organizations/:organizationId",
     {
-      schema: { tags: ["organizations"], params, response: { 200: OrganizationSchema } },
+      schema: { tags: ["organizations"], params: orgParams, response: { 200: OrganizationSchema } },
       onRequest: [app.requireAuth],
     },
     async (request) => service.getById(request.actor, request.params.organizationId),
+  );
+
+  app.patch(
+    "/v1/organizations/:organizationId",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: orgParams,
+        body: UpdateOrganizationBodySchema,
+        response: { 200: OrganizationSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) =>
+      service.update(request.actor, request.params.organizationId, request.body, request.id),
   );
 
   app.get(
@@ -44,7 +70,7 @@ export const organizationsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ["organizations"],
-        params,
+        params: orgParams,
         response: { 200: OrganizationMembersResponseSchema },
       },
       onRequest: [app.requireAuth],
@@ -52,5 +78,123 @@ export const organizationsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => ({
       members: await service.listMembers(request.actor, request.params.organizationId),
     }),
+  );
+
+  app.patch(
+    "/v1/organizations/:organizationId/members/:userId",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: memberParams,
+        body: UpdateMemberBodySchema,
+        response: noContent,
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request, reply) => {
+      await service.updateMemberRole(
+        request.actor,
+        request.params.organizationId,
+        request.params.userId,
+        request.body.role,
+        request.id,
+      );
+      return reply.code(204).send();
+    },
+  );
+
+  app.delete(
+    "/v1/organizations/:organizationId/members/:userId",
+    {
+      schema: { tags: ["organizations"], params: memberParams, response: noContent },
+      onRequest: [app.requireAuth],
+    },
+    async (request, reply) => {
+      await service.removeMember(
+        request.actor,
+        request.params.organizationId,
+        request.params.userId,
+        request.id,
+      );
+      return reply.code(204).send();
+    },
+  );
+
+  app.post(
+    "/v1/organizations/:organizationId/invitations",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: orgParams,
+        body: CreateInvitationBodySchema,
+        response: { 201: CreatedInvitationSchema },
+      },
+      onRequest: [app.requireAuth],
+      config: { rateLimit: { max: 20, timeWindow: "1 hour" } },
+    },
+    async (request, reply) =>
+      reply
+        .code(201)
+        .send(
+          await service.createInvitation(
+            request.actor,
+            request.params.organizationId,
+            request.body,
+            opts.deepLinkScheme,
+            request.id,
+          ),
+        ),
+  );
+
+  app.get(
+    "/v1/organizations/:organizationId/invitations",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: orgParams,
+        response: { 200: InvitationsResponseSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) => ({
+      invitations: await service.listInvitations(request.actor, request.params.organizationId),
+    }),
+  );
+
+  app.delete(
+    "/v1/organizations/:organizationId/invitations/:invitationId",
+    {
+      schema: { tags: ["organizations"], params: invitationParams, response: noContent },
+      onRequest: [app.requireAuth],
+    },
+    async (request, reply) => {
+      await service.revokeInvitation(
+        request.actor,
+        request.params.organizationId,
+        request.params.invitationId,
+        request.id,
+      );
+      return reply.code(204).send();
+    },
+  );
+
+  app.post(
+    "/v1/invitations/accept",
+    {
+      schema: {
+        tags: ["organizations"],
+        body: AcceptInvitationBodySchema,
+        response: { 200: AcceptInvitationResponseSchema },
+      },
+      onRequest: [app.requireAuth],
+      config: { rateLimit: { max: 10, timeWindow: "1 hour" } },
+    },
+    async (request) =>
+      service.acceptInvitation(
+        request.actor,
+        request.identity!.email,
+        request.body.token,
+        request.id,
+      ),
   );
 };

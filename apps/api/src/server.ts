@@ -15,17 +15,20 @@ import type { Logger } from "pino";
 
 import type { Database } from "./db/client.js";
 import type { Env } from "./env.js";
+import { devicesRoutes } from "./modules/devices/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { identityRoutes } from "./modules/identity/routes.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
 import { DomainError } from "./shared/errors.js";
 import { authPlugin } from "./shared/plugins.js";
+import type { SupabaseAdmin } from "./shared/supabase-admin.js";
 
 export interface BuildServerOptions {
-  env: Pick<Env, "API_CORS_ORIGINS" | "API_VERSION" | "NODE_ENV">;
+  env: Pick<Env, "API_CORS_ORIGINS" | "API_VERSION" | "NODE_ENV" | "APP_DEEP_LINK_SCHEME">;
   db: Database;
   verifyToken: TokenVerifier;
+  supabaseAdmin: SupabaseAdmin;
   logger: Logger;
 }
 
@@ -72,7 +75,11 @@ export async function buildServer(opts: BuildServerOptions) {
     transform: jsonSchemaTransform,
   });
 
-  await app.register(authPlugin, { db: opts.db, verifyToken: opts.verifyToken });
+  await app.register(authPlugin, {
+    db: opts.db,
+    verifyToken: opts.verifyToken,
+    supabaseAdmin: opts.supabaseAdmin,
+  });
 
   app.setErrorHandler((rawError: unknown, request, reply) => {
     const error = rawError as FastifyError;
@@ -128,7 +135,8 @@ export async function buildServer(opts: BuildServerOptions) {
 
   await app.register(healthRoutes, { version: opts.env.API_VERSION });
   await app.register(identityRoutes);
-  await app.register(organizationsRoutes);
+  await app.register(devicesRoutes);
+  await app.register(organizationsRoutes, { deepLinkScheme: opts.env.APP_DEEP_LINK_SCHEME });
 
   app.get("/openapi.json", { config: { rateLimit: false } }, async () => app.swagger());
 

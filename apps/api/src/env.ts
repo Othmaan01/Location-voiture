@@ -20,6 +20,8 @@ const EnvSchema = z.object({
         .filter(Boolean),
     ),
   API_VERSION: z.string().default("0.1.0"),
+  /** Schema de lien profond de l'app mobile (invitations, retours OAuth). */
+  APP_DEEP_LINK_SCHEME: z.string().default("lv"),
 
   DATABASE_URL: z.string().min(1),
 
@@ -31,6 +33,11 @@ const EnvSchema = z.object({
    * En production, laisser vide : la verification passe par le JWKS (cles asymetriques).
    */
   SUPABASE_JWT_SECRET: z.string().min(16).optional(),
+  /**
+   * Cle service_role : utilisee UNIQUEMENT par le module identity pour supprimer
+   * un compte Auth. Jamais exposee, jamais loggee.
+   */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(16).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

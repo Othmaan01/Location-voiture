@@ -44,7 +44,13 @@ export function createTestDatabase() {
 
 export async function createTestServer(db: Database, verifyToken: TokenVerifier) {
   return buildServer({
-    env: { API_CORS_ORIGINS: [], API_VERSION: "test", NODE_ENV: "test" },
+    env: {
+      API_CORS_ORIGINS: [],
+      API_VERSION: "test",
+      NODE_ENV: "test",
+      APP_DEEP_LINK_SCHEME: "lv",
+    },
+    supabaseAdmin: { deleteUser: async () => undefined },
     db,
     verifyToken,
     logger: pino({ level: "silent" }),

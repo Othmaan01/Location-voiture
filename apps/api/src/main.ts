@@ -3,6 +3,7 @@ import { loadEnv } from "./env.js";
 import { buildServer } from "./server.js";
 import { createTokenVerifier } from "./shared/auth.js";
 import { createLogger } from "./shared/logger.js";
+import { createSupabaseAdmin } from "./shared/supabase-admin.js";
 
 const env = loadEnv();
 const logger = createLogger(env.API_LOG_LEVEL, env.NODE_ENV === "development");
@@ -12,6 +13,7 @@ const app = await buildServer({
   env,
   db: database.db,
   verifyToken: createTokenVerifier(env),
+  supabaseAdmin: createSupabaseAdmin(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
   logger,
 });
 

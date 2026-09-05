@@ -6,6 +6,7 @@ import { loadActor } from "./actor.js";
 import type { TokenVerifier } from "./auth.js";
 import { anonymousActor, type Actor } from "./authz.js";
 import { unauthenticated } from "./errors.js";
+import type { SupabaseAdmin } from "./supabase-admin.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -17,6 +18,7 @@ declare module "fastify" {
   interface FastifyInstance {
     db: Database;
     verifyToken: TokenVerifier;
+    supabaseAdmin: SupabaseAdmin;
     /** Hook a poser sur les routes qui exigent un utilisateur authentifie. */
     requireAuth: (request: FastifyRequest) => Promise<void>;
   }
@@ -25,6 +27,7 @@ declare module "fastify" {
 export interface AuthPluginOptions {
   db: Database;
   verifyToken: TokenVerifier;
+  supabaseAdmin: SupabaseAdmin;
 }
 
 /**
@@ -34,6 +37,7 @@ export interface AuthPluginOptions {
 export const authPlugin = fp<AuthPluginOptions>(async (app: FastifyInstance, opts) => {
   app.decorate("db", opts.db);
   app.decorate("verifyToken", opts.verifyToken);
+  app.decorate("supabaseAdmin", opts.supabaseAdmin);
   app.decorateRequest("actor", null as unknown as Actor);
   app.decorateRequest("identity", null);
 

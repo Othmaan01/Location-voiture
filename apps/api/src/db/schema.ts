@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   char,
   jsonb,
   pgEnum,
@@ -15,6 +16,7 @@ import {
  * Seules les tables utilisees par l'API sont declarees ; on complete au fil des phases.
  */
 export const platformRoleEnum = pgEnum("platform_role", ["support", "admin", "superadmin"]);
+export const devicePlatformEnum = pgEnum("device_platform", ["ios", "android"]);
 export const organizationRoleEnum = pgEnum("organization_role", ["owner", "manager", "agent"]);
 export const organizationStatusEnum = pgEnum("organization_status", [
   "draft",
@@ -39,9 +41,31 @@ export const profiles = pgTable("profiles", {
   avatarPath: text("avatar_path"),
   locale: text("locale").notNull().default("fr"),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  authDeletedAt: timestamp("auth_deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const deviceTokens = pgTable("device_tokens", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  userId: uuid("user_id").notNull(),
+  platform: devicePlatformEnum("platform").notNull(),
+  token: text("token").notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const favorites = pgTable(
+  "favorites",
+  {
+    userId: uuid("user_id").notNull(),
+    vehicleId: uuid("vehicle_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.vehicleId] })],
+);
 
 export const platformRoles = pgTable("platform_roles", {
   userId: uuid("user_id").primaryKey(),
@@ -53,6 +77,7 @@ export const platformRoles = pgTable("platform_roles", {
 export const plans = pgTable("plans", {
   code: text("code").primaryKey(),
   name: text("name").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
 });
 
 export const organizations = pgTable("organizations", {
@@ -81,6 +106,20 @@ export const organizationMembers = pgTable(
   },
   (t) => [primaryKey({ columns: [t.organizationId, t.userId] })],
 );
+
+export const organizationInvitations = pgTable("organization_invitations", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  email: text("email").notNull(),
+  role: organizationRoleEnum("role").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  invitedBy: uuid("invited_by"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const auditLog = pgTable("audit_log", {
   id: uuid("id")
