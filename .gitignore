@@ -26,3 +26,6 @@ coverage/
 # native
 ios/
 android/
+
+# claude code (parametres locaux)
+.claude/settings.local.json
