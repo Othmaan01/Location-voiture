@@ -1,0 +1,22 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API → Fly.io (staging)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config apps/api/fly.toml --dockerfile apps/api/Dockerfile .
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  # Web : Netlify deploie la branche `develop` depuis son integration Git.
+  # Mobile : `eas update --channel staging` sera ajoute quand le projet EAS sera cree (Phase 1).
