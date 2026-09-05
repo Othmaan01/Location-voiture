@@ -1,13 +1,13 @@
 # Roadmap
 
-Détail et critères de sortie : [docs/phase-0/05-roadmap-risques-decisions.md](docs/phase-0/05-roadmap-risques-decisions.md).
+Réordonnée le 2026-09-06 après validation de la direction produit et interface ([ADR-0009](docs/adr/0009-direction-produit-et-design-validee.md)). Chaque phase a un critère de sortie vérifiable ; on ne passe pas à la suivante sans l'atteindre.
 
-- [x] **Phase 0 — Fondations** : monorepo, schéma v1, API (auth JWT, authz, organisations, audit), squelette mobile, CI. _Reste : premier `supabase start` réel sur la machine (Docker), déploiement staging Fly._
-- [ ] **Phase 1 — Authentification et profils** : inscription, connexion, récupération, suppression de compte, invitations et rôles, push.
-- [ ] **Phase 2 — Espace professionnel et véhicules** : agences, véhicules, photos, tarifs, documents, vérification, admin minimal, back-office web.
-- [ ] **Phase 3 — Recherche client et fiches** : recherche par ville/position/dates, carte, fiche véhicule, favoris, onglet Loueurs.
-- [ ] **Phase 4 — Disponibilités et réservation** : calendrier, blocages, state machine, idempotence, notifications. **→ MVP**
-- [ ] **Phase 5 — Abonnement loueur** : Stripe Billing par organisation, quotas, portail, factures.
-- [ ] **Phase 6 — Communication** : messagerie par réservation, avis.
-- [ ] **Phase 7 — Administration et sécurité avancée**.
-- [ ] **Phase 8 — Optimisation, analytics, scale**.
+- [x] **Phase 0 — Fondations** : monorepo, schéma v1, API (JWT, autorisation, organisations, audit), squelette mobile, CI. *Reste : premier `supabase start` sur la machine, déploiement staging.*
+- [ ] **Phase 1 — Design system nuit, authentification et profils** (2 à 3 semaines) : tokens (noirs, rouge, Manrope), composants de base (barre capsule, cartes, feuilles, badges, frise), inscription, connexion, récupération, suppression de compte, profil, organisations et membres, enregistrement des appareils pour le push. *Sortie : un pro crée son organisation et invite un agent ; un agent ne voit rien d'une autre organisation.*
+- [ ] **Phase 2 — Espace professionnel et flotte** (3 semaines) : agences, véhicules, photos, tarifs, conditions, publication, documents et vérification, admin minimal, back-office web en tableau. *Sortie : un pro passe de zéro à « vérifié, 5 véhicules publiés avec photos » en moins de 20 minutes.*
+- [ ] **Phase 3 — Feed, profils loueurs et recherche** (2 à 3 semaines) : feed avec onglets, profil loueur avec grille et feuille d'action, favoris, Explorer (ville, position, dates, carte), pages web SEO rebranchées sur l'API. *Sortie : un client ouvre l'app et atteint un véhicule disponible en moins de 30 secondes.*
+- [ ] **Phase 4 — Demande, contact et suivi de location** (3 à 4 semaines) : state machine, demande idempotente, acceptation depuis la notification, calendrier pro, « Contacter le loueur » (appel + message simple), suivi de location (compte à rebours, frise, retrait, retour, prolongation), notifications. **→ MVP, publication TestFlight / Play puis stores.** *Sortie : première réservation réelle confirmée par un vrai loueur.*
+- [ ] **Phase 5 — Abonnement loueur** (2 à 3 semaines) : Stripe Billing par organisation, grille (paliers ou par véhicule), essai, quotas serveur, portail, factures.
+- [ ] **Phase 6 — Communication et avis** (2 à 3 semaines) : messagerie complète par réservation, avis après location, réponse du loueur, modération.
+- [ ] **Phase 7 — Administration et sécurité avancée** (2 à 3 semaines) : admin complet, litiges, signalements, fraude, MFA élargie, App Attest / Play Integrity, pentest.
+- [ ] **Phase 8 — Optimisation, analytics et scale** (continu) : entonnoir produit, tableaux de bord pro, performance, feature flags, saisonnalité et promotions, livraison, options.
