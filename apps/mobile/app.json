@@ -5,20 +5,21 @@
     "scheme": "lv",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "fr.locationvoiture.app",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement a trouver des vehicules autour de vous lorsque vous le demandez."
+        "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement a trouver des vehicules autour de vous lorsque vous le demandez.",
+        "UIUserInterfaceStyle": "Dark"
       }
     },
     "android": {
       "package": "fr.locationvoiture.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#fcfcfb"
+        "backgroundColor": "#0e0e11"
       },
       "permissions": []
     },
@@ -29,10 +30,17 @@
         {
           "image": "./assets/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#fcfcfb"
+          "backgroundColor": "#0e0e11"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#e3243b"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

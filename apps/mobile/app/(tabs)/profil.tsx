@@ -1,63 +1,170 @@
-import { useQuery } from "@tanstack/react-query";
-import { MeResponseSchema } from "@lv/contracts";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import {
+  Bell,
+  Building2,
+  Info,
+  LogOut,
+  ScrollText,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+} from "lucide-react-native";
 
-import { EmptyState } from "@/components/EmptyState";
-import { Screen } from "@/components/Screen";
-import { apiRequest, ApiRequestError } from "@/lib/api";
+import { Avatar, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
+import { ApiRequestError } from "@/lib/api";
+import { useMe } from "@/lib/queries";
+import { useSession } from "@/lib/session";
+import { supabase } from "@/lib/supabase";
 import { theme } from "@/theme";
 
-/**
- * Ecran de verification de bout en bout (critere de sortie Phase 0) :
- * l'app appelle l'API avec sa session et affiche l'identite renvoyee.
- * L'authentification elle-meme (ecrans, OAuth) arrive en Phase 1.
- */
 export default function ProfileScreen() {
-  const me = useQuery({
-    queryKey: ["me"],
-    queryFn: () => apiRequest("/v1/me", MeResponseSchema),
-    retry: (count, error) =>
-      !(error instanceof ApiRequestError && error.status === 401) && count < 2,
-  });
+  const { session, loading } = useSession();
+  const router = useRouter();
+  const me = useMe();
+
+  if (loading) {
+    return (
+      <Screen title="Profil" dock scroll={false}>
+        <ActivityIndicator color={theme.colors.accent} />
+      </Screen>
+    );
+  }
+
+  if (!session) {
+    return (
+      <Screen title="Profil" dock scroll={false}>
+        <EmptyState
+          title="Bienvenue"
+          description="Créez un compte pour demander une réservation et suivre vos locations."
+          action={
+            <View style={styles.stack}>
+              <Button label="Créer un compte" onPress={() => router.push("/(auth)/sign-up")} />
+              <Button
+                label="Se connecter"
+                variant="ghost"
+                onPress={() => router.push("/(auth)/sign-in")}
+              />
+            </View>
+          }
+        />
+      </Screen>
+    );
+  }
+
+  const fullName =
+    [me.data?.firstName, me.data?.lastName].filter(Boolean).join(" ") ||
+    (session.user.email ?? "Mon compte");
+  const isUnreachable =
+    me.isError && !(me.error instanceof ApiRequestError && me.error.status < 500);
 
   return (
-    <Screen title="Profil">
-      {me.isPending ? <ActivityIndicator color={theme.colors.brand} /> : null}
-      {me.isError && me.error instanceof ApiRequestError && me.error.status === 401 ? (
-        <EmptyState title="Non connecté" description="La connexion arrive en Phase 1." />
-      ) : null}
-      {me.isError && !(me.error instanceof ApiRequestError && me.error.status === 401) ? (
-        <EmptyState
-          title="Impossible de joindre le serveur"
-          description="Vérifiez votre connexion puis réessayez."
-        />
-      ) : null}
-      {me.data ? (
-        <View style={styles.card}>
-          <Text style={styles.label}>Connecté en tant que</Text>
-          <Text style={styles.value}>{me.data.email ?? me.data.userId}</Text>
-          <Text style={styles.label}>Organisations</Text>
-          <Text style={styles.value}>{me.data.memberships.length}</Text>
+    <Screen title="Profil" dock>
+      <View style={styles.identity}>
+        <Avatar name={fullName} size={56} round />
+        <View style={styles.identityTexts}>
+          <Text variant="h2">{fullName}</Text>
+          <Text variant="sm" tone="muted">
+            {session.user.email}
+          </Text>
         </View>
+      </View>
+      {isUnreachable ? (
+        <Card raised>
+          <Text variant="sm" tone="muted">
+            Impossible de joindre le serveur. Vérifiez votre connexion.
+          </Text>
+        </Card>
       ) : null}
+
+      <Card padded={false}>
+        <ListItem
+          icon={<UserRound size={22} color={theme.colors.text} />}
+          title="Informations personnelles"
+          subtitle="Nom, téléphone"
+          onPress={() => router.push("/profil/edit")}
+        />
+        <ListItem
+          icon={<Bell size={22} color={theme.colors.text} />}
+          title="Notifications"
+          subtitle="Réponses des loueurs, rappels"
+          last
+        />
+      </Card>
+
+      <Card style={styles.proCard}>
+        <View style={styles.proHeader}>
+          <Building2 size={22} color={theme.colors.accentTint} />
+          <Text variant="bodyStrong">Espace professionnel</Text>
+        </View>
+        {me.data && me.data.memberships.length > 0 ? (
+          <View style={styles.stack}>
+            {me.data.memberships.map((m) => (
+              <ListItem
+                key={m.organizationId}
+                title={m.organizationName}
+                subtitle={ROLE_LABEL[m.role]}
+                onPress={() => router.push(`/(pro)/organizations/${m.organizationId}`)}
+                last
+              />
+            ))}
+            <Button
+              label="Créer une autre organisation"
+              variant="ghost"
+              size="sm"
+              onPress={() => router.push("/(pro)/onboarding")}
+            />
+          </View>
+        ) : (
+          <View style={styles.stack}>
+            <Text variant="sm" tone="muted">
+              Vous êtes loueur ? Publiez votre flotte, recevez des demandes, gérez votre planning.
+            </Text>
+            <Button
+              label="Ouvrir l'espace pro"
+              size="sm"
+              onPress={() => router.push("/(pro)/onboarding")}
+              style={styles.proButton}
+            />
+          </View>
+        )}
+      </Card>
+
+      <Card padded={false}>
+        <ListItem icon={<Info size={22} color={theme.colors.text} />} title="Aide et contact" />
+        <ListItem
+          icon={<ScrollText size={22} color={theme.colors.text} />}
+          title="Mentions légales et CGU"
+        />
+        <ListItem
+          icon={<ShieldCheck size={22} color={theme.colors.text} />}
+          title="Confidentialité et données"
+          subtitle="Exporter, supprimer"
+        />
+        <ListItem
+          icon={<LogOut size={22} color={theme.colors.text} />}
+          title="Se déconnecter"
+          onPress={() => void supabase.auth.signOut()}
+        />
+        <ListItem
+          icon={<Trash2 size={22} color={theme.colors.danger} />}
+          title="Supprimer mon compte"
+          danger
+          onPress={() => router.push("/profil/delete")}
+          last
+        />
+      </Card>
     </Screen>
   );
 }
 
+const ROLE_LABEL = { owner: "Propriétaire", manager: "Manager", agent: "Agent" } as const;
+
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.card,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.space["4"],
-    gap: theme.space["1"],
-  },
-  label: { fontSize: theme.font.size.sm, color: theme.colors.textMuted },
-  value: {
-    fontSize: theme.font.size.md,
-    color: theme.colors.text,
-    fontWeight: theme.font.weight.medium,
-    marginBottom: theme.space["2"],
-  },
+  identity: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
+  identityTexts: { flex: 1, gap: 2 },
+  stack: { gap: theme.space["2"], alignSelf: "stretch" },
+  proCard: { borderColor: theme.colors.accentDark, gap: theme.space["3"] },
+  proHeader: { flexDirection: "row", alignItems: "center", gap: theme.space["2"] },
+  proButton: { alignSelf: "flex-start" },
 });

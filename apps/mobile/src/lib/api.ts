@@ -15,7 +15,7 @@ export class ApiRequestError extends Error {
 }
 
 interface RequestOptions<TBody> {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: TBody;
   /** Cle d'idempotence pour les creations (reservations). */
   idempotencyKey?: string;

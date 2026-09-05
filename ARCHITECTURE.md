@@ -14,6 +14,13 @@ Résumé opérationnel. Le raisonnement complet et les alternatives écartées s
 
 `Authorization: Bearer <jwt Supabase>` → `shared/plugins.authPlugin` vérifie la signature (JWKS, ou secret HS256 en local) → `shared/actor.loadActor` charge rôle plateforme et appartenances **à chaque requête** → la route appelle `assertCan` / `assertCanOrHide` (`shared/authz`) avant toute lecture → réponse validée par le schéma Zod.
 
+## Mobile (apps/mobile)
+
+- `app/` : routes expo-router. `(tabs)` = zone client avec la capsule (`Dock`), `(auth)` = modale de connexion (redirige si déjà connecté), `(pro)` et `profil/` = zones protégées (redirection vers la connexion), `invitations/[token]` = lien profond.
+- `src/components/ui` : design system (Text, Button, Input, Card, Badge, Avatar, ListItem, Sheet, EmptyState, Screen, Dock). Aucune couleur ni taille en dur hors de `@lv/tokens`.
+- `src/lib` : `supabase` (auth uniquement, session en Keychain), `api` (client HTTP validé par Zod), `session` (source unique de la session), `queries` (hooks TanStack Query par ressource), `notifications` (push, silencieux en cas de refus), `validation` (schémas de formulaires), `auth-errors` (messages utilisateur, jamais l'erreur brute).
+- Règle : l'app n'écrit jamais en base ; elle appelle l'API. Le rôle n'est jamais transmis à l'inscription.
+
 ## Stack
 
 Expo SDK 57 · Next.js 16 · Fastify 5 · Drizzle · Zod 4 · Postgres 17 + PostGIS (Supabase) · Supabase Auth & Storage · pg-boss (jobs, Phase 4) · Stripe Billing (abonnement, Phase 5) · Sentry · PostHog EU · MapLibre + OpenFreeMap · Fly.io (cdg) · Netlify · EAS.

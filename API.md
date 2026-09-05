@@ -5,18 +5,30 @@ Base : `apps/api` (Fastify). Contrat généré : `GET /openapi.json` (source : s
 ## Conventions
 
 - Préfixe `/v1`. Réponses JSON validées par schéma ; erreurs au format `{ error: { code, message, requestId, details? } }` avec codes stables (`packages/contracts/src/errors.ts`).
-- Authentification : `Authorization: Bearer <jwt Supabase>`. Token absent = anonyme ; token invalide = `401` (jamais ignoré).
+- Authentification : `Authorization: Bearer <jwt Supabase>`. Token absent = anonyme ; token invalide = `401` (jamais ignoré). Rôle plateforme et appartenances sont relus en base à chaque requête.
 - Rate limiting global (300/min par utilisateur ou IP) et par route sensible.
 - Créations : en-tête `Idempotency-Key` (Phase 4).
-- Ressource d'une autre organisation : `404`.
+- Ressource d'une autre organisation : `404`. Jeton d'invitation invalide, expiré, consommé ou pour un autre e-mail : `404` uniforme.
 
-## Routes (Phase 0)
+## Routes
 
-| Méthode | Route                           | Auth           | Description                                      |
-| ------- | ------------------------------- | -------------- | ------------------------------------------------ |
-| GET     | `/health`                       | non            | état du service                                  |
-| GET     | `/v1/me`                        | oui            | identité, rôle plateforme, appartenances         |
-| PATCH   | `/v1/me`                        | oui            | prénom, nom, téléphone                           |
-| POST    | `/v1/organizations`             | oui            | crée une organisation, le créateur devient owner |
-| GET     | `/v1/organizations/:id`         | membre / staff | fiche organisation                               |
-| GET     | `/v1/organizations/:id/members` | membre / staff | membres                                          |
+| Méthode | Route                                             | Qui                | Description                                                                                                                                                                                                                                         |
+| ------- | ------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET     | `/health`                                         | tous               | état du service                                                                                                                                                                                                                                     |
+| GET     | `/v1/me`                                          | connecté           | identité, rôle plateforme, appartenances                                                                                                                                                                                                            |
+| PATCH   | `/v1/me`                                          | connecté           | prénom, nom, téléphone                                                                                                                                                                                                                              |
+| DELETE  | `/v1/me`                                          | connecté           | suppression de compte (`{ confirmation: "SUPPRIMER" }`) : refusée (`409`) au propriétaire d'une organisation à plusieurs membres ; sinon anonymisation du profil, suppression des organisations dont il est seul membre, suppression du compte Auth |
+| PUT     | `/v1/devices`                                     | connecté           | enregistre un jeton Expo Push (un jeton = un utilisateur)                                                                                                                                                                                           |
+| DELETE  | `/v1/devices/:token`                              | connecté           | retire un jeton                                                                                                                                                                                                                                     |
+| POST    | `/v1/organizations`                               | connecté           | crée une organisation ; le créateur devient owner                                                                                                                                                                                                   |
+| GET     | `/v1/organizations/:id`                           | membre / staff     | fiche                                                                                                                                                                                                                                               |
+| PATCH   | `/v1/organizations/:id`                           | owner              | nom, raison sociale, SIRET (clé de Luhn), e-mail de facturation                                                                                                                                                                                     |
+| GET     | `/v1/organizations/:id/members`                   | membre / staff     | membres avec prénom et nom                                                                                                                                                                                                                          |
+| PATCH   | `/v1/organizations/:id/members/:userId`           | owner              | changer le rôle ; `409` si l'organisation perdrait son dernier owner                                                                                                                                                                                |
+| DELETE  | `/v1/organizations/:id/members/:userId`           | owner, ou soi-même | retirer un membre ; `409` pour le dernier owner                                                                                                                                                                                                     |
+| POST    | `/v1/organizations/:id/invitations`               | owner              | crée une invitation (`manager` ou `agent`), renvoie le jeton et le lien `lv://invitations/<jeton>` une seule fois ; remplace une invitation en attente pour le même e-mail                                                                          |
+| GET     | `/v1/organizations/:id/invitations`               | owner              | invitations en attente                                                                                                                                                                                                                              |
+| DELETE  | `/v1/organizations/:id/invitations/:invitationId` | owner              | révoque                                                                                                                                                                                                                                             |
+| POST    | `/v1/invitations/accept`                          | connecté           | accepte (`{ token }`) : l'e-mail du compte doit être celui invité ; 7 jours de validité                                                                                                                                                             |
+
+Toutes les écritures produisent une ligne dans `audit_log`.

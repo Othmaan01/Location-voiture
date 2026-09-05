@@ -1,12 +1,12 @@
-import { EmptyState } from "@/components/EmptyState";
-import { Screen } from "@/components/Screen";
+import { EmptyState, Screen } from "@/components/ui";
 
-export default function ExploreScreen() {
+/** Accueil : le feed des loueurs arrive en Phase 3. */
+export default function HomeScreen() {
   return (
-    <Screen title="Explorer">
+    <Screen eyebrow="Lyon" title="Loueurs" dock>
       <EmptyState
-        title="Recherche à venir"
-        description="Ville ou position, dates, filtres. Phase 3."
+        title="Le feed arrive bientôt"
+        description="Les loueurs vérifiés près de vous s'afficheront ici."
       />
     </Screen>
   );
