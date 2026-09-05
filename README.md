@@ -1,0 +1,50 @@
+# Location Voiture — plateforme de réservation entre loueurs professionnels et clients
+
+Les clients trouvent et réservent un véhicule près de chez eux, à des dates précises, auprès de loueurs professionnels vérifiés. Les loueurs paient un abonnement mensuel indexé sur le nombre de véhicules publiés ; aucune commission n'est prélevée sur les clients ([ADR-0008](docs/adr/0008-monetisation-abonnement-par-vehicule.md)).
+
+Ce dépôt succède à RentMap v0.1 (annuaire web), archivé dans [docs/legacy](docs/legacy/README.md). Le cadrage complet est dans [docs/phase-0](docs/phase-0/00-README.md).
+
+## Structure
+
+```
+apps/
+  mobile/     Expo (iOS / Android) — client et professionnel
+  web/        Next.js — pages SEO, back-office pro, admin (ex-RentMap)
+  api/        Fastify — l'autorité : autorisation, réservation, prix, documents
+packages/
+  contracts/  schémas Zod partagés (requêtes, réponses, permissions, enums)
+  pricing/    moteur de prix pur (centimes), testé
+  tokens/     design tokens (couleurs, typo, espacements)
+  config/     tsconfig, eslint partagés
+supabase/     migrations SQL (source de vérité du schéma), seed, config locale
+docs/         phase-0 (cadrage), adr (décisions), legacy
+```
+
+## Démarrage
+
+Prérequis : Node 22 (`.nvmrc`), pnpm via corepack, Docker Desktop et la CLI Supabase pour la base locale.
+
+```bash
+corepack enable            # une fois (peut demander sudo) ; sinon utilisez `corepack pnpm`
+pnpm install
+cp .env.example .env.local # puis renseignez les clés affichées par `supabase start`
+pnpm db:start              # Postgres + Auth + Storage en local, migrations appliquées
+pnpm --filter @lv/api dev  # API sur http://localhost:4000 (OpenAPI : /openapi.json)
+pnpm --filter @lv/mobile dev
+pnpm --filter @lv/web dev
+```
+
+Sans Docker, tout compile et les tests unitaires passent ; seuls les tests d'intégration (base réelle) sont sautés.
+
+## Commandes
+
+| Commande                     | Effet                                                 |
+| ---------------------------- | ----------------------------------------------------- |
+| `pnpm check`                 | lint + typecheck + tests, tous packages               |
+| `pnpm --filter @lv/api test` | tests API (intégration si `TEST_DATABASE_URL`)        |
+| `pnpm db:reset`              | réapplique migrations + seed                          |
+| `pnpm db:types`              | régénère les types Supabase dans `packages/contracts` |
+
+## Documentation
+
+[ARCHITECTURE.md](ARCHITECTURE.md) · [SECURITY.md](SECURITY.md) · [DATABASE.md](DATABASE.md) · [API.md](API.md) · [DECISIONS.md](DECISIONS.md) · [ROADMAP.md](ROADMAP.md)

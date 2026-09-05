@@ -14,11 +14,11 @@ Ce que ça n'est pas : un agrégateur des majors (Rentalcars, Booking), une plat
 
 ### Deux expériences
 
-| | Client | Professionnel |
-|---|---|---|
-| Objectif | Trouver, comparer, réserver un véhicule sans friction et sans doute | Remplir son planning, décider vite, gérer sa flotte sans ressaisie |
-| Surface principale | Application mobile | Application mobile (opérations du quotidien) + back-office web (gestion de flotte, tableaux, bulk) |
-| Émotion visée | Rassuré, en contrôle | Efficace, en contrôle |
+|                    | Client                                                              | Professionnel                                                                                      |
+| ------------------ | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Objectif           | Trouver, comparer, réserver un véhicule sans friction et sans doute | Remplir son planning, décider vite, gérer sa flotte sans ressaisie                                 |
+| Surface principale | Application mobile                                                  | Application mobile (opérations du quotidien) + back-office web (gestion de flotte, tableaux, bulk) |
+| Émotion visée      | Rassuré, en contrôle                                                | Efficace, en contrôle                                                                              |
 
 ### Où finit RentMap, où commence la marketplace
 
@@ -39,12 +39,14 @@ Le risque de cette découpe (no-show client, pro qui contourne la plateforme) es
 ### Périmètre P0 (lancement)
 
 **Transverse**
+
 - Compte : inscription e-mail + mot de passe, connexion, réinitialisation, suppression de compte (exigence stores), profil minimal.
-- Connexion Apple et Google : P1, mais à prévoir dès l'architecture (Apple exige *Sign in with Apple* dès qu'un autre login tiers est proposé).
+- Connexion Apple et Google : P1, mais à prévoir dès l'architecture (Apple exige _Sign in with Apple_ dès qu'un autre login tiers est proposé).
 - Notifications push : nouvelle demande (pro), réponse à la demande (client), rappels J-1.
 - États d'interface complets (chargement, vide, erreur, hors-ligne) sur chaque écran.
 
 **Client**
+
 - Recherche : ville ou position, rayon, dates de début/fin, filtres (catégorie, boîte, énergie, places, prix).
 - Résultats en liste et sur carte, triés par pertinence/prix/distance, **filtrés par disponibilité réelle**.
 - Fiche véhicule : galerie, caractéristiques, conditions (âge, permis, caution, km inclus), agence, devis pour les dates choisies.
@@ -53,6 +55,7 @@ Le risque de cette découpe (no-show client, pro qui contourne la plateforme) es
 - Favoris.
 
 **Professionnel**
+
 - Onboarding : création de l'organisation (raison sociale, SIRET, adresse), première agence, dépôt des documents de vérification.
 - Véhicules : création/édition, photos (ordre, compression, miniatures), tarifs (jour, semaine, mois, week-end, caution, km inclus, km supplémentaire), conditions, publication.
 - Disponibilités : calendrier par véhicule, blocages manuels, réservations confirmées visibles.
@@ -61,25 +64,26 @@ Le risque de cette découpe (no-show client, pro qui contourne la plateforme) es
 - Membres : inviter un collaborateur (rôle manager ou agent). Une organisation, plusieurs comptes.
 
 **Administration (interne, web, minimal)**
+
 - File de vérification des organisations (documents, décision, motif).
 - Suspension d'une organisation ou d'un véhicule.
 - Recherche d'un utilisateur, d'une réservation.
 
 ### Repoussé volontairement après le MVP
 
-| Fonctionnalité | Priorité | Pourquoi plus tard |
-|---|---|---|
-| Paiement en ligne, commission, caution, remboursement | P1 (Phase 5) | Bloc juridique et technique lourd ; le flux de réservation doit être validé avant |
-| Messagerie client ↔ loueur | P1 | Le MVP utilise des statuts structurés + message libre à la demande + coordonnées après confirmation ; une messagerie temps réel est un domaine à part entière (modération, notifications, pièces jointes) |
-| Avis et notes | P1 | Sans réservation terminée, pas d'avis légitime ; à activer après les premières locations complétées |
-| Livraison du véhicule, retrait en dehors de l'agence | P2 | Complexifie prix et disponibilités |
-| Promotions, codes, fidélité | P2 | Levier de croissance, pas de validation |
-| Assurance, options payantes | P2 | Dépend du paiement |
-| Location longue durée, abonnement véhicule | P3 | Autre modèle de contrat |
-| Multi-pays, multi-devise, multi-langue | P3 | Le schéma porte `currency` et `country_code` dès le début ; l'interface reste FR/EUR |
-| Statistiques avancées pro | P2 | Le MVP montre les 4 chiffres qui comptent ; le reste vient avec les données |
-| Vérification d'identité automatisée (KYC fournisseur) | P2 | Le MVP vérifie manuellement les documents en admin |
-| Anti-fraude automatisé | P2 | Architecture prête (événements, audit), règles plus tard |
+| Fonctionnalité                                        | Priorité     | Pourquoi plus tard                                                                                                                                                                                        |
+| ----------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paiement en ligne, commission, caution, remboursement | P1 (Phase 5) | Bloc juridique et technique lourd ; le flux de réservation doit être validé avant                                                                                                                         |
+| Messagerie client ↔ loueur                            | P1           | Le MVP utilise des statuts structurés + message libre à la demande + coordonnées après confirmation ; une messagerie temps réel est un domaine à part entière (modération, notifications, pièces jointes) |
+| Avis et notes                                         | P1           | Sans réservation terminée, pas d'avis légitime ; à activer après les premières locations complétées                                                                                                       |
+| Livraison du véhicule, retrait en dehors de l'agence  | P2           | Complexifie prix et disponibilités                                                                                                                                                                        |
+| Promotions, codes, fidélité                           | P2           | Levier de croissance, pas de validation                                                                                                                                                                   |
+| Assurance, options payantes                           | P2           | Dépend du paiement                                                                                                                                                                                        |
+| Location longue durée, abonnement véhicule            | P3           | Autre modèle de contrat                                                                                                                                                                                   |
+| Multi-pays, multi-devise, multi-langue                | P3           | Le schéma porte `currency` et `country_code` dès le début ; l'interface reste FR/EUR                                                                                                                      |
+| Statistiques avancées pro                             | P2           | Le MVP montre les 4 chiffres qui comptent ; le reste vient avec les données                                                                                                                               |
+| Vérification d'identité automatisée (KYC fournisseur) | P2           | Le MVP vérifie manuellement les documents en admin                                                                                                                                                        |
+| Anti-fraude automatisé                                | P2           | Architecture prête (événements, audit), règles plus tard                                                                                                                                                  |
 
 ## F. User journeys
 
@@ -96,8 +100,9 @@ Onboarding 3 écrans  Dates                     Galerie, conditions      Compte 
 ```
 
 Règles UX :
+
 - **Aucun compte requis avant la demande de réservation.** On ne demande une inscription qu'au moment où elle a une valeur pour l'utilisateur.
-- **Les dates sont saisies tôt** (barre de recherche) et persistent : chaque prix affiché est un prix pour *ces* dates, pas un « à partir de ».
+- **Les dates sont saisies tôt** (barre de recherche) et persistent : chaque prix affiché est un prix pour _ces_ dates, pas un « à partir de ».
 - **Le devis affiché est celui qui sera réservé.** Il est calculé côté serveur, figé avec une durée de validité, et la demande de réservation référence ce devis. Si le prix a changé, l'application le dit et redemande confirmation.
 - La localisation n'est demandée qu'au tap sur « Autour de moi », jamais au lancement.
 
@@ -115,6 +120,7 @@ Import assisté       Agence (adresse, horaires)     Calendrier                 
 ```
 
 Règles UX :
+
 - **Le pro peut tout préparer avant d'être vérifié** (véhicules en brouillon). La vérification ne bloque que la publication. Zéro temps mort.
 - **La décision sur une demande se prend depuis la notification**, avec les 5 informations utiles (véhicule, dates, montant, client, ancienneté du compte), sans navigation.
 - **Le calendrier est la vue centrale du pro**, pas la liste de véhicules. Un loueur pense en planning.
@@ -124,28 +130,28 @@ Règles UX :
 
 ### Mobile — client (≈ 22 écrans)
 
-| Zone | Écrans |
-|---|---|
-| Onboarding | Splash, 3 écrans de valeur, choix « je cherche un véhicule / je suis loueur » |
-| Auth | Connexion, inscription, mot de passe oublié, code de vérification, (Apple/Google en P1) |
-| Recherche | Accueil-recherche, sélecteur de lieu, sélecteur de dates, filtres (sheet), résultats liste, résultats carte, fiche véhicule, galerie plein écran, fiche agence |
-| Réservation | Récapitulatif + devis, confirmation d'envoi, liste des réservations, détail réservation, annulation |
-| Compte | Profil, favoris, notifications, paramètres, suppression de compte, mentions légales |
+| Zone        | Écrans                                                                                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Onboarding  | Splash, 3 écrans de valeur, choix « je cherche un véhicule / je suis loueur »                                                                                  |
+| Auth        | Connexion, inscription, mot de passe oublié, code de vérification, (Apple/Google en P1)                                                                        |
+| Recherche   | Accueil-recherche, sélecteur de lieu, sélecteur de dates, filtres (sheet), résultats liste, résultats carte, fiche véhicule, galerie plein écran, fiche agence |
+| Réservation | Récapitulatif + devis, confirmation d'envoi, liste des réservations, détail réservation, annulation                                                            |
+| Compte      | Profil, favoris, notifications, paramètres, suppression de compte, mentions légales                                                                            |
 
 ### Mobile — professionnel (≈ 18 écrans)
 
-| Zone | Écrans |
-|---|---|
-| Onboarding | Organisation, agence, documents, statut de vérification |
-| Tableau de bord | Vue du jour (demandes, départs, retours) |
-| Réservations | Boîte de réception, détail, accepter/refuser (sheet avec motif), calendrier |
-| Flotte | Liste véhicules (recherche, filtres, statut), fiche véhicule, édition (caractéristiques, photos, tarifs, conditions), disponibilités du véhicule |
-| Organisation | Membres, invitation, agences, paramètres, notifications |
+| Zone            | Écrans                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Onboarding      | Organisation, agence, documents, statut de vérification                                                                                          |
+| Tableau de bord | Vue du jour (demandes, départs, retours)                                                                                                         |
+| Réservations    | Boîte de réception, détail, accepter/refuser (sheet avec motif), calendrier                                                                      |
+| Flotte          | Liste véhicules (recherche, filtres, statut), fiche véhicule, édition (caractéristiques, photos, tarifs, conditions), disponibilités du véhicule |
+| Organisation    | Membres, invitation, agences, paramètres, notifications                                                                                          |
 
 ### Web (Next.js, existant, à faire évoluer)
 
-| Zone | État |
-|---|---|
-| Public SEO : accueil, ville, agence, véhicule, recherche | Existant, à rebrancher sur l'API v1 et le filtre par dates |
-| Back-office pro : flotte en tableau, bulk tarifs, calendrier multi-véhicules, membres, exports | Phase 2, nouveau |
-| Admin interne : vérifications, suspensions, recherche | Phase 2 (minimal) puis Phase 7 |
+| Zone                                                                                           | État                                                       |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Public SEO : accueil, ville, agence, véhicule, recherche                                       | Existant, à rebrancher sur l'API v1 et le filtre par dates |
+| Back-office pro : flotte en tableau, bulk tarifs, calendrier multi-véhicules, membres, exports | Phase 2, nouveau                                           |
+| Admin interne : vérifications, suspensions, recherche                                          | Phase 2 (minimal) puis Phase 7                             |

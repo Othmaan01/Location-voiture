@@ -120,6 +120,7 @@ Deux demandes `requested` peuvent se chevaucher (le pro choisit) ; deux réserva
 ```
 
 Règles :
+
 - Chaque transition est une fonction nommée dans `modules/bookings/state-machine.ts`, avec la liste exhaustive des transitions autorisées par état et par type d'acteur. Toute autre transition est refusée.
 - `requested` expire automatiquement (job) après un délai configurable par organisation (défaut 24 h), avec rappel push au pro à mi-délai.
 - L'annulation client après confirmation est libre au MVP (pas de paiement) mais tracée ; les conditions d'annulation deviennent une règle tarifaire en Phase 5.
@@ -141,6 +142,7 @@ quote(input: { ratePlan, period, agencyTimezone, options[] }) → { lines[], sub
 ## Recherche
 
 `search_vehicles` (RentMap) est conservée dans l'esprit et réécrite pour :
+
 - filtrer par période : exclure les véhicules ayant un `availability_block` ou un `booking` confirmé/actif qui chevauche la période ;
 - lire les prix depuis `rate_plans` en centimes ;
 - exposer le prix « pour ces dates » (calcul rapide en SQL pour le tri, devis exact via l'API à l'ouverture de la fiche).
@@ -148,6 +150,7 @@ quote(input: { ratePlan, period, agencyTimezone, options[] }) → { lines[], sub
 ## Migration depuis le schéma RentMap
 
 Hypothèse : aucune donnée de production. Plan :
+
 1. Nouvelle série de migrations `v1` remplaçant les trois migrations existantes (les fichiers actuels sont archivés dans `docs/legacy/` pour référence).
 2. Reprise à l'identique : extensions, `cities`, helpers `slugify` / `set_updated_at`, `handle_new_user` (sans rôle en métadonnées), pattern de policies.
 3. Seed réécrit : 46 villes conservées, organisations et véhicules de démonstration avec tarifs en centimes.

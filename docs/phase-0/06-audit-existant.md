@@ -14,14 +14,14 @@ Le brief CTO décrit autre chose : une **marketplace mobile** avec disponibilit�
 
 ## 2. État de production du dépôt
 
-| Constat | Conséquence |
-|---|---|
-| Pas de dépôt Git (`.git` absent) | Aucun historique, aucune traçabilité, aucune protection contre la perte. À corriger le jour 1. |
-| Pas de `node_modules`, pas de `.env.example`, pas de `.gitignore` | Le projet n'a probablement jamais été installé ni lancé sur cette machine. Le README y fait pourtant référence. |
-| Pas de dossier `.github/` | Le ROADMAP coche « CI GitHub Actions » : c'est faux, il n'y a pas de pipeline. |
-| Aucun test | Assumé dans le ROADMAP. |
-| `src/types/database.ts` écrit à la main, client Supabase non typé | Dette documentée, mais réelle : le compilateur ne protège pas les requêtes. |
-| Aucune trace de projet Supabase ou Netlify de production | À confirmer avec vous. Hypothèse retenue : **aucune donnée de production n'existe**, donc le schéma peut être réécrit proprement plutôt que migré. |
+| Constat                                                           | Conséquence                                                                                                                                        |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pas de dépôt Git (`.git` absent)                                  | Aucun historique, aucune traçabilité, aucune protection contre la perte. À corriger le jour 1.                                                     |
+| Pas de `node_modules`, pas de `.env.example`, pas de `.gitignore` | Le projet n'a probablement jamais été installé ni lancé sur cette machine. Le README y fait pourtant référence.                                    |
+| Pas de dossier `.github/`                                         | Le ROADMAP coche « CI GitHub Actions » : c'est faux, il n'y a pas de pipeline.                                                                     |
+| Aucun test                                                        | Assumé dans le ROADMAP.                                                                                                                            |
+| `src/types/database.ts` écrit à la main, client Supabase non typé | Dette documentée, mais réelle : le compilateur ne protège pas les requêtes.                                                                        |
+| Aucune trace de projet Supabase ou Netlify de production          | À confirmer avec vous. Hypothèse retenue : **aucune donnée de production n'existe**, donc le schéma peut être réécrit proprement plutôt que migré. |
 
 ## 3. Ce qui est bien fait et que l'on garde
 
@@ -39,20 +39,20 @@ Le code a été écrit avec de bons réflexes. Il ne faut pas le jeter.
 
 ## 4. Ce qui ne correspond pas à la cible et doit changer
 
-| Sujet | Existant | Cible (brief) | Action |
-|---|---|---|---|
-| Multi-tenant | `agencies.owner_id` = une personne. Un pro = un compte = ses agences. | Entreprise avec plusieurs membres et rôles (propriétaire, manager, employé). | Introduire `organizations` + `organization_members`. L'agence devient un point de retrait rattaché à une organisation. |
-| Rôles | Enum `client / pro / admin` sur le profil. | Rôles plateforme (support, admin, superadmin) distincts des rôles d'organisation. | Séparer rôles plateforme et rôles d'organisation, matrice de permissions côté serveur. |
-| Montants | `numeric(10,2)` (`price_per_day`, `deposit_amount`, …). | Entiers dans la plus petite unité monétaire. | Colonnes `*_cents integer` + `currency`. |
-| Réservation | Table `leads` (demande de contact libre). | Machine à états, verrouillage, idempotence, devis figé. | Nouveau domaine `bookings` (voir modèle de données). |
-| Disponibilités | Table `vehicle_unavailability` non utilisée. | Calendrier + filtre par dates + contrainte anti-chevauchement. | Réécrire en `availability_blocks` + contrainte d'exclusion sur `bookings`. |
-| Prix | 3 colonnes (jour/semaine/mois) sur le véhicule. | Moteur tarifaire évolutif. | Table `rate_plans` + package `pricing` pur, testé. |
-| Images | Bucket public, `images text[]` sur le véhicule. | Ordre, variantes, suppression sûre. | Table `vehicle_photos` ; bucket public acceptable pour les photos de véhicules (contenu public par nature). |
-| Documents | Inexistant. | Permis, identité, Kbis, assurance, en stockage privé. | Bucket privé + URLs signées + table `documents` + workflow de vérification. |
-| Vérification pro | `is_verified boolean`. | `submitted / under_review / verified / rejected / suspended`. | Enum + table `verification_requests`. |
-| Monétisation | Abonnement Stripe Billing, quotas par palier en trigger. | Non tranché (abonnement, commission, hybride). | Conserver le code Billing en l'état, hors chemin critique, jusqu'à la décision. |
-| Client mobile | Aucun. Site responsive. | Application iOS/Android premium. | `apps/mobile` (Expo). |
-| Autorité serveur | Server Actions Next.js + RLS. | API contractuelle consommée par mobile et web, jobs, webhooks. | `apps/api` dédiée (voir architecture). |
+| Sujet            | Existant                                                              | Cible (brief)                                                                     | Action                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Multi-tenant     | `agencies.owner_id` = une personne. Un pro = un compte = ses agences. | Entreprise avec plusieurs membres et rôles (propriétaire, manager, employé).      | Introduire `organizations` + `organization_members`. L'agence devient un point de retrait rattaché à une organisation. |
+| Rôles            | Enum `client / pro / admin` sur le profil.                            | Rôles plateforme (support, admin, superadmin) distincts des rôles d'organisation. | Séparer rôles plateforme et rôles d'organisation, matrice de permissions côté serveur.                                 |
+| Montants         | `numeric(10,2)` (`price_per_day`, `deposit_amount`, …).               | Entiers dans la plus petite unité monétaire.                                      | Colonnes `*_cents integer` + `currency`.                                                                               |
+| Réservation      | Table `leads` (demande de contact libre).                             | Machine à états, verrouillage, idempotence, devis figé.                           | Nouveau domaine `bookings` (voir modèle de données).                                                                   |
+| Disponibilités   | Table `vehicle_unavailability` non utilisée.                          | Calendrier + filtre par dates + contrainte anti-chevauchement.                    | Réécrire en `availability_blocks` + contrainte d'exclusion sur `bookings`.                                             |
+| Prix             | 3 colonnes (jour/semaine/mois) sur le véhicule.                       | Moteur tarifaire évolutif.                                                        | Table `rate_plans` + package `pricing` pur, testé.                                                                     |
+| Images           | Bucket public, `images text[]` sur le véhicule.                       | Ordre, variantes, suppression sûre.                                               | Table `vehicle_photos` ; bucket public acceptable pour les photos de véhicules (contenu public par nature).            |
+| Documents        | Inexistant.                                                           | Permis, identité, Kbis, assurance, en stockage privé.                             | Bucket privé + URLs signées + table `documents` + workflow de vérification.                                            |
+| Vérification pro | `is_verified boolean`.                                                | `submitted / under_review / verified / rejected / suspended`.                     | Enum + table `verification_requests`.                                                                                  |
+| Monétisation     | Abonnement Stripe Billing, quotas par palier en trigger.              | Non tranché (abonnement, commission, hybride).                                    | Conserver le code Billing en l'état, hors chemin critique, jusqu'à la décision.                                        |
+| Client mobile    | Aucun. Site responsive.                                               | Application iOS/Android premium.                                                  | `apps/mobile` (Expo).                                                                                                  |
+| Autorité serveur | Server Actions Next.js + RLS.                                         | API contractuelle consommée par mobile et web, jobs, webhooks.                    | `apps/api` dédiée (voir architecture).                                                                                 |
 
 ## 5. Points de sécurité relevés dans l'existant
 
