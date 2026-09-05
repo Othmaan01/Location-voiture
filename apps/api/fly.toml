@@ -1,0 +1,29 @@
+# Fly.io — API. Region Paris. Les secrets sont poses avec `fly secrets set`, jamais ici.
+app = "lv-api-staging"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  API_HOST = "0.0.0.0"
+  API_PORT = "4000"
+  API_LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

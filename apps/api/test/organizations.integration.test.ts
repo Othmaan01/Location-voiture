@@ -1,0 +1,165 @@
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import {
+  createAuthUser,
+  createTestDatabase,
+  createTestKeys,
+  createTestServer,
+  testDatabaseUrl,
+} from "./helpers.js";
+
+/**
+ * Tests d'integration contre une vraie base Supabase locale (migrations appliquees).
+ * Lances en CI ; en local, `supabase start` puis TEST_DATABASE_URL.
+ */
+describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => {
+  let database: ReturnType<typeof createTestDatabase>;
+  let app: Awaited<ReturnType<typeof createTestServer>>;
+  let keys: Awaited<ReturnType<typeof createTestKeys>>;
+  let alice: string;
+  let bob: string;
+  let aliceToken: string;
+  let bobToken: string;
+
+  beforeAll(async () => {
+    database = createTestDatabase();
+    keys = await createTestKeys();
+    app = await createTestServer(database.db, keys.verifyToken);
+    const stamp = Date.now();
+    alice = await createAuthUser(database.sql, `alice-${stamp}@test.local`);
+    bob = await createAuthUser(database.sql, `bob-${stamp}@test.local`);
+    aliceToken = await keys.sign(alice);
+    bobToken = await keys.sign(bob);
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await database.sql`delete from auth.users where id in (${alice}, ${bob})`;
+    await database.close();
+  });
+
+  it("refuse les routes protegees sans token, et un token invalide n'est jamais silencieux", async () => {
+    expect((await app.inject({ method: "GET", url: "/v1/me" })).statusCode).toBe(401);
+    const bad = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: { authorization: "Bearer nope" },
+    });
+    expect(bad.statusCode).toBe(401);
+  });
+
+  it("GET /v1/me renvoie l'identite et aucune appartenance au depart", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ userId: alice, platformRole: null, memberships: [] });
+  });
+
+  it("cree une organisation : le createur devient owner, l'audit est ecrit, le plan par defaut est applique", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { name: "Auto Prestige Lyon", siret: "73282932000074" },
+    });
+    expect(res.statusCode).toBe(201);
+    const org = res.json<{ id: string; status: string }>();
+    expect(org.status).toBe("draft");
+
+    const me = await app.inject({
+      method: "GET",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(me.json()).toMatchObject({ memberships: [{ organizationId: org.id, role: "owner" }] });
+
+    const audit = await database.sql<
+      { action: string }[]
+    >`select action from public.audit_log where subject_id = ${org.id}::uuid`;
+    expect(audit.map((r) => r.action)).toContain("organization.create");
+
+    const plan = await database.sql<
+      { plan_code: string }[]
+    >`select plan_code from public.organizations where id = ${org.id}::uuid`;
+    expect(plan[0]?.plan_code).toBe("free");
+  });
+
+  it("IDOR : un autre utilisateur obtient 404 (pas 403) sur l'organisation et ses membres", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { name: "Org privee" },
+    });
+    const orgId = created.json<{ id: string }>().id;
+
+    const asOwner = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(asOwner.statusCode).toBe(200);
+
+    const asStranger = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}`,
+      headers: { authorization: `Bearer ${bobToken}` },
+    });
+    expect(asStranger.statusCode).toBe(404);
+    const members = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}/members`,
+      headers: { authorization: `Bearer ${bobToken}` },
+    });
+    expect(members.statusCode).toBe(404);
+  });
+
+  it("mass assignment : les champs inconnus sont rejetes (422), le SIRET invalide aussi", async () => {
+    const extra = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${bobToken}` },
+      payload: { name: "Hack", status: "verified", planCode: "pro" },
+    });
+    expect(extra.statusCode).toBe(422);
+    const badSiret = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${bobToken}` },
+      payload: { name: "Hack", siret: "73282932000075" },
+    });
+    expect(badSiret.statusCode).toBe(422);
+    expect(badSiret.json()).toMatchObject({ error: { code: "validation_failed" } });
+  });
+
+  it("la contrainte d'exclusion interdit deux reservations fermes qui se chevauchent", async () => {
+    const sql = database.sql;
+    type Row = { id: string }[];
+    const stamp = Date.now();
+    const [org] =
+      await sql<Row>`insert into public.organizations (name, slug, plan_code) values ('Excl', ${"excl-" + stamp}, 'free') returning id`;
+    const orgId = org!.id;
+    const [agency] =
+      await sql<Row>`insert into public.agencies (organization_id, name, slug) values (${orgId}, 'A', ${"a-" + stamp}) returning id`;
+    const agencyId = agency!.id;
+    const [vehicle] =
+      await sql<Row>`insert into public.vehicles (organization_id, agency_id, brand, model, category, transmission, fuel) values (${orgId}, ${agencyId}, 'Peugeot', '208', 'citadine', 'manuelle', 'essence') returning id`;
+    const vehicleId = vehicle!.id;
+    const [plan] =
+      await sql<Row>`insert into public.rate_plans (vehicle_id, organization_id, daily_cents) values (${vehicleId}, ${orgId}, 5000) returning id`;
+    const planId = plan!.id;
+    const period = "[2026-10-01 09:00+02,2026-10-04 09:00+02)";
+    const [quote] =
+      await sql<Row>`insert into public.quotes (user_id, vehicle_id, organization_id, rate_plan_id, pickup_agency_id, period, lines, subtotal_cents, total_cents, currency, expires_at) values (${alice}, ${vehicleId}, ${orgId}, ${planId}, ${agencyId}, ${period}::tstzrange, '[]', 15000, 15000, 'EUR', now() + interval '15 minutes') returning id`;
+    const quoteId = quote!.id;
+    const insertBooking = (status: string) =>
+      sql`insert into public.bookings (organization_id, agency_id, vehicle_id, customer_id, quote_id, period, status, total_cents, currency, price_snapshot) values (${orgId}, ${agencyId}, ${vehicleId}, ${alice}, ${quoteId}, ${period}::tstzrange, ${status}::public.booking_status, 15000, 'EUR', '{}')`;
+    await insertBooking("confirmed");
+    await expect(insertBooking("confirmed")).rejects.toThrow(/bookings_no_overlap/);
+    await insertBooking("requested"); // une demande peut chevaucher, le pro arbitre
+    await sql`delete from public.organizations where id = ${orgId}`;
+  });
+});
