@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+# Adaptateur officiel Next.js pour Netlify : gere le SSR, les routes API,
+# l'ISR et les Server Actions via les Netlify Functions.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
+
+# Le webhook Stripe doit recevoir le corps brut : pas de transformation.
+[[headers]]
+  for = "/api/stripe/webhook"
+  [headers.values]
+    Cache-Control = "no-store"

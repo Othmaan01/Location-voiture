@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Design system RentMap
+   Encre profonde + ambre : lisible sur une carte, chaleureux, automobile.
+   Les tokens ci-dessous sont la seule source de verite des couleurs :
+   changer une valeur ici met a jour tout le site.
+   ===================================================================== */
+
+@theme {
+  --color-ink-50: oklch(0.97 0.005 250);
+  --color-ink-100: oklch(0.93 0.01 250);
+  --color-ink-200: oklch(0.86 0.015 250);
+  --color-ink-300: oklch(0.74 0.02 250);
+  --color-ink-400: oklch(0.6 0.03 250);
+  --color-ink-500: oklch(0.48 0.04 250);
+  --color-ink-600: oklch(0.38 0.05 250);
+  --color-ink-700: oklch(0.3 0.05 252);
+  --color-ink-800: oklch(0.24 0.045 254);
+  --color-ink-900: oklch(0.18 0.04 256);
+  --color-ink-950: oklch(0.13 0.03 258);
+
+  --color-amber-brand: oklch(0.78 0.16 72);
+  --color-amber-brand-dark: oklch(0.68 0.16 62);
+  --color-amber-brand-soft: oklch(0.96 0.04 85);
+
+  --color-background: oklch(0.99 0.003 100);
+  --color-surface: oklch(1 0 0);
+  --color-surface-muted: oklch(0.97 0.005 100);
+  --color-foreground: var(--color-ink-900);
+  --color-muted-foreground: var(--color-ink-500);
+  --color-border: oklch(0.9 0.006 250);
+  --color-ring: var(--color-ink-700);
+
+  --color-success: oklch(0.62 0.14 155);
+  --color-warning: oklch(0.78 0.15 75);
+  --color-danger: oklch(0.58 0.19 25);
+
+  --font-sans: "InterVariable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --radius-card: 0.875rem;
+
+  --shadow-soft: 0 1px 2px oklch(0.2 0.03 250 / 0.05),
+    0 8px 24px -12px oklch(0.2 0.03 250 / 0.18);
+  --shadow-lift: 0 2px 4px oklch(0.2 0.03 250 / 0.06),
+    0 16px 40px -16px oklch(0.2 0.03 250 / 0.28);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--color-amber-brand-soft);
+    color: var(--color-ink-900);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  .container-page {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 80rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  /* Degrade discret utilise en fond de section hero. */
+  .hero-glow {
+    background:
+      radial-gradient(60rem 30rem at 15% -10%, oklch(0.78 0.16 72 / 0.16), transparent 60%),
+      radial-gradient(50rem 26rem at 90% 0%, oklch(0.3 0.05 252 / 0.12), transparent 65%);
+  }
+
+  /* Damier leger pour les images manquantes. */
+  .image-fallback {
+    background-image:
+      linear-gradient(135deg, oklch(0.94 0.01 250) 25%, transparent 25%),
+      linear-gradient(225deg, oklch(0.94 0.01 250) 25%, transparent 25%),
+      linear-gradient(45deg, oklch(0.94 0.01 250) 25%, transparent 25%),
+      linear-gradient(315deg, oklch(0.94 0.01 250) 25%, oklch(0.97 0.005 250) 25%);
+    background-size: 16px 16px;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   MapLibre : on aligne les controles sur le design system.
+   --------------------------------------------------------------------- */
+.maplibregl-map {
+  font-family: var(--font-sans);
+}
+
+.maplibregl-ctrl-group {
+  border-radius: 0.625rem !important;
+  box-shadow: var(--shadow-soft) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.maplibregl-popup-content {
+  border-radius: var(--radius-card) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-lift) !important;
+  border: 1px solid var(--color-border);
+}
+
+.maplibregl-popup-close-button {
+  right: 6px;
+  top: 4px;
+  font-size: 18px;
+  color: var(--color-ink-500);
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+/* Marqueur de prix personnalise */
+.rm-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-ink-900);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: var(--shadow-soft);
+  border: 1.5px solid white;
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 120ms ease;
+  white-space: nowrap;
+}
+
+.rm-marker:hover,
+.rm-marker[data-active="true"] {
+  transform: scale(1.08);
+  background: var(--color-amber-brand-dark);
+}
+
+.rm-marker[data-featured="true"] {
+  background: var(--color-amber-brand-dark);
+}
+
+.rm-cluster {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--color-ink-900);
+  color: white;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
