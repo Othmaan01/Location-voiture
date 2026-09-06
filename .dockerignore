@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+.git
+.env
+.env.*
+apps/web/*
+!apps/web/package.json
+apps/mobile/*
+!apps/mobile/package.json
+docs
+**/.expo
+**/.next
+**/dist
+**/coverage

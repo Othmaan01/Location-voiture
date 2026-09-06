@@ -1,26 +1,27 @@
-# Fly.io — API. Region Paris. Les secrets sont poses avec `fly secrets set`, jamais ici.
-app = "lv-api-staging"
+# Fly.io — API (staging). Region Paris. Les secrets sont poses avec `fly secrets set`, jamais ici.
+app = "location-voiture-api-staging"
 primary_region = "cdg"
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = "apps/api/Dockerfile"
 
 [env]
   API_HOST = "0.0.0.0"
   API_PORT = "4000"
   API_LOG_LEVEL = "info"
+  APP_DEEP_LINK_SCHEME = "lv"
 
 [http_service]
   internal_port = 4000
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
 
   [[http_service.checks]]
-    interval = "15s"
+    interval = "30s"
     timeout = "5s"
-    grace_period = "10s"
+    grace_period = "20s"
     method = "GET"
     path = "/health"
 
