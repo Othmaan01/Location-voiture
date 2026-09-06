@@ -60,6 +60,11 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" options={{ presentation: "modal" }} />
             <Stack.Screen name="(pro)" />
             <Stack.Screen name="(admin)" />
+            <Stack.Screen name="loueurs/[loueurId]" />
+            <Stack.Screen
+              name="vehicules/[vehicleId]/demande"
+              options={{ presentation: "modal" }}
+            />
             <Stack.Screen name="profil" />
             <Stack.Screen name="invitations/[token]" />
           </Stack>

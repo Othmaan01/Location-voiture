@@ -40,6 +40,12 @@
         {
           "color": "#e3243b"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Votre position sert uniquement à trouver des loueurs autour de vous lorsque vous le demandez."
+        }
       ]
     ],
     "experiments": {
