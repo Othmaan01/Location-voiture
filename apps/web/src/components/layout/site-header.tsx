@@ -20,7 +20,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-50 border-b border-ink-200 bg-background/80 backdrop-blur-md">
+    <header className="glass sticky top-0 z-50 rounded-none border-x-0 border-t-0">
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link href="/" aria-label="Accueil">
           <Logo />
@@ -43,7 +43,7 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="hidden items-center gap-2 md:flex">
-          <ButtonLink href="/pro" variant="primary" size="sm">
+          <ButtonLink href="/pro" variant="primary" size="sm" className="btn-glow">
             Télécharger l&apos;application
           </ButtonLink>
         </div>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 
+import { AnimatedBackground } from "@/components/fx/animated-background";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { publicEnv } from "@/lib/env";
@@ -51,8 +52,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="flex min-h-dvh flex-col"
         style={{ fontFamily: "var(--font-manrope), var(--font-sans)" }}
       >
+        <AnimatedBackground />
         <SiteHeader />
-        <main className="flex-1">{children}</main>
+        <main className="relative flex-1">{children}</main>
         <SiteFooter />
       </body>
     </html>

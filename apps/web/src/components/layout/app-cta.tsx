@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 /** Rappel commun : la reservation et les messages se font dans l'application. */
 export function AppCta({ title = "Réservez dans l'application" }: { title?: string }) {
   return (
-    <section className="rounded-card border border-brand/30 bg-brand-soft/60 p-6 sm:p-8">
+    <section className="glass rounded-card border-brand/30 p-6 sm:p-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-lg font-bold text-ink-900">{title}</p>
@@ -14,7 +14,7 @@ export function AppCta({ title = "Réservez dans l'application" }: { title?: str
             passe dans l&apos;application, gratuite pour les clients.
           </p>
         </div>
-        <ButtonLink href="/pro#application" size="lg">
+        <ButtonLink href="/pro#application" size="lg" className="btn-glow">
           <Smartphone /> Obtenir l&apos;application
         </ButtonLink>
       </div>

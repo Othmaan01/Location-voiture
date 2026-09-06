@@ -4,12 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("rounded-card border border-ink-200 bg-surface shadow-soft", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("glass rounded-card shadow-soft", className)} {...props} />;
 }
 
 const badgeVariants = cva(
