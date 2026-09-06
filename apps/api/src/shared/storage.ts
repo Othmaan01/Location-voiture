@@ -34,9 +34,11 @@ export function createStorageClient(
 
   return {
     async createSignedUploadUrl(bucket, path) {
+      // Le service exige un corps JSON, meme vide.
       const response = await fetch(`${base}/object/upload/sign/${bucket}/${encodePath(path)}`, {
         method: "POST",
         headers: headers(),
+        body: "{}",
       });
       if (!response.ok)
         throw new DomainError("internal", "Impossible de preparer le televersement.", {
@@ -45,7 +47,9 @@ export function createStorageClient(
       const body = (await response.json()) as { url?: string; token?: string };
       if (!body.url || !body.token)
         throw new DomainError("internal", "Reponse de stockage invalide.");
-      return { uploadUrl: `${base}${body.url}`, token: body.token };
+      // `url` contient deja `?token=` : on renvoie l'URL nue, le client ajoute le jeton lui-meme.
+      const bare = body.url.split("?")[0] ?? body.url;
+      return { uploadUrl: `${base}${bare}`, token: body.token };
     },
 
     async createSignedReadUrl(bucket, path, expiresInSeconds) {
