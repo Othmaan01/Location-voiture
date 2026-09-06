@@ -4,13 +4,14 @@ Source de vérité : `supabase/migrations/*.sql` (Postgres 17 + PostGIS, via Sup
 
 ## Migrations v1
 
-| Fichier                               | Contenu                                                                                                         |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `20260905000000_v1_foundation.sql`    | extensions, `uuid_generate_v7`, profils, rôles plateforme, appareils, consentements, villes, audit, idempotence |
-| `20260905000001_v1_organizations.sql` | plans, organisations, membres, invitations, agences, documents, vérification, abonnements                       |
-| `20260905000002_v1_catalog.sql`       | véhicules, quotas de publication, photos, grilles tarifaires, blocages                                          |
-| `20260905000003_v1_bookings.sql`      | devis, réservations (contrainte d'exclusion), événements, favoris, notifications                                |
-| `20260905000004_v1_rls.sql`           | policies RLS, buckets Storage                                                                                   |
+| Fichier                               | Contenu                                                                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `20260905000000_v1_foundation.sql`    | extensions, `uuid_generate_v7`, profils, rôles plateforme, appareils, consentements, villes, audit, idempotence                                  |
+| `20260905000001_v1_organizations.sql` | plans, organisations, membres, invitations, agences, documents, vérification, abonnements                                                        |
+| `20260907000000_v1_siren_siret.sql`   | `organizations.siren` (unique), `agencies.siret` (unique) + trigger de cohérence SIRET ⊃ SIREN ; suppression de `organizations.siret` (ADR-0010) |
+| `20260905000002_v1_catalog.sql`       | véhicules, quotas de publication, photos, grilles tarifaires, blocages                                                                           |
+| `20260905000003_v1_bookings.sql`      | devis, réservations (contrainte d'exclusion), événements, favoris, notifications                                                                 |
+| `20260905000004_v1_rls.sql`           | policies RLS, buckets Storage                                                                                                                    |
 
 ## Conventions
 

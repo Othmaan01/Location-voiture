@@ -3,13 +3,16 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, StyleSheet, View } from "react-native";
 import { z } from "zod";
-import type { Agency, AgencyInput } from "@lv/contracts";
+import { SiretSchema, type Agency, type AgencyInput } from "@lv/contracts";
 
 import { Button, Card, Input, Text } from "@/components/ui";
+import { ApiRequestError } from "@/lib/api";
+import { useCompanyLookup } from "@/lib/queries";
 import { theme } from "@/theme";
 
 const Schema = z.object({
   name: z.string().trim().min(2, "2 caractères minimum").max(120),
+  siret: z.union([z.literal(""), SiretSchema]),
   addressLine: z.string().trim().max(200),
   postalCode: z.string().trim().max(10),
   cityName: z.string().trim().max(120),
@@ -51,13 +54,17 @@ async function searchAddress(query: string): Promise<Suggestion[]> {
 
 export function AgencyForm({
   initial,
+  siren,
   submitting,
   onSubmit,
 }: {
   initial?: Agency;
+  /** SIREN de l'organisation : le SIRET de l'agence doit commencer par lui. */
+  siren: string | null;
   submitting: boolean;
   onSubmit: (input: AgencyInput) => Promise<void>;
 }) {
+  const lookup = useCompanyLookup();
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(
     initial && initial.latitude !== null && initial.longitude !== null
       ? { latitude: initial.latitude, longitude: initial.longitude }
@@ -65,10 +72,11 @@ export function AgencyForm({
   );
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
-  const { control, handleSubmit, setValue, formState } = useForm<Form>({
+  const { control, handleSubmit, setValue, setError, watch, formState } = useForm<Form>({
     resolver: zodResolver(Schema),
     defaultValues: {
       name: initial?.name ?? "",
+      siret: initial?.siret ?? "",
       addressLine: initial?.addressLine ?? "",
       postalCode: initial?.postalCode ?? "",
       cityName: initial?.cityName ?? "",
@@ -77,11 +85,45 @@ export function AgencyForm({
     },
   });
 
+  const siret = watch("siret");
+  const siretMismatch = !!siren && siret.length === 14 && !siret.startsWith(siren);
+
+  /** Annuaire officiel : adresse de l'etablissement, puis position (annuaire ou geocodage). */
+  const findEstablishment = () =>
+    lookup.mutate(siret, {
+      onSuccess: async (c) => {
+        const est = c.establishments[0] ?? c.headOffice;
+        if (!est) {
+          setServerError("Établissement introuvable dans l'annuaire.");
+          return;
+        }
+        if (est.addressLine) setValue("addressLine", est.addressLine, { shouldDirty: true });
+        if (est.postalCode) setValue("postalCode", est.postalCode, { shouldDirty: true });
+        if (est.cityName) setValue("cityName", est.cityName, { shouldDirty: true });
+        if (est.latitude !== null && est.longitude !== null) {
+          setCoords({ latitude: est.latitude, longitude: est.longitude });
+        } else if (est.addressLine) {
+          const [first] = await searchAddress(
+            [est.addressLine, est.postalCode, est.cityName].filter(Boolean).join(" "),
+          );
+          if (first) setCoords({ latitude: first.latitude, longitude: first.longitude });
+        }
+        setSuggestions([]);
+      },
+      onError: (e) =>
+        setServerError(e instanceof ApiRequestError ? e.message : "Annuaire indisponible."),
+    });
+
   const submit = handleSubmit(async (v) => {
     setServerError(null);
+    if (siretMismatch) {
+      setError("siret", { message: `Doit commencer par le SIREN ${siren}` });
+      return;
+    }
     try {
       await onSubmit({
         name: v.name,
+        siret: v.siret || null,
         addressLine: v.addressLine || null,
         postalCode: v.postalCode || null,
         cityName: v.cityName || null,
@@ -111,6 +153,38 @@ export function AgencyForm({
           />
         )}
       />
+      <Controller
+        control={control}
+        name="siret"
+        render={({ field, fieldState }) => (
+          <Input
+            label="SIRET de l'établissement"
+            hint={
+              siren
+                ? `14 chiffres, commence par ${siren}. Requis pour être visible.`
+                : "Renseignez d'abord le SIREN dans les informations de l'organisation."
+            }
+            value={field.value}
+            onChangeText={(t) => field.onChange(t.replace(/\D/g, "").slice(0, 14))}
+            onBlur={field.onBlur}
+            error={
+              fieldState.error?.message ??
+              (siretMismatch ? `Doit commencer par le SIREN ${siren}` : undefined)
+            }
+            keyboardType="number-pad"
+            maxLength={14}
+          />
+        )}
+      />
+      {siret.length === 14 && !siretMismatch ? (
+        <Button
+          label="Retrouver l'adresse de l'établissement"
+          variant="ghost"
+          size="sm"
+          loading={lookup.isPending}
+          onPress={findEstablishment}
+        />
+      ) : null}
       <Controller
         control={control}
         name="addressLine"

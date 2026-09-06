@@ -73,7 +73,7 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
       method: "POST",
       url: "/v1/organizations",
       headers: { authorization: `Bearer ${aliceToken}` },
-      payload: { name: "Auto Prestige Lyon", siret: "73282932000074" },
+      payload: { name: "Auto Prestige Lyon", siren: "732829320" },
     });
     expect(res.statusCode).toBe(201);
     const org = res.json<{ id: string; status: string }>();
@@ -127,7 +127,7 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
     expect(members.statusCode).toBe(404);
   });
 
-  it("mass assignment : les champs inconnus sont rejetes (422), le SIRET invalide aussi", async () => {
+  it("mass assignment : les champs inconnus sont rejetes (422), le SIREN invalide aussi", async () => {
     const extra = await app.inject({
       method: "POST",
       url: "/v1/organizations",
@@ -135,14 +135,68 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
       payload: { name: "Hack", status: "verified", planCode: "pro" },
     });
     expect(extra.statusCode).toBe(422);
-    const badSiret = await app.inject({
+    const badSiren = await app.inject({
       method: "POST",
       url: "/v1/organizations",
       headers: { authorization: `Bearer ${bobToken}` },
-      payload: { name: "Hack", siret: "73282932000075" },
+      payload: { name: "Hack", siren: "732829321" },
     });
-    expect(badSiret.statusCode).toBe(422);
-    expect(badSiret.json()).toMatchObject({ error: { code: "validation_failed" } });
+    expect(badSiren.statusCode).toBe(422);
+    expect(badSiren.json()).toMatchObject({ error: { code: "validation_failed" } });
+  });
+
+  it("suppression d'une organisation : confirmation exigee, owner uniquement, cascade", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${bobToken}` },
+      payload: { name: "A supprimer", siren: "552032534" },
+    });
+    expect(created.statusCode).toBe(201);
+    const orgId = created.json<{ id: string }>().id;
+    const agency = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/agencies`,
+      headers: { authorization: `Bearer ${bobToken}` },
+      payload: { name: "Siege", siret: "55203253400703" },
+    });
+    expect(agency.statusCode).toBe(201);
+
+    const noConfirm = await app.inject({
+      method: "DELETE",
+      url: `/v1/organizations/${orgId}`,
+      headers: { authorization: `Bearer ${bobToken}` },
+      payload: { confirmation: "oui" },
+    });
+    expect(noConfirm.statusCode).toBe(422);
+    const stranger = await app.inject({
+      method: "DELETE",
+      url: `/v1/organizations/${orgId}`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { confirmation: "SUPPRIMER" },
+    });
+    expect(stranger.statusCode).toBe(404);
+    const ok = await app.inject({
+      method: "DELETE",
+      url: `/v1/organizations/${orgId}`,
+      headers: { authorization: `Bearer ${bobToken}` },
+      payload: { confirmation: "SUPPRIMER" },
+    });
+    expect(ok.statusCode).toBe(204);
+    const gone = await database.sql<
+      { n: string }[]
+    >`select count(*)::text as n from public.agencies where organization_id = ${orgId}::uuid`;
+    expect(gone[0]?.n).toBe("0");
+    const me = await app.inject({
+      method: "GET",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${bobToken}` },
+    });
+    expect(
+      me
+        .json<{ memberships: { organizationId: string }[] }>()
+        .memberships.map((m) => m.organizationId),
+    ).not.toContain(orgId);
   });
 
   it("la contrainte d'exclusion interdit deux reservations fermes qui se chevauchent", async () => {

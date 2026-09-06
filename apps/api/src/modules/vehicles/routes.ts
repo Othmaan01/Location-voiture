@@ -8,6 +8,7 @@ import {
   ReorderPhotosSchema,
   SignedUploadSchema,
   UuidSchema,
+  VehicleDeleteOutcomeSchema,
   VehicleInputSchema,
   VehiclePhotoSchema,
   VehicleSchema,
@@ -86,13 +87,12 @@ export const vehiclesRoutes: FastifyPluginAsyncZod = async (app) => {
   app.delete(
     "/v1/vehicles/:vehicleId",
     {
-      schema: { tags, params: vehicleParams, response: { 204: z.null() } },
+      schema: { tags, params: vehicleParams, response: { 200: VehicleDeleteOutcomeSchema } },
       onRequest: [app.requireAuth],
     },
-    async (request, reply) => {
-      await service.archive(request.actor, request.params.vehicleId, request.id);
-      return reply.code(204).send(null);
-    },
+    async (request) => ({
+      outcome: await service.remove(request.actor, request.params.vehicleId, request.id),
+    }),
   );
 
   app.put(

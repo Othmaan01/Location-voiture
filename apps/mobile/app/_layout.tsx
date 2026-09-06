@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AppLockGate } from "@/components/AppLockGate";
 import { ApiRequestError } from "@/lib/api";
 import { PushListener } from "@/lib/push-listener";
 import { SessionProvider } from "@/lib/session";
@@ -52,25 +53,27 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <StatusBar style="light" />
           <PushListener />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: theme.colors.background },
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(auth)" options={{ presentation: "modal" }} />
-            <Stack.Screen name="(pro)" />
-            <Stack.Screen name="(admin)" />
-            <Stack.Screen name="loueurs/[loueurId]" />
-            <Stack.Screen name="reservations/[bookingId]" />
-            <Stack.Screen
-              name="vehicules/[vehicleId]/demande"
-              options={{ presentation: "modal" }}
-            />
-            <Stack.Screen name="profil" />
-            <Stack.Screen name="invitations/[token]" />
-          </Stack>
+          <AppLockGate>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: theme.colors.background },
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" options={{ presentation: "modal" }} />
+              <Stack.Screen name="(pro)" />
+              <Stack.Screen name="(admin)" />
+              <Stack.Screen name="loueurs/[loueurId]" />
+              <Stack.Screen name="reservations/[bookingId]" />
+              <Stack.Screen
+                name="vehicules/[vehicleId]/demande"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen name="profil" />
+              <Stack.Screen name="invitations/[token]" />
+            </Stack>
+          </AppLockGate>
         </QueryClientProvider>
       </SessionProvider>
     </SafeAreaProvider>

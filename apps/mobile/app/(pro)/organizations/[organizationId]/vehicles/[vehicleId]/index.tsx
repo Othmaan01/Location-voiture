@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Camera, Pencil, Tag, Trash2 } from "lucide-react-native";
+import { Camera, ChevronRight, Pencil, Tag, Trash2 } from "lucide-react-native";
 
 import { Badge, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
@@ -13,7 +13,7 @@ import {
   formatEuros,
 } from "@/features/pro/labels";
 import {
-  useArchiveVehicle,
+  useDeleteVehicle,
   usePublishCheck,
   useSetVehiclePublished,
   useVehicle,
@@ -29,7 +29,7 @@ export default function VehicleScreen() {
   const vehicle = useVehicle(vehicleId);
   const check = usePublishCheck(vehicleId);
   const setPublished = useSetVehiclePublished(organizationId, vehicleId);
-  const archive = useArchiveVehicle(organizationId, vehicleId);
+  const remove = useDeleteVehicle(organizationId, vehicleId);
 
   if (vehicle.isPending) {
     return (
@@ -57,19 +57,46 @@ export default function VehicleScreen() {
           e instanceof ApiRequestError ? e.message : "Réessayez plus tard.",
         ),
     });
-  const confirmArchive = () =>
+  const confirmDelete = () =>
     Alert.alert(
-      "Archiver ce véhicule ?",
-      "Il disparaît de votre flotte et de l'app. Son historique est conservé.",
+      "Supprimer ce véhicule ?",
+      "Il disparaît de votre flotte et de l'app. S'il a déjà eu des réservations, il est archivé et son historique est conservé.",
       [
         { text: "Annuler", style: "cancel" },
         {
-          text: "Archiver",
+          text: "Supprimer",
           style: "destructive",
-          onPress: () => archive.mutate(undefined, { onSuccess: () => router.back() }),
+          onPress: () =>
+            remove.mutate(undefined, {
+              onSuccess: (r) => {
+                if (r.outcome === "archived")
+                  Alert.alert(
+                    "Véhicule archivé",
+                    "Il avait un historique de réservations : il est conservé mais n'apparaît plus.",
+                  );
+                router.back();
+              },
+              onError: (e) =>
+                Alert.alert(
+                  "Suppression impossible",
+                  e instanceof ApiRequestError ? e.message : "Réessayez.",
+                ),
+            }),
         },
       ],
     );
+
+  /** Chaque bloqueur ouvre l'ecran ou il se corrige. */
+  const resolveBlocker = (b: string) => {
+    if (b === "organization_not_verified")
+      router.push(`/(pro)/organizations/${organizationId}/documents`);
+    else if (b === "agency_incomplete")
+      router.push(`/(pro)/organizations/${organizationId}/agencies/${v.agencyId}`);
+    else if (b === "no_photo")
+      router.push(`/(pro)/organizations/${organizationId}/vehicles/${vehicleId}/photos`);
+    else if (b === "no_rate_plan")
+      router.push(`/(pro)/organizations/${organizationId}/vehicles/${vehicleId}/rate-plan`);
+  };
 
   return (
     <Screen
@@ -154,13 +181,22 @@ export default function VehicleScreen() {
       <Card style={[styles.publishCard, published ? styles.publishCardOn : null]}>
         <Text variant="bodyStrong">{published ? "Visible des clients" : "Pas encore visible"}</Text>
         {!published && blockers.length > 0 ? (
-          <View style={styles.blockers}>
-            {blockers.map((b) => (
-              <Text key={b} variant="sm" tone="muted">
-                • {BLOCKER_LABEL[b] ?? b}
-              </Text>
+          <Card padded={false} raised>
+            {blockers.map((b, i) => (
+              <ListItem
+                key={b}
+                title={BLOCKER_LABEL[b] ?? b}
+                subtitle={b === "quota_reached" ? undefined : "Appuyez pour corriger"}
+                right={
+                  b === "quota_reached" ? undefined : (
+                    <ChevronRight size={18} color={theme.colors.textDim} />
+                  )
+                }
+                onPress={b === "quota_reached" ? undefined : () => resolveBlocker(b)}
+                last={i === blockers.length - 1}
+              />
             ))}
-          </View>
+          </Card>
         ) : null}
         {!published && blockers.length === 0 && check.data ? (
           <Text variant="sm" tone="muted">
@@ -177,11 +213,11 @@ export default function VehicleScreen() {
       </Card>
 
       <Button
-        label="Archiver le véhicule"
+        label="Supprimer le véhicule"
         variant="danger"
         icon={<Trash2 size={18} color={theme.colors.danger} />}
-        loading={archive.isPending}
-        onPress={confirmArchive}
+        loading={remove.isPending}
+        onPress={confirmDelete}
       />
     </Screen>
   );

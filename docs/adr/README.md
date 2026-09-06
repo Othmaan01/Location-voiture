@@ -13,3 +13,4 @@ Une décision structurante par fichier. Format : contexte, options, décision, c
 | [0007](./0007-roles-plateforme-et-roles-organisation.md)      | Deux familles de rôles : plateforme et organisation ; matrice de permissions serveur               | accepté                          |
 | [0008](./0008-monetisation-abonnement-par-vehicule.md)        | Monétisation : abonnement loueur indexé sur le nombre de véhicules, aucune commission client       | accepté                          |
 | [0009](./0009-direction-produit-et-design-validee.md)         | Direction produit et interface validée : feed de loueurs, mise en relation pure, mode nuit premium | accepté                          |
+| [0010](./0010-siren-siret-suppressions-verrouillage.md)       | SIREN par organisation, SIRET par agence ; politique de suppression ; verrouillage Face ID         | accepté                          |

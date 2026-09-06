@@ -27,6 +27,14 @@ export const CATEGORY_OPTIONS: readonly SelectOption<
   { value: "prestige", label: "Prestige" },
   { value: "sans_permis", label: "Sans permis" },
 ];
+/**
+ * Categories masquees dans l'app (decision fondateur 2026-09-06 : voitures uniquement au lancement).
+ * Le moteur les connait toujours : les rouvrir = retirer une entree ici.
+ */
+export const HIDDEN_CATEGORIES: ReadonlySet<string> = new Set(["utilitaire", "minibus"]);
+export const ENABLED_CATEGORY_OPTIONS = CATEGORY_OPTIONS.filter(
+  (o) => !HIDDEN_CATEGORIES.has(o.value),
+);
 export const TRANSMISSION_OPTIONS: readonly SelectOption<"manuelle" | "automatique">[] = [
   { value: "manuelle", label: "Manuelle" },
   { value: "automatique", label: "Automatique" },

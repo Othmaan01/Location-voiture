@@ -18,13 +18,15 @@ import { useSearchState } from "@/features/client/search-state";
 import { useFeed } from "@/lib/queries-public";
 import { theme } from "@/theme";
 
+/** Onglets masques au lancement (voitures uniquement) ; le moteur sert toujours "utility". */
+const HIDDEN_TABS: ReadonlySet<FeedTab> = new Set<FeedTab>(["utility"]);
 const TABS: { key: FeedTab; label: string }[] = [
   { key: "all", label: "Tous" },
   { key: "nearby", label: "Près de moi" },
   { key: "premium", label: "Premium" },
   { key: "utility", label: "Utilitaires" },
   { key: "new", label: "Nouveaux" },
-];
+].filter((t) => !HIDDEN_TABS.has(t.key as FeedTab)) as { key: FeedTab; label: string }[];
 
 /** Accueil = feed des loueurs avec onglets (ADR-0009). */
 export default function HomeScreen() {

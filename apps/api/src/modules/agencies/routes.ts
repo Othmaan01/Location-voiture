@@ -66,6 +66,18 @@ export const agenciesRoutes: FastifyPluginAsyncZod = async (app) => {
       service.update(request.actor, request.params.agencyId, request.body, request.id),
   );
 
+  app.delete(
+    "/v1/agencies/:agencyId",
+    {
+      schema: { tags: ["agencies"], params: agencyParams, response: { 204: z.null() } },
+      onRequest: [app.requireAuth],
+    },
+    async (request, reply) => {
+      await service.remove(request.actor, request.params.agencyId, request.id);
+      return reply.code(204).send(null);
+    },
+  );
+
   app.post(
     "/v1/agencies/:agencyId/publish",
     {

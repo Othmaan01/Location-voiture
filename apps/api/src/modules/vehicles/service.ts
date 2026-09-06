@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import type {
   PhotoConfirmSchema,
   RatePlan,
@@ -14,8 +14,10 @@ import type { z } from "zod";
 import type { Database } from "../../db/client.js";
 import {
   agencies,
+  bookings,
   organizations,
   plans,
+  quotes,
   ratePlans,
   vehiclePhotos,
   vehicles,
@@ -24,10 +26,10 @@ import { audit } from "../../shared/audit.js";
 import { assertCan, assertCanOrHide, type Actor } from "../../shared/authz.js";
 import { translateDbError } from "../../shared/db-errors.js";
 import { DomainError, notFound } from "../../shared/errors.js";
-import type { StorageClient } from "../../shared/storage.js";
+import { PHOTOS_BUCKET, type StorageClient } from "../../shared/storage.js";
 import { isAgencyComplete } from "../agencies/service.js";
 
-export const PHOTOS_BUCKET = "vehicle-photos";
+export { PHOTOS_BUCKET };
 const MAX_PHOTOS = 30;
 const UPLOAD_TTL_SECONDS = 600;
 const EXT: Record<string, string> = {
@@ -72,6 +74,8 @@ export interface VehiclesService {
     requestId: string,
   ): Promise<Vehicle>;
   archive(actor: Actor, vehicleId: string, requestId: string): Promise<void>;
+  /** Supprime vraiment sans historique de reservation, archive sinon. */
+  remove(actor: Actor, vehicleId: string, requestId: string): Promise<"deleted" | "archived">;
   setRatePlan(
     actor: Actor,
     vehicleId: string,
@@ -332,7 +336,44 @@ export function createVehiclesService(db: Database, storage: StorageClient): Veh
       }
     },
 
-    /** Jamais de suppression physique : un vehicule archive garde son historique. */
+    async remove(actor, vehicleId, requestId) {
+      const current = await loadForMember(actor, vehicleId);
+      assertCan(actor, "vehicle.write", { organizationId: current.organizationId });
+      const [bookingRow] = await db
+        .select({ n: count() })
+        .from(bookings)
+        .where(eq(bookings.vehicleId, vehicleId));
+      if ((bookingRow?.n ?? 0) > 0) {
+        await this.archive(actor, vehicleId, requestId);
+        return "archived";
+      }
+      const photos = await db
+        .select({ path: vehiclePhotos.storagePath })
+        .from(vehiclePhotos)
+        .where(eq(vehiclePhotos.vehicleId, vehicleId));
+      await db.transaction(async (tx) => {
+        await tx.delete(quotes).where(eq(quotes.vehicleId, vehicleId));
+        await tx.delete(vehicles).where(eq(vehicles.id, vehicleId));
+        await audit(tx, {
+          actorId: actor.userId,
+          actorType: "organization_member",
+          action: "vehicle.delete",
+          subjectType: "vehicle",
+          subjectId: vehicleId,
+          organizationId: current.organizationId,
+          metadata: { brand: current.brand, model: current.model },
+          requestId,
+        });
+      });
+      if (photos.length > 0)
+        await storage.remove(
+          PHOTOS_BUCKET,
+          photos.map((p) => p.path),
+        );
+      return "deleted";
+    },
+
+    /** Archivage : le vehicule disparait de la flotte, son historique est conserve. */
     async archive(actor, vehicleId, requestId) {
       const current = await loadForMember(actor, vehicleId);
       assertCan(actor, "vehicle.write", { organizationId: current.organizationId });

@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Switch, View } from "react-native";
 import {
   Bell,
   Building2,
   Info,
+  LockKeyhole,
   LogOut,
   ScrollText,
   ShieldAlert,
@@ -14,6 +15,7 @@ import {
 
 import { Avatar, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
+import { useAppLockSetting } from "@/lib/app-lock";
 import { useMe } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -23,6 +25,18 @@ export default function ProfileScreen() {
   const { session, loading } = useSession();
   const router = useRouter();
   const me = useMe();
+  const appLock = useAppLockSetting();
+
+  const toggleLock = async (next: boolean) => {
+    if (next && !appLock.biometrics.available) {
+      Alert.alert(
+        "Aucun verrou configuré",
+        "Activez Face ID, Touch ID ou un code sur votre appareil, puis réessayez.",
+      );
+      return;
+    }
+    await appLock.toggle(next);
+  };
 
   if (loading) {
     return (
@@ -89,6 +103,19 @@ export default function ProfileScreen() {
           icon={<Bell size={22} color={theme.colors.text} />}
           title="Notifications"
           subtitle="Réponses des loueurs, rappels"
+        />
+        <ListItem
+          icon={<LockKeyhole size={22} color={theme.colors.text} />}
+          title={`Verrouillage ${appLock.biometrics.label}`}
+          subtitle="Demandé à l'ouverture et après 30 s en arrière-plan"
+          right={
+            <Switch
+              value={appLock.enabled}
+              onValueChange={(v) => void toggleLock(v)}
+              trackColor={{ true: theme.colors.accent, false: theme.colors.border }}
+              thumbColor="#ffffff"
+            />
+          }
           last
         />
       </Card>

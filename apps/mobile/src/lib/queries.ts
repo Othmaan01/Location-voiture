@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import {
   AcceptInvitationResponseSchema,
+  CompanyLookupSchema,
   CreatedInvitationSchema,
   InvitationsResponseSchema,
   MeResponseSchema,
@@ -63,6 +64,27 @@ export function useCreateOrganization() {
     mutationFn: (body: CreateOrganizationBody) =>
       apiRequest("/v1/organizations", OrganizationSchema, { method: "POST", body }),
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.me }),
+  });
+}
+
+/** Suppression par le proprietaire : confirmation explicite, refusee (409) avec un historique de reservations. */
+export function useDeleteOrganization() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (organizationId: string) =>
+      apiRequest(`/v1/organizations/${organizationId}`, Empty, {
+        method: "DELETE",
+        body: { confirmation: "SUPPRIMER" },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.me }),
+  });
+}
+
+/** Annuaire officiel des entreprises : aide a la saisie depuis un SIREN (9) ou un SIRET (14). */
+export function useCompanyLookup() {
+  return useMutation({
+    mutationFn: (q: string) =>
+      apiRequest(`/v1/companies/lookup?q=${encodeURIComponent(q)}`, CompanyLookupSchema),
   });
 }
 

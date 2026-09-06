@@ -2,7 +2,13 @@ import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { Document } from "@lv/contracts";
 
 import type { Database } from "../../db/client.js";
-import { documents, organizations, vehicles, verificationRequests } from "../../db/schema.js";
+import {
+  agencies,
+  documents,
+  organizations,
+  vehicles,
+  verificationRequests,
+} from "../../db/schema.js";
 import { audit } from "../../shared/audit.js";
 import { assertCan, type Actor } from "../../shared/authz.js";
 import { DomainError, notFound } from "../../shared/errors.js";
@@ -13,10 +19,12 @@ export interface AdminService {
     {
       organizationId: string;
       organizationName: string;
-      siret: string | null;
+      legalName: string | null;
+      siren: string | null;
       status: "submitted" | "under_review";
       submittedAt: string;
       documents: Document[];
+      agencies: { id: string; name: string; siret: string | null; cityName: string | null }[];
     }[]
   >;
   decideVerification(
@@ -62,14 +70,15 @@ export function createAdminService(db: Database): AdminService {
         .select({
           id: organizations.id,
           name: organizations.name,
-          siret: organizations.siret,
+          legalName: organizations.legalName,
+          siren: organizations.siren,
           status: organizations.status,
         })
         .from(organizations)
         .where(inArray(organizations.status, ["submitted", "under_review"]));
       if (orgs.length === 0) return [];
       const ids = orgs.map((o) => o.id);
-      const [reqs, docs] = await Promise.all([
+      const [reqs, docs, ags] = await Promise.all([
         db
           .select()
           .from(verificationRequests)
@@ -85,17 +94,32 @@ export function createAdminService(db: Database): AdminService {
           .from(documents)
           .where(inArray(documents.organizationId, ids))
           .orderBy(desc(documents.createdAt)),
+        db
+          .select({
+            id: agencies.id,
+            organizationId: agencies.organizationId,
+            name: agencies.name,
+            siret: agencies.siret,
+            cityName: agencies.cityName,
+          })
+          .from(agencies)
+          .where(inArray(agencies.organizationId, ids))
+          .orderBy(asc(agencies.createdAt)),
       ]);
       return orgs
         .map((o) => ({
           organizationId: o.id,
           organizationName: o.name,
-          siret: o.siret,
+          legalName: o.legalName,
+          siren: o.siren,
           status: o.status as "submitted" | "under_review",
           submittedAt: (
             reqs.find((r) => r.organizationId === o.id)?.submittedAt ?? new Date()
           ).toISOString(),
           documents: docs.filter((d) => d.organizationId === o.id).map(documentDto),
+          agencies: ags
+            .filter((a) => a.organizationId === o.id)
+            .map(({ id, name, siret, cityName }) => ({ id, name, siret, cityName })),
         }))
         .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
     },

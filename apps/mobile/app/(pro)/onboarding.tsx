@@ -4,17 +4,17 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, View } from "react-native";
 import { z } from "zod";
-import { SiretSchema } from "@lv/contracts";
+import { SirenSchema } from "@lv/contracts";
 
 import { Button, Input, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
-import { useCreateOrganization } from "@/lib/queries";
+import { useCompanyLookup, useCreateOrganization } from "@/lib/queries";
 import { theme } from "@/theme";
 
 const Schema = z.object({
   name: z.string().trim().min(2, "2 caractères minimum").max(120),
   legalName: z.string().trim().max(200),
-  siret: z.union([z.literal(""), SiretSchema]),
+  siren: z.union([z.literal(""), SirenSchema]),
 });
 type Form = z.infer<typeof Schema>;
 
@@ -22,11 +22,26 @@ type Form = z.infer<typeof Schema>;
 export default function ProOnboardingScreen() {
   const router = useRouter();
   const create = useCreateOrganization();
+  const lookup = useCompanyLookup();
   const [serverError, setServerError] = useState<string | null>(null);
-  const { control, handleSubmit, formState } = useForm<Form>({
+  const [found, setFound] = useState<string | null>(null);
+  const { control, handleSubmit, formState, watch, setValue, getValues } = useForm<Form>({
     resolver: zodResolver(Schema),
-    defaultValues: { name: "", legalName: "", siret: "" },
+    defaultValues: { name: "", legalName: "", siren: "" },
   });
+  const siren = watch("siren");
+
+  /** Annuaire officiel : pre-remplit la raison sociale (et le nom s'il est vide). */
+  const findCompany = () =>
+    lookup.mutate(siren, {
+      onSuccess: (c) => {
+        setFound(c.legalName);
+        setValue("legalName", c.legalName, { shouldDirty: true });
+        if (!getValues("name").trim()) setValue("name", c.legalName, { shouldDirty: true });
+      },
+      onError: (e) =>
+        setServerError(e instanceof ApiRequestError ? e.message : "Annuaire indisponible."),
+    });
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -35,7 +50,7 @@ export default function ProOnboardingScreen() {
         name: values.name,
         countryCode: "FR",
         ...(values.legalName ? { legalName: values.legalName } : {}),
-        ...(values.siret ? { siret: values.siret } : {}),
+        ...(values.siren ? { siren: values.siren } : {}),
       });
       router.replace(`/(pro)/organizations/${org.id}`);
     } catch (error) {
@@ -84,19 +99,36 @@ export default function ProOnboardingScreen() {
         />
         <Controller
           control={control}
-          name="siret"
+          name="siren"
           render={({ field, fieldState }) => (
             <Input
-              label="SIRET (optionnel)"
-              hint="14 chiffres"
+              label="SIREN de l'entreprise"
+              hint={
+                found
+                  ? `Entreprise trouvée : ${found}`
+                  : "9 chiffres. Le SIRET de chaque agence viendra ensuite."
+              }
               value={field.value}
-              onChangeText={(v) => field.onChange(v.replace(/\D/g, "").slice(0, 14))}
+              onChangeText={(v) => {
+                setFound(null);
+                field.onChange(v.replace(/\D/g, "").slice(0, 9));
+              }}
               onBlur={field.onBlur}
               error={fieldState.error?.message}
               keyboardType="number-pad"
+              maxLength={9}
             />
           )}
         />
+        {siren.length === 9 ? (
+          <Button
+            label="Retrouver mon entreprise"
+            variant="ghost"
+            size="sm"
+            loading={lookup.isPending}
+            onPress={findCompany}
+          />
+        ) : null}
         {serverError ? (
           <Text variant="sm" tone="danger">
             {serverError}

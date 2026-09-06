@@ -66,7 +66,7 @@ export default function OrganizationScreen() {
           <Text variant="sm" tone="muted">
             {org.data.status === "rejected"
               ? "Corrigez les points signalés puis soumettez de nouveau."
-              : "Kbis, assurance, une agence avec adresse et votre SIRET. Vous pouvez préparer vos véhicules en attendant, la publication s'ouvre après vérification."}
+              : "Kbis, assurance, votre SIREN et une agence avec son SIRET et son adresse. Vous pouvez préparer vos véhicules en attendant, la publication s'ouvre après vérification."}
           </Text>
         </Card>
       ) : null}
@@ -136,7 +136,7 @@ export default function OrganizationScreen() {
         <ListItem
           icon={<Building2 size={22} color={theme.colors.text} />}
           title="Informations"
-          subtitle={org.data.siret ? `SIRET ${org.data.siret}` : "SIRET à renseigner"}
+          subtitle={org.data.siren ? `SIREN ${org.data.siren}` : "SIREN à renseigner"}
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/edit`)}
           last
         />

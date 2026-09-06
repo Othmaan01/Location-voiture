@@ -8,6 +8,7 @@ import {
   PublishCheckSchema,
   RatePlanSchema,
   SignedUploadSchema,
+  VehicleDeleteOutcomeSchema,
   VehiclePhotoSchema,
   VehicleSchema,
   VehiclesResponseSchema,
@@ -57,6 +58,18 @@ export function useUpdateAgency(orgId: string) {
   return useMutation({
     mutationFn: ({ agencyId, body }: { agencyId: string; body: AgencyUpdate }) =>
       apiRequest(`/v1/agencies/${agencyId}`, AgencySchema, { method: "PATCH", body }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: catalogKeys.agencies(orgId) });
+      void client.invalidateQueries({ queryKey: catalogKeys.verification(orgId) });
+    },
+  });
+}
+/** Refuse (409) tant que des vehicules y sont rattaches. */
+export function useDeleteAgency(orgId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (agencyId: string) =>
+      apiRequest(`/v1/agencies/${agencyId}`, Empty, { method: "DELETE" }),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: catalogKeys.agencies(orgId) });
       void client.invalidateQueries({ queryKey: catalogKeys.verification(orgId) });
@@ -120,10 +133,12 @@ export function useUpdateVehicle(orgId: string, vehicleId: string) {
     onSuccess: () => invalidateVehicle(client, orgId, vehicleId),
   });
 }
-export function useArchiveVehicle(orgId: string, vehicleId: string) {
+/** Le serveur supprime vraiment (sans historique) ou archive ; la reponse le dit. */
+export function useDeleteVehicle(orgId: string, vehicleId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () => apiRequest(`/v1/vehicles/${vehicleId}`, Empty, { method: "DELETE" }),
+    mutationFn: () =>
+      apiRequest(`/v1/vehicles/${vehicleId}`, VehicleDeleteOutcomeSchema, { method: "DELETE" }),
     onSuccess: () => invalidateVehicle(client, orgId, vehicleId),
   });
 }

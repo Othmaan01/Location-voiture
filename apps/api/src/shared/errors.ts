@@ -30,6 +30,8 @@ export class DomainError extends Error {
         return 409;
       case "rate_limited":
         return 429;
+      case "unavailable":
+        return 503;
       case "internal":
         return 500;
     }

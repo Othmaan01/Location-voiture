@@ -8,6 +8,7 @@ import {
 } from "../enums.js";
 import { CurrencySchema } from "../money.js";
 import { IsoDateTimeSchema, UuidSchema } from "./common.js";
+import { SiretSchema } from "./organizations.js";
 
 // ---------------------------------------------------------------------
 // Agences (points de retrait)
@@ -22,6 +23,8 @@ const OpeningHoursSchema = z.partialRecord(
 export const AgencyInputSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
+    /** SIRET de l'etablissement : doit commencer par le SIREN de l'organisation (verifie serveur). */
+    siret: SiretSchema.nullable().optional(),
     addressLine: z.string().trim().min(3).max(200).nullable().optional(),
     postalCode: z
       .string()
@@ -54,6 +57,7 @@ export const AgencySchema = z
     organizationId: UuidSchema,
     name: z.string(),
     slug: z.string(),
+    siret: z.string().nullable(),
     addressLine: z.string().nullable(),
     postalCode: z.string().nullable(),
     cityName: z.string().nullable(),
@@ -70,6 +74,15 @@ export const AgencySchema = z
   .strict();
 export type Agency = z.infer<typeof AgencySchema>;
 export const AgenciesResponseSchema = z.object({ agencies: z.array(AgencySchema) }).strict();
+
+/**
+ * Suppression d'un vehicule : supprime vraiment s'il n'a aucun historique de reservation,
+ * sinon archive (l'historique est conserve). Le serveur decide, la reponse le dit.
+ */
+export const VehicleDeleteOutcomeSchema = z
+  .object({ outcome: z.enum(["deleted", "archived"]) })
+  .strict();
+export type VehicleDeleteOutcome = z.infer<typeof VehicleDeleteOutcomeSchema>;
 
 // ---------------------------------------------------------------------
 // Grille tarifaire (centimes, ADR-0004)

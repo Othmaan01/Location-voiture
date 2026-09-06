@@ -19,6 +19,7 @@ export function createLogger(level: string, pretty: boolean): Logger {
         "*.access_token",
         "*.secret",
         "*.siret",
+        "*.siren",
         "*.phone",
         "*.email",
       ],

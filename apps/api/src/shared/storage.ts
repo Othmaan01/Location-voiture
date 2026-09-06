@@ -1,5 +1,9 @@
 import { DomainError } from "./errors.js";
 
+/** Buckets Supabase Storage : photos publiques, documents prives (URL signees). */
+export const PHOTOS_BUCKET = "vehicle-photos";
+export const DOCUMENTS_BUCKET = "documents";
+
 /**
  * Acces minimal a Supabase Storage avec la cle service_role, sans SDK :
  * URL signees d'upload et de lecture, suppression. La cle ne quitte pas ce module.

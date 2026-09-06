@@ -1,7 +1,7 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, StyleSheet, View } from "react-native";
-import { FileText, Plus } from "lucide-react-native";
+import { ChevronRight, FileText, Plus } from "lucide-react-native";
 
 import { Badge, Button, Card, ListItem, Screen, Select, Sheet, Text } from "@/components/ui";
 import { DOCUMENT_KIND_LABEL, ORG_STATUS } from "@/features/pro/labels";
@@ -30,11 +30,15 @@ const KIND_OPTIONS = [
   { value: "id_card" as const, label: DOCUMENT_KIND_LABEL["id_card"]!, hint: "Sur demande" },
   { value: "other" as const, label: DOCUMENT_KIND_LABEL["other"]!, hint: "" },
 ];
-const MISSING_LABEL: Record<string, string> = {
-  kbis: "Kbis manquant",
-  insurance: "Attestation d'assurance manquante",
-  agency: "Une agence avec adresse positionnée",
-  siret: "SIRET à renseigner dans l'organisation",
+/** Chaque manque renvoie vers l'ecran ou il se corrige : on ne laisse jamais un blocage sans issue. */
+const MISSING_LABEL: Record<string, { title: string; hint: string }> = {
+  kbis: { title: "Kbis manquant", hint: "Ajouter le document" },
+  insurance: { title: "Attestation d'assurance manquante", hint: "Ajouter le document" },
+  agency: {
+    title: "Une agence avec SIRET et adresse positionnée",
+    hint: "Compléter une agence",
+  },
+  siren: { title: "SIREN à renseigner", hint: "Ouvrir les informations de l'organisation" },
 };
 const DOC_STATUS: Record<string, { label: string; tone: "success" | "warning" | "accent" }> = {
   pending: { label: "En attente", tone: "warning" },
@@ -45,6 +49,7 @@ const DOC_STATUS: Record<string, { label: string; tone: "success" | "warning" | 
 /** Documents de verification : bucket prive, lecture par lien temporaire, soumission quand le dossier est complet. */
 export default function DocumentsScreen() {
   const { organizationId } = useLocalSearchParams<{ organizationId: string }>();
+  const router = useRouter();
   const me = useMe();
   const role = me.data?.memberships.find((m) => m.organizationId === organizationId)?.role;
   const canWrite = role === "owner" || role === "manager";
@@ -65,6 +70,15 @@ export default function DocumentsScreen() {
     verification.data &&
     missing.length === 0 &&
     (verification.data.status === "draft" || verification.data.status === "rejected");
+
+  const resolveMissing = (m: string) => {
+    if (m === "siren") router.push(`/(pro)/organizations/${organizationId}/edit`);
+    else if (m === "agency") router.push(`/(pro)/organizations/${organizationId}/agencies`);
+    else if (m === "kbis" || m === "insurance") {
+      setKind(m);
+      setSheet(true);
+    }
+  };
 
   const upload = async () => {
     try {
@@ -131,11 +145,18 @@ export default function DocumentsScreen() {
               <Text variant="sm" tone="muted">
                 Avant de soumettre :
               </Text>
-              {missing.map((m) => (
-                <Text key={m} variant="sm" tone="muted">
-                  • {MISSING_LABEL[m] ?? m}
-                </Text>
-              ))}
+              <Card padded={false} raised>
+                {missing.map((m, i) => (
+                  <ListItem
+                    key={m}
+                    title={MISSING_LABEL[m]?.title ?? m}
+                    subtitle={MISSING_LABEL[m]?.hint}
+                    right={<ChevronRight size={18} color={theme.colors.textDim} />}
+                    onPress={canWrite ? () => resolveMissing(m) : undefined}
+                    last={i === missing.length - 1}
+                  />
+                ))}
+              </Card>
             </View>
           ) : null}
           {canSubmit ? (
@@ -217,5 +238,5 @@ export default function DocumentsScreen() {
 const styles = StyleSheet.create({
   status: { gap: theme.space["3"] },
   statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  missing: { gap: 4 },
+  missing: { gap: theme.space["2"] },
 });

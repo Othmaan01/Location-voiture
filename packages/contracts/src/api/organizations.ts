@@ -3,14 +3,19 @@ import { z } from "zod";
 import { OrganizationRoleSchema, OrganizationStatusSchema } from "../enums.js";
 import { IsoDateTimeSchema, UuidSchema } from "./common.js";
 
-/** SIRET francais : 14 chiffres. La validite (cle de Luhn) est verifiee cote serveur. */
+/**
+ * SIREN (entreprise, 9 chiffres) et SIRET (etablissement, 14 chiffres = SIREN + 5).
+ * L'organisation porte le SIREN ; chaque agence porte son SIRET, qui doit commencer
+ * par le SIREN de l'organisation. La cle de Luhn est verifiee cote serveur (ADR-0010).
+ */
+export const SirenSchema = z.string().regex(/^[0-9]{9}$/, "SIREN : 9 chiffres attendus");
 export const SiretSchema = z.string().regex(/^[0-9]{14}$/, "SIRET : 14 chiffres attendus");
 
 export const CreateOrganizationBodySchema = z
   .object({
     name: z.string().trim().min(2).max(120),
     legalName: z.string().trim().min(2).max(200).optional(),
-    siret: SiretSchema.optional(),
+    siren: SirenSchema.optional(),
     countryCode: z.literal("FR").default("FR"),
   })
   .strict();
@@ -20,7 +25,7 @@ export const UpdateOrganizationBodySchema = z
   .object({
     name: z.string().trim().min(2).max(120).optional(),
     legalName: z.string().trim().min(2).max(200).nullable().optional(),
-    siret: SiretSchema.nullable().optional(),
+    siren: SirenSchema.nullable().optional(),
     billingEmail: z.email().nullable().optional(),
   })
   .strict();
@@ -31,13 +36,18 @@ export const OrganizationSchema = z
     id: UuidSchema,
     name: z.string(),
     legalName: z.string().nullable(),
-    siret: z.string().nullable(),
+    siren: z.string().nullable(),
     countryCode: z.string(),
     status: OrganizationStatusSchema,
     createdAt: IsoDateTimeSchema,
   })
   .strict();
 export type Organization = z.infer<typeof OrganizationSchema>;
+
+/** Suppression d'une organisation : confirmation explicite, comme pour le compte. */
+export const DeleteOrganizationBodySchema = z
+  .object({ confirmation: z.literal("SUPPRIMER") })
+  .strict();
 
 export const OrganizationMemberSchema = z
   .object({

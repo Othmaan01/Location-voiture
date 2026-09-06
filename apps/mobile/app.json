@@ -12,7 +12,8 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement a trouver des vehicules autour de vous lorsque vous le demandez.",
-        "UIUserInterfaceStyle": "Dark"
+        "UIUserInterfaceStyle": "Dark",
+        "NSFaceIDUsageDescription": "Face ID sert uniquement à déverrouiller l'application sur cet appareil."
       }
     },
     "android": {
@@ -48,6 +49,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Votre position sert uniquement à trouver des loueurs autour de vous lorsque vous le demandez."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Face ID sert uniquement à déverrouiller l'application sur cet appareil."
         }
       ]
     ],

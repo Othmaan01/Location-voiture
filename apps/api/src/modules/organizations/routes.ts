@@ -5,6 +5,7 @@ import {
   CreateInvitationBodySchema,
   CreateOrganizationBodySchema,
   CreatedInvitationSchema,
+  DeleteOrganizationBodySchema,
   InvitationsResponseSchema,
   OrganizationMembersResponseSchema,
   OrganizationSchema,
@@ -20,7 +21,7 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
   app,
   opts,
 ) => {
-  const service = createOrganizationsService(app.db);
+  const service = createOrganizationsService(app.db, app.storage);
   const orgParams = z.object({ organizationId: UuidSchema }).strict();
   const memberParams = orgParams.extend({ userId: UuidSchema }).strict();
   const invitationParams = orgParams.extend({ invitationId: UuidSchema }).strict();
@@ -63,6 +64,24 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
     },
     async (request) =>
       service.update(request.actor, request.params.organizationId, request.body, request.id),
+  );
+
+  app.delete(
+    "/v1/organizations/:organizationId",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: orgParams,
+        body: DeleteOrganizationBodySchema,
+        response: noContent,
+      },
+      onRequest: [app.requireAuth],
+      config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
+    },
+    async (request, reply) => {
+      await service.remove(request.actor, request.params.organizationId, request.id);
+      return reply.code(204).send(null);
+    },
   );
 
   app.get(

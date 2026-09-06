@@ -9,6 +9,8 @@ export const ErrorCodeSchema = z.enum([
   "conflict",
   "rate_limited",
   "idempotency_key_reused",
+  /** Un service externe (annuaire des entreprises, stockage) ne repond pas : reessayer plus tard. */
+  "unavailable",
   "internal",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;

@@ -15,10 +15,10 @@ import { audit } from "../../shared/audit.js";
 import { assertCan, assertCanOrHide, type Actor } from "../../shared/authz.js";
 import { translateDbError } from "../../shared/db-errors.js";
 import { DomainError, notFound } from "../../shared/errors.js";
-import type { StorageClient } from "../../shared/storage.js";
+import { DOCUMENTS_BUCKET, type StorageClient } from "../../shared/storage.js";
 import { isAgencyComplete } from "../agencies/service.js";
 
-export const DOCUMENTS_BUCKET = "documents";
+export { DOCUMENTS_BUCKET };
 const READ_TTL_SECONDS = 300;
 const UPLOAD_TTL_SECONDS = 600;
 const EXT: Record<string, string> = {
@@ -42,7 +42,7 @@ export function documentDto(row: typeof documents.$inferSelect): Document {
   };
 }
 
-export type Missing = "kbis" | "insurance" | "agency" | "siret";
+export type Missing = "kbis" | "insurance" | "agency" | "siren";
 
 export interface DocumentsService {
   list(actor: Actor, organizationId: string): Promise<Document[]>;
@@ -81,11 +81,11 @@ export function createDocumentsService(db: Database, storage: StorageClient): Do
   async function missingFor(organizationId: string): Promise<Missing[]> {
     const missing: Missing[] = [];
     const [org] = await db
-      .select({ siret: organizations.siret })
+      .select({ siren: organizations.siren })
       .from(organizations)
       .where(eq(organizations.id, organizationId))
       .limit(1);
-    if (!org?.siret) missing.push("siret");
+    if (!org?.siren) missing.push("siren");
     const docs = await db
       .select({ kind: documents.kind, status: documents.status })
       .from(documents)

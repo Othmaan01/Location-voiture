@@ -1,13 +1,14 @@
 import { randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import type { Agency, AgencyInput, AgencyUpdate } from "@lv/contracts";
 
 import type { Database } from "../../db/client.js";
-import { agencies, organizations } from "../../db/schema.js";
+import { agencies, organizations, quotes, vehicles } from "../../db/schema.js";
 import { audit } from "../../shared/audit.js";
 import { assertCan, assertCanOrHide, type Actor } from "../../shared/authz.js";
 import { translateDbError } from "../../shared/db-errors.js";
 import { DomainError, notFound } from "../../shared/errors.js";
+import { isValidSiret } from "../organizations/service.js";
 
 function slugify(name: string): string {
   const base = name
@@ -25,6 +26,7 @@ export function agencyDto(row: typeof agencies.$inferSelect): Agency {
     organizationId: row.organizationId,
     name: row.name,
     slug: row.slug,
+    siret: row.siret,
     addressLine: row.addressLine,
     postalCode: row.postalCode,
     cityName: row.cityName,
@@ -40,16 +42,29 @@ export function agencyDto(row: typeof agencies.$inferSelect): Agency {
   };
 }
 
-/** Une agence est "complete" quand elle peut apparaitre a un client : adresse et coordonnees. */
+/**
+ * Une agence est "complete" quand elle peut apparaitre a un client : SIRET de
+ * l'etablissement, adresse et coordonnees.
+ */
 export function isAgencyComplete(
-  row: Pick<typeof agencies.$inferSelect, "addressLine" | "cityName" | "latitude" | "longitude">,
+  row: Pick<
+    typeof agencies.$inferSelect,
+    "siret" | "addressLine" | "cityName" | "latitude" | "longitude"
+  >,
 ): boolean {
-  return !!row.addressLine && !!row.cityName && row.latitude !== null && row.longitude !== null;
+  return (
+    !!row.siret &&
+    !!row.addressLine &&
+    !!row.cityName &&
+    row.latitude !== null &&
+    row.longitude !== null
+  );
 }
 
 function toRow(input: AgencyUpdate) {
   return {
     ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.siret !== undefined ? { siret: input.siret } : {}),
     ...(input.addressLine !== undefined ? { addressLine: input.addressLine } : {}),
     ...(input.postalCode !== undefined ? { postalCode: input.postalCode } : {}),
     ...(input.cityName !== undefined ? { cityName: input.cityName } : {}),
@@ -78,6 +93,7 @@ export interface AgenciesService {
     published: boolean,
     requestId: string,
   ): Promise<Agency>;
+  remove(actor: Actor, agencyId: string, requestId: string): Promise<void>;
 }
 
 export function createAgenciesService(db: Database): AgenciesService {
@@ -86,6 +102,32 @@ export function createAgenciesService(db: Database): AgenciesService {
     if (!row) throw notFound("Agence");
     assertCanOrHide(actor, "organization.read", { organizationId: row.organizationId }, "Agence");
     return row;
+  }
+
+  /**
+   * Le SIRET d'un etablissement commence toujours par le SIREN de son entreprise :
+   * c'est la premiere verification, avant meme le controle humain.
+   */
+  async function assertSiretMatchesOrganization(organizationId: string, siret: string) {
+    if (!isValidSiret(siret))
+      throw new DomainError("validation_failed", "SIRET invalide.", { field: "siret" });
+    const [org] = await db
+      .select({ siren: organizations.siren })
+      .from(organizations)
+      .where(eq(organizations.id, organizationId))
+      .limit(1);
+    if (!org?.siren)
+      throw new DomainError(
+        "validation_failed",
+        "Renseignez d'abord le SIREN de l'organisation (Informations).",
+        { field: "siret", blocker: "siren_missing" },
+      );
+    if (!siret.startsWith(org.siren))
+      throw new DomainError(
+        "validation_failed",
+        `Ce SIRET ne correspond pas a votre entreprise : il doit commencer par ${org.siren}.`,
+        { field: "siret", blocker: "siret_mismatch" },
+      );
   }
 
   return {
@@ -110,6 +152,7 @@ export function createAgenciesService(db: Database): AgenciesService {
           field: "latitude",
         });
       }
+      if (input.siret) await assertSiretMatchesOrganization(organizationId, input.siret);
       try {
         return await db.transaction(async (tx) => {
           const [row] = await tx
@@ -133,13 +176,14 @@ export function createAgenciesService(db: Database): AgenciesService {
           return agencyDto(row!);
         });
       } catch (error) {
-        return translateDbError(error);
+        return translateDbError(error, "Un etablissement avec ce SIRET existe deja.");
       }
     },
 
     async update(actor, agencyId, input, requestId) {
       const current = await load(actor, agencyId);
       assertCan(actor, "vehicle.write", { organizationId: current.organizationId });
+      if (input.siret) await assertSiretMatchesOrganization(current.organizationId, input.siret);
       try {
         const [row] = await db
           .update(agencies)
@@ -165,8 +209,42 @@ export function createAgenciesService(db: Database): AgenciesService {
         });
         return agencyDto(row!);
       } catch (error) {
-        return translateDbError(error);
+        return translateDbError(error, "Un etablissement avec ce SIRET existe deja.");
       }
+    },
+
+    /**
+     * Suppression : refusee tant que des vehicules (meme archives) y sont rattaches,
+     * car leur historique de reservation pointe vers cette agence.
+     */
+    async remove(actor, agencyId, requestId) {
+      const current = await load(actor, agencyId);
+      assertCan(actor, "vehicle.write", { organizationId: current.organizationId });
+      const [row] = await db
+        .select({ n: count() })
+        .from(vehicles)
+        .where(eq(vehicles.agencyId, agencyId));
+      const vehicleCount = row?.n ?? 0;
+      if (vehicleCount > 0)
+        throw new DomainError(
+          "conflict",
+          "Des vehicules sont rattaches a cette agence : supprimez-les ou deplacez-les vers une autre agence avant de la supprimer.",
+          { blocker: "has_vehicles", vehicleCount },
+        );
+      await db.transaction(async (tx) => {
+        await tx.delete(quotes).where(eq(quotes.pickupAgencyId, agencyId));
+        await tx.delete(agencies).where(eq(agencies.id, agencyId));
+        await audit(tx, {
+          actorId: actor.userId,
+          actorType: "organization_member",
+          action: "agency.delete",
+          subjectType: "agency",
+          subjectId: agencyId,
+          organizationId: current.organizationId,
+          metadata: { name: current.name },
+          requestId,
+        });
+      });
     },
 
     /** Publication : organisation verifiee et agence complete. Depublication toujours possible. */

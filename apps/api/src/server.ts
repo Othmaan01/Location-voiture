@@ -19,6 +19,7 @@ import { adminRoutes } from "./modules/admin/routes.js";
 import { agenciesRoutes } from "./modules/agencies/routes.js";
 import { availabilityRoutes } from "./modules/availability/routes.js";
 import { bookingsRoutes } from "./modules/bookings/routes.js";
+import { companiesRoutes } from "./modules/companies/routes.js";
 import { devicesRoutes } from "./modules/devices/routes.js";
 import { documentsRoutes } from "./modules/documents/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
@@ -37,7 +38,11 @@ import type { SupabaseAdmin } from "./shared/supabase-admin.js";
 export interface BuildServerOptions {
   env: Pick<
     Env,
-    "API_CORS_ORIGINS" | "API_VERSION" | "NODE_ENV" | "APP_DEEP_LINK_SCHEME" | "API_ADMIN_REQUIRE_MFA"
+    | "API_CORS_ORIGINS"
+    | "API_VERSION"
+    | "NODE_ENV"
+    | "APP_DEEP_LINK_SCHEME"
+    | "API_ADMIN_REQUIRE_MFA"
   >;
   db: Database;
   verifyToken: TokenVerifier;
@@ -157,6 +162,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(devicesRoutes);
   await app.register(organizationsRoutes, { deepLinkScheme: opts.env.APP_DEEP_LINK_SCHEME });
   await app.register(agenciesRoutes);
+  await app.register(companiesRoutes);
   await app.register(vehiclesRoutes);
   await app.register(documentsRoutes);
   await app.register(publicCatalogRoutes);

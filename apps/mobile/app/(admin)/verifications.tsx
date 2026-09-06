@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, StyleSheet, View } from "react-native";
-import { FileText } from "lucide-react-native";
+import { FileText, MapPin } from "lucide-react-native";
 
 import {
   Badge,
@@ -67,7 +67,8 @@ export default function VerificationsScreen() {
             <View style={styles.headTexts}>
               <Text variant="bodyStrong">{item.organizationName}</Text>
               <Text variant="small" tone="muted">
-                {item.siret ? `SIRET ${item.siret} · ` : ""}soumis le{" "}
+                {item.legalName ? `${item.legalName} · ` : ""}
+                {item.siren ? `SIREN ${item.siren} · ` : "SIREN manquant · "}soumis le{" "}
                 {new Date(item.submittedAt).toLocaleDateString("fr-FR")}
               </Text>
             </View>
@@ -87,6 +88,32 @@ export default function VerificationsScreen() {
               />
             ))}
           </Card>
+          {item.agencies.length > 0 ? (
+            <Card padded={false} raised>
+              {item.agencies.map((a, i) => {
+                const coherent = !!a.siret && !!item.siren && a.siret.startsWith(item.siren);
+                return (
+                  <ListItem
+                    key={a.id}
+                    icon={<MapPin size={20} color={theme.colors.text} />}
+                    title={a.name}
+                    subtitle={
+                      a.siret
+                        ? `SIRET ${a.siret}${a.cityName ? ` · ${a.cityName}` : ""}`
+                        : "SIRET manquant"
+                    }
+                    right={
+                      <Badge
+                        label={coherent ? "SIRET cohérent" : a.siret ? "Incohérent" : "À compléter"}
+                        tone={coherent ? "success" : a.siret ? "accent" : "warning"}
+                      />
+                    }
+                    last={i === item.agencies.length - 1}
+                  />
+                );
+              })}
+            </Card>
+          ) : null}
           <View style={styles.actions}>
             <Button
               label="Refuser"

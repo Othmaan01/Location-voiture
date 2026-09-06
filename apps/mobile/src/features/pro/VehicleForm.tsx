@@ -6,7 +6,12 @@ import { z } from "zod";
 import type { Agency, Vehicle, VehicleInput } from "@lv/contracts";
 
 import { Button, Input, Select, Text } from "@/components/ui";
-import { CATEGORY_OPTIONS, FUEL_OPTIONS, TRANSMISSION_OPTIONS } from "@/features/pro/labels";
+import {
+  CATEGORY_OPTIONS,
+  ENABLED_CATEGORY_OPTIONS,
+  FUEL_OPTIONS,
+  TRANSMISSION_OPTIONS,
+} from "@/features/pro/labels";
 import { theme } from "@/theme";
 
 const Schema = z.object({
@@ -177,7 +182,7 @@ export function VehicleForm({
           <Select
             label="Catégorie"
             value={field.value}
-            options={CATEGORY_OPTIONS}
+            options={ENABLED_CATEGORY_OPTIONS}
             onChange={field.onChange}
             error={fieldState.error?.message}
           />

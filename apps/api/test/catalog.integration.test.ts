@@ -43,7 +43,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
       method: "POST",
       url: "/v1/organizations",
       headers: auth(ownerToken),
-      payload: { name: "Catalogue Test", siret: "44306184100047" },
+      payload: { name: "Catalogue Test", siren: "443061841" },
     });
     orgId = created.json<{ id: string }>().id;
   });
@@ -62,6 +62,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
       headers: auth(ownerToken),
       payload: {
         name: "Agence Part-Dieu",
+        siret: "44306184100047",
         addressLine: "12 rue de la Part-Dieu",
         postalCode: "69003",
         cityName: "Lyon",
@@ -72,6 +73,41 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
     });
     expect(res.statusCode).toBe(201);
     agencyId = res.json<{ id: string }>().id;
+    // SIRET d'une autre entreprise : refuse (doit commencer par le SIREN de l'organisation)
+    const foreign = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/agencies`,
+      headers: auth(ownerToken),
+      payload: { name: "Autre", siret: "73282932000074" },
+    });
+    expect(foreign.statusCode).toBe(422);
+    expect(foreign.json()).toMatchObject({ error: { details: { blocker: "siret_mismatch" } } });
+    // Agence sans vehicule : supprimable ; l'agence principale avec vehicules ne le sera pas (teste plus bas)
+    const spare = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/agencies`,
+      headers: auth(ownerToken),
+      payload: { name: "Temporaire" },
+    });
+    expect(spare.statusCode).toBe(201);
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/v1/agencies/${spare.json<{ id: string }>().id}`,
+          headers: auth(strangerToken),
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/v1/agencies/${spare.json<{ id: string }>().id}`,
+          headers: auth(ownerToken),
+        })
+      ).statusCode,
+    ).toBe(204);
     const publish = await app.inject({
       method: "POST",
       url: `/v1/agencies/${agencyId}/publish`,
@@ -474,5 +510,42 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
     expect((await app.inject({ method: "GET", url: `/v1/vehicles/${vehicleId}` })).statusCode).toBe(
       404,
     );
+  });
+
+  it("agence avec vehicules : suppression refusee (409) ; vehicule sans reservation : vraiment supprime", async () => {
+    const blocked = await app.inject({
+      method: "DELETE",
+      url: `/v1/agencies/${agencyId}`,
+      headers: auth(ownerToken),
+    });
+    expect(blocked.statusCode).toBe(409);
+    expect(blocked.json()).toMatchObject({ error: { details: { blocker: "has_vehicles" } } });
+
+    const created = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/vehicles`,
+      headers: auth(ownerToken),
+      payload: {
+        agencyId,
+        brand: "Renault",
+        model: "Clio",
+        category: "citadine",
+        transmission: "manuelle",
+        fuel: "essence",
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const id = created.json<{ id: string }>().id;
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/v1/vehicles/${id}`,
+      headers: auth(ownerToken),
+    });
+    expect(removed.statusCode).toBe(200);
+    expect(removed.json()).toEqual({ outcome: "deleted" });
+    const rows = await database.sql<
+      { n: string }[]
+    >`select count(*)::text as n from public.vehicles where id = ${id}::uuid`;
+    expect(rows[0]?.n).toBe("0");
   });
 });

@@ -45,7 +45,7 @@ export const VerificationStatusSchema = z
     status: OrganizationStatusSchema,
     statusReason: z.string().nullable(),
     /** Ce qui manque avant de pouvoir soumettre. */
-    missing: z.array(z.enum(["kbis", "insurance", "agency", "siret"])),
+    missing: z.array(z.enum(["kbis", "insurance", "agency", "siren"])),
     submittedAt: IsoDateTimeSchema.nullable(),
   })
   .strict();
@@ -55,10 +55,22 @@ export const VerificationQueueItemSchema = z
   .object({
     organizationId: UuidSchema,
     organizationName: z.string(),
-    siret: z.string().nullable(),
+    legalName: z.string().nullable(),
+    siren: z.string().nullable(),
     status: OrganizationStatusSchema,
     submittedAt: IsoDateTimeSchema,
     documents: z.array(DocumentSchema),
+    /** Etablissements declares : l'admin verifie que chaque SIRET est coherent avec le SIREN. */
+    agencies: z.array(
+      z
+        .object({
+          id: UuidSchema,
+          name: z.string(),
+          siret: z.string().nullable(),
+          cityName: z.string().nullable(),
+        })
+        .strict(),
+    ),
   })
   .strict();
 export const VerificationQueueSchema = z

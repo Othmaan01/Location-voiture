@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import type {
   CreateInvitationBody,
   CreateOrganizationBody,
@@ -12,32 +12,44 @@ import type {
 
 import type { Database } from "../../db/client.js";
 import {
+  bookings,
+  documents,
   organizationInvitations,
   organizationMembers,
   organizations,
   plans,
   profiles,
+  quotes,
+  vehiclePhotos,
 } from "../../db/schema.js";
 import { audit } from "../../shared/audit.js";
 import { assertCan, assertCanOrHide, type Actor } from "../../shared/authz.js";
 import { isUniqueViolation, translateDbError } from "../../shared/db-errors.js";
-import { DomainError, notFound } from "../../shared/errors.js";
+import { DomainError, forbidden, notFound } from "../../shared/errors.js";
+import { DOCUMENTS_BUCKET, PHOTOS_BUCKET, type StorageClient } from "../../shared/storage.js";
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Cle de Luhn d'un SIRET (14 chiffres). */
-export function isValidSiret(siret: string): boolean {
-  if (!/^[0-9]{14}$/.test(siret)) return false;
+/** Cle de Luhn (depuis la droite) : valable pour SIREN (9 chiffres) et SIRET (14 chiffres). */
+function luhn(digits: string): boolean {
   let sum = 0;
-  for (let i = 0; i < 14; i += 1) {
-    let digit = Number(siret[i]);
-    if (i % 2 === 0) {
+  let double = false;
+  for (let i = digits.length - 1; i >= 0; i -= 1) {
+    let digit = Number(digits[i]);
+    if (double) {
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
     sum += digit;
+    double = !double;
   }
   return sum % 10 === 0;
+}
+export function isValidSiren(siren: string): boolean {
+  return /^[0-9]{9}$/.test(siren) && luhn(siren);
+}
+export function isValidSiret(siret: string): boolean {
+  return /^[0-9]{14}$/.test(siret) && luhn(siret);
 }
 
 export function hashInvitationToken(token: string): string {
@@ -63,7 +75,7 @@ function toDto(row: typeof organizations.$inferSelect): Organization {
     id: row.id,
     name: row.name,
     legalName: row.legalName,
-    siret: row.siret,
+    siren: row.siren,
     countryCode: row.countryCode,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
@@ -90,6 +102,7 @@ export interface OrganizationsService {
     input: UpdateOrganizationBody,
     requestId: string,
   ): Promise<Organization>;
+  remove(actor: Actor, organizationId: string, requestId: string): Promise<void>;
   listMembers(actor: Actor, organizationId: string): Promise<OrganizationMember[]>;
   updateMemberRole(
     actor: Actor,
@@ -126,13 +139,16 @@ export interface OrganizationsService {
   ): Promise<{ organizationId: string; organizationName: string; role: "manager" | "agent" }>;
 }
 
-export function createOrganizationsService(db: Database): OrganizationsService {
+export function createOrganizationsService(
+  db: Database,
+  storage: StorageClient,
+): OrganizationsService {
   return {
     async create(actor, input, requestId) {
       assertCan(actor, "booking.create"); // tout utilisateur authentifie peut fonder une organisation
       const userId = actor.userId!;
-      if (input.siret && !isValidSiret(input.siret)) {
-        throw new DomainError("validation_failed", "SIRET invalide.", { field: "siret" });
+      if (input.siren && !isValidSiren(input.siren)) {
+        throw new DomainError("validation_failed", "SIREN invalide.", { field: "siren" });
       }
       const [defaultPlan] = await db
         .select({ code: plans.code })
@@ -150,15 +166,15 @@ export function createOrganizationsService(db: Database): OrganizationsService {
               name: input.name,
               slug: slugify(input.name),
               legalName: input.legalName ?? null,
-              siret: input.siret ?? null,
+              siren: input.siren ?? null,
               countryCode: input.countryCode,
               planCode: defaultPlan.code,
             })
             .returning();
         } catch (error) {
           if (isUniqueViolation(error)) {
-            throw new DomainError("conflict", "Une organisation avec ce SIRET existe deja.", {
-              field: "siret",
+            throw new DomainError("conflict", "Une organisation avec ce SIREN existe deja.", {
+              field: "siren",
             });
           }
           throw error;
@@ -194,8 +210,8 @@ export function createOrganizationsService(db: Database): OrganizationsService {
     async update(actor, organizationId, input, requestId) {
       assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
       assertCan(actor, "organization.write", { organizationId });
-      if (input.siret && !isValidSiret(input.siret)) {
-        throw new DomainError("validation_failed", "SIRET invalide.", { field: "siret" });
+      if (input.siren && !isValidSiren(input.siren)) {
+        throw new DomainError("validation_failed", "SIREN invalide.", { field: "siren" });
       }
       try {
         const [row] = await db
@@ -203,7 +219,7 @@ export function createOrganizationsService(db: Database): OrganizationsService {
           .set({
             ...(input.name !== undefined ? { name: input.name } : {}),
             ...(input.legalName !== undefined ? { legalName: input.legalName } : {}),
-            ...(input.siret !== undefined ? { siret: input.siret } : {}),
+            ...(input.siren !== undefined ? { siren: input.siren } : {}),
             ...(input.billingEmail !== undefined ? { billingEmail: input.billingEmail } : {}),
           })
           .where(eq(organizations.id, organizationId))
@@ -221,8 +237,71 @@ export function createOrganizationsService(db: Database): OrganizationsService {
         });
         return toDto(row);
       } catch (error) {
-        return translateDbError(error, "Une organisation avec ce SIRET existe deja.");
+        return translateDbError(error, "Une organisation avec ce SIREN existe deja.");
       }
+    },
+
+    /**
+     * Suppression par le proprietaire uniquement. Refusee des qu'un historique de
+     * reservation existe (obligations de conservation, litiges) : dans ce cas on
+     * depublie. Sinon tout part en cascade (agences, vehicules, documents, membres)
+     * et les fichiers sont retires du stockage apres validation.
+     */
+    async remove(actor, organizationId, requestId) {
+      assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
+      if (actor.memberships.get(organizationId) !== "owner") throw forbidden();
+      const [org] = await db
+        .select({ id: organizations.id, name: organizations.name })
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .limit(1);
+      if (!org) throw notFound("Organisation");
+      const [bookingRow] = await db
+        .select({ n: count() })
+        .from(bookings)
+        .where(eq(bookings.organizationId, organizationId));
+      if ((bookingRow?.n ?? 0) > 0) {
+        throw new DomainError(
+          "conflict",
+          "Cette organisation a un historique de reservations : elle ne peut pas etre supprimee. Depubliez vos vehicules pour disparaitre de l'application.",
+          { blocker: "has_bookings" },
+        );
+      }
+      const [photoPaths, documentPaths] = await Promise.all([
+        db
+          .select({ path: vehiclePhotos.storagePath })
+          .from(vehiclePhotos)
+          .where(eq(vehiclePhotos.organizationId, organizationId)),
+        db
+          .select({ path: documents.storagePath })
+          .from(documents)
+          .where(eq(documents.organizationId, organizationId)),
+      ]);
+      await db.transaction(async (tx) => {
+        await tx.delete(quotes).where(eq(quotes.organizationId, organizationId));
+        await tx.delete(organizations).where(eq(organizations.id, organizationId));
+        // L'organisation n'existe plus : la trace d'audit est rattachee a l'acteur, pas a l'organisation.
+        await audit(tx, {
+          actorId: actor.userId,
+          actorType: "organization_member",
+          action: "organization.delete",
+          subjectType: "organization",
+          subjectId: organizationId,
+          organizationId: null,
+          metadata: { name: org.name },
+          requestId,
+        });
+      });
+      if (photoPaths.length > 0)
+        await storage.remove(
+          PHOTOS_BUCKET,
+          photoPaths.map((p) => p.path),
+        );
+      if (documentPaths.length > 0)
+        await storage.remove(
+          DOCUMENTS_BUCKET,
+          documentPaths.map((p) => p.path),
+        );
     },
 
     async listMembers(actor, organizationId) {

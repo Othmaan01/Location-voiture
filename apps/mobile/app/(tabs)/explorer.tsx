@@ -10,7 +10,11 @@ import { PeriodSheet } from "@/features/client/PeriodSheet";
 import { VehicleActionSheet } from "@/features/client/VehicleActionSheet";
 import { VehicleCard } from "@/features/client/VehicleCard";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
-import { CATEGORY_OPTIONS, FUEL_OPTIONS, TRANSMISSION_OPTIONS } from "@/features/pro/labels";
+import {
+  ENABLED_CATEGORY_OPTIONS,
+  FUEL_OPTIONS,
+  TRANSMISSION_OPTIONS,
+} from "@/features/pro/labels";
 import {
   useFavorites,
   useSearch,
@@ -175,7 +179,7 @@ export default function ExploreScreen() {
         <Select
           label="Catégorie"
           value={category}
-          options={[{ value: "", label: "Toutes" }, ...CATEGORY_OPTIONS]}
+          options={[{ value: "", label: "Toutes" }, ...ENABLED_CATEGORY_OPTIONS]}
           onChange={(v) => setCategory(v || null)}
           placeholder="Toutes"
         />
