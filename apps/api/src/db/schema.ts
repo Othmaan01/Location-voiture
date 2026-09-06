@@ -2,10 +2,14 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   char,
+  date,
+  doublePrecision,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -17,6 +21,40 @@ import {
  */
 export const platformRoleEnum = pgEnum("platform_role", ["support", "admin", "superadmin"]);
 export const devicePlatformEnum = pgEnum("device_platform", ["ios", "android"]);
+export const agencyStatusEnum = pgEnum("agency_status", ["draft", "published", "suspended"]);
+export const vehicleStatusEnum = pgEnum("vehicle_status", ["draft", "published", "archived"]);
+export const vehicleCategoryEnum = pgEnum("vehicle_category", [
+  "citadine",
+  "compacte",
+  "berline",
+  "suv",
+  "break",
+  "monospace",
+  "cabriolet",
+  "coupe",
+  "utilitaire",
+  "minibus",
+  "prestige",
+  "sans_permis",
+]);
+export const transmissionEnum = pgEnum("transmission_type", ["manuelle", "automatique"]);
+export const fuelEnum = pgEnum("fuel_type", [
+  "essence",
+  "diesel",
+  "hybride",
+  "hybride_rechargeable",
+  "electrique",
+  "gpl",
+]);
+export const documentKindEnum = pgEnum("document_kind", [
+  "kbis",
+  "insurance",
+  "id_card",
+  "driving_license",
+  "vehicle_registration",
+  "other",
+]);
+export const documentStatusEnum = pgEnum("document_status", ["pending", "accepted", "rejected"]);
 export const organizationRoleEnum = pgEnum("organization_role", ["owner", "manager", "agent"]);
 export const organizationStatusEnum = pgEnum("organization_status", [
   "draft",
@@ -78,6 +116,7 @@ export const plans = pgTable("plans", {
   code: text("code").primaryKey(),
   name: text("name").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
+  maxPublishedVehicles: integer("max_published_vehicles"),
 });
 
 export const organizations = pgTable("organizations", {
@@ -91,6 +130,8 @@ export const organizations = pgTable("organizations", {
   countryCode: char("country_code", { length: 2 }).notNull().default("FR"),
   status: organizationStatusEnum("status").notNull().default("draft"),
   billingEmail: text("billing_email"),
+  statusReason: text("status_reason"),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
   planCode: text("plan_code").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -136,4 +177,139 @@ export const auditLog = pgTable("audit_log", {
   ipHash: text("ip_hash"),
   requestId: text("request_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const agencies = pgTable("agencies", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  addressLine: text("address_line"),
+  postalCode: text("postal_code"),
+  cityId: uuid("city_id"),
+  cityName: text("city_name"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  timezone: text("timezone").notNull().default("Europe/Paris"),
+  phone: text("phone"),
+  email: text("email"),
+  openingHours: jsonb("opening_hours").notNull().default({}),
+  services: text("services").array().notNull().default([]),
+  status: agencyStatusEnum("status").notNull().default("draft"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vehicles = pgTable("vehicles", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  agencyId: uuid("agency_id").notNull(),
+  brand: text("brand").notNull(),
+  model: text("model").notNull(),
+  version: text("version"),
+  year: integer("year"),
+  category: vehicleCategoryEnum("category").notNull(),
+  transmission: transmissionEnum("transmission").notNull(),
+  fuel: fuelEnum("fuel").notNull(),
+  seats: smallint("seats").notNull().default(5),
+  doors: smallint("doors").notNull().default(5),
+  luggage: smallint("luggage").notNull().default(2),
+  color: text("color"),
+  licensePlate: text("license_plate"),
+  options: text("options").array().notNull().default([]),
+  description: text("description"),
+  minDriverAge: smallint("min_driver_age").notNull().default(21),
+  minLicenseYears: smallint("min_license_years").notNull().default(2),
+  status: vehicleStatusEnum("status").notNull().default("draft"),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  suspendedReason: text("suspended_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vehiclePhotos = pgTable("vehicle_photos", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  vehicleId: uuid("vehicle_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  storagePath: text("storage_path").notNull(),
+  position: smallint("position").notNull(),
+  width: integer("width"),
+  height: integer("height"),
+  blurhash: text("blurhash"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const ratePlans = pgTable("rate_plans", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  vehicleId: uuid("vehicle_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  currency: char("currency", { length: 3 }).notNull().default("EUR"),
+  dailyCents: integer("daily_cents").notNull(),
+  weekendDailyCents: integer("weekend_daily_cents"),
+  weeklyCents: integer("weekly_cents"),
+  monthlyCents: integer("monthly_cents"),
+  depositCents: integer("deposit_cents").notNull().default(0),
+  kmIncludedPerDay: integer("km_included_per_day"),
+  extraKmCents: integer("extra_km_cents"),
+  minDays: smallint("min_days").notNull().default(1),
+  maxDays: smallint("max_days"),
+  validFrom: date("valid_from"),
+  validTo: date("valid_to"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documents = pgTable("documents", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  uploadedBy: uuid("uploaded_by"),
+  kind: documentKindEnum("kind").notNull(),
+  storagePath: text("storage_path").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  sha256: text("sha256"),
+  status: documentStatusEnum("status").notNull().default("pending"),
+  reviewedBy: uuid("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  rejectionReason: text("rejection_reason"),
+  expiresAt: date("expires_at"),
+  subjectType: text("subject_type").notNull().default("organization"),
+  subjectId: uuid("subject_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentAccessLog = pgTable("document_access_log", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  documentId: uuid("document_id").notNull(),
+  accessedBy: uuid("accessed_by"),
+  purpose: text("purpose").notNull(),
+  requestId: text("request_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const verificationRequests = pgTable("verification_requests", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  submittedBy: uuid("submitted_by"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  decidedBy: uuid("decided_by"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decision: text("decision"),
+  notes: text("notes"),
 });

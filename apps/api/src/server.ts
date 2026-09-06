@@ -15,13 +15,18 @@ import type { Logger } from "pino";
 
 import type { Database } from "./db/client.js";
 import type { Env } from "./env.js";
+import { adminRoutes } from "./modules/admin/routes.js";
+import { agenciesRoutes } from "./modules/agencies/routes.js";
 import { devicesRoutes } from "./modules/devices/routes.js";
+import { documentsRoutes } from "./modules/documents/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { identityRoutes } from "./modules/identity/routes.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
+import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
 import { DomainError } from "./shared/errors.js";
 import { authPlugin } from "./shared/plugins.js";
+import type { StorageClient } from "./shared/storage.js";
 import type { SupabaseAdmin } from "./shared/supabase-admin.js";
 
 export interface BuildServerOptions {
@@ -29,6 +34,7 @@ export interface BuildServerOptions {
   db: Database;
   verifyToken: TokenVerifier;
   supabaseAdmin: SupabaseAdmin;
+  storage: StorageClient;
   logger: Logger;
 }
 
@@ -79,6 +85,7 @@ export async function buildServer(opts: BuildServerOptions) {
     db: opts.db,
     verifyToken: opts.verifyToken,
     supabaseAdmin: opts.supabaseAdmin,
+    storage: opts.storage,
   });
 
   app.setErrorHandler((rawError: unknown, request, reply) => {
@@ -137,6 +144,10 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(identityRoutes);
   await app.register(devicesRoutes);
   await app.register(organizationsRoutes, { deepLinkScheme: opts.env.APP_DEEP_LINK_SCHEME });
+  await app.register(agenciesRoutes);
+  await app.register(vehiclesRoutes);
+  await app.register(documentsRoutes);
+  await app.register(adminRoutes, { requireMfa: opts.env.NODE_ENV === "production" });
 
   app.get("/openapi.json", { config: { rateLimit: false } }, async () => app.swagger());
 

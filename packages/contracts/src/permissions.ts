@@ -22,6 +22,7 @@ export const ACTIONS = [
   "organization.documents.write",
   "organization.documents.read",
   "organization.verify",
+  "vehicle.suspend",
   "organization.suspend",
   "platform.roles.manage",
 ] as const;
@@ -86,6 +87,7 @@ export const PLATFORM_PERMISSIONS: Record<PlatformRole, ReadonlySet<Action>> = {
     "organization.documents.read",
     "organization.verify",
     "organization.suspend",
+    "vehicle.suspend",
   ]),
   superadmin: new Set<Action>([
     "catalog.read",
@@ -96,6 +98,7 @@ export const PLATFORM_PERMISSIONS: Record<PlatformRole, ReadonlySet<Action>> = {
     "organization.documents.read",
     "organization.verify",
     "organization.suspend",
+    "vehicle.suspend",
     "platform.roles.manage",
   ]),
 };

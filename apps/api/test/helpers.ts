@@ -3,6 +3,7 @@ import pino from "pino";
 
 import { createDatabase, type Database } from "../src/db/client.js";
 import { buildServer } from "../src/server.js";
+import type { StorageClient } from "../src/shared/storage.js";
 import {
   createLocalJWKSet,
   createVerifierFromKeySource,
@@ -51,6 +52,7 @@ export async function createTestServer(db: Database, verifyToken: TokenVerifier)
       APP_DEEP_LINK_SCHEME: "lv",
     },
     supabaseAdmin: { deleteUser: async () => undefined },
+    storage: fakeStorage(),
     db,
     verifyToken,
     logger: pino({ level: process.env["TEST_LOG_LEVEL"] ?? "silent" }),
@@ -67,4 +69,34 @@ export async function createAuthUser(
     values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', ${email}, 'x', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
     returning id`;
   return rows[0]!.id;
+}
+
+/**
+ * Stockage simule : les tests d'integration verifient la logique metier (chemins,
+ * autorisations, positions) sans dependre du service Storage. `exists` reconnait
+ * les chemins pour lesquels une URL d'upload a ete emise.
+ */
+export function fakeStorage(): StorageClient & { issued: Set<string>; removed: string[] } {
+  const issued = new Set<string>();
+  const removed: string[] = [];
+  return {
+    issued,
+    removed,
+    async createSignedUploadUrl(bucket, path) {
+      issued.add(`${bucket}/${path}`);
+      return { uploadUrl: `https://storage.test/upload/${bucket}/${path}`, token: "t" };
+    },
+    async createSignedReadUrl(bucket, path) {
+      return `https://storage.test/signed/${bucket}/${path}?exp=300`;
+    },
+    publicUrl(bucket, path) {
+      return `https://storage.test/public/${bucket}/${path}`;
+    },
+    async remove(bucket, paths) {
+      removed.push(...paths.map((p) => `${bucket}/${p}`));
+    },
+    async exists(bucket, path) {
+      return issued.has(`${bucket}/${path}`);
+    },
+  };
 }
