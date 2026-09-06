@@ -19,8 +19,7 @@ export default function GlobalError({
     <div className="container-page flex min-h-[60dvh] flex-col items-center justify-center gap-5 text-center">
       <h1 className="text-2xl font-semibold text-ink-900">Une erreur est survenue</h1>
       <p className="max-w-md text-muted-foreground">
-        Le chargement de cette page a echoue. Reessayez dans un instant : si le probleme persiste,
-        verifiez que la base de donnees est bien accessible.
+        Le chargement de cette page a échoué. Réessayez dans un instant.
       </p>
       <div className="flex flex-wrap justify-center gap-3">
         <Button onClick={reset}>Reessayer</Button>

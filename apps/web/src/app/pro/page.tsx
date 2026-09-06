@@ -1,160 +1,89 @@
 import type { Metadata } from "next";
-import { BarChart3, Globe2, Inbox, MapPinned, ShieldCheck, Zap } from "lucide-react";
+import { CalendarDays, MessageCircle, ShieldCheck, Smartphone, Star, Wallet } from "lucide-react";
 
 import { ButtonLink } from "@/components/ui/button";
-import { Badge, Card, CardContent } from "@/components/ui/card";
-import { PLANS } from "@/lib/plans";
 
 export const metadata: Metadata = {
-  title: "Referencer mon agence de location de voiture",
+  title: "Loueurs : publiez votre flotte",
   description:
-    "Rejoignez l'annuaire cartographie des loueurs. Fiche geolocalisee, vehicules avec prix et options, demandes de contact directes. Sans commission.",
-  alternates: { canonical: "/pro" },
+    "Publiez vos véhicules, recevez des demandes de réservation et gérez votre planning depuis l'application. Vérification des loueurs, aucune commission.",
 };
 
-const BENEFITS = [
+const STEPS = [
   {
-    icon: MapPinned,
-    title: "Visible sur la carte de votre ville",
-    text: "Votre agence apparait a l'endroit exact ou vos clients cherchent, avec vos vehicules et vos tarifs.",
+    Icon: ShieldCheck,
+    title: "Vérification",
+    text: "SIREN, Kbis et assurance contrôlés : un gage de confiance pour vos clients.",
   },
   {
-    icon: Globe2,
-    title: "Une page optimisee pour Google",
-    text: "Chaque ville a sa page dediee, chaque vehicule sa fiche indexee. Vous captez la recherche locale sans budget publicitaire.",
+    Icon: CalendarDays,
+    title: "Flotte et planning",
+    text: "Photos, tarifs, agences et calendrier de disponibilité, tout dans l'application.",
   },
   {
-    icon: Inbox,
-    title: "Les demandes arrivent chez vous",
-    text: "Coordonnees du client, dates souhaitees, vehicule concerne : tout arrive dans votre tableau de bord.",
+    Icon: MessageCircle,
+    title: "Demandes et messages",
+    text: "Acceptez ou refusez en deux gestes, échangez avec le client, suivez la location.",
   },
   {
-    icon: ShieldCheck,
+    Icon: Star,
+    title: "Avis",
+    text: "Les avis après location renforcent votre profil ; vous y répondez publiquement.",
+  },
+  {
+    Icon: Wallet,
     title: "Aucune commission",
-    text: "Vous gardez 100 % du montant de vos locations. Notre revenu, c'est l'abonnement, rien d'autre.",
-  },
-  {
-    icon: BarChart3,
-    title: "Des chiffres pour decider",
-    text: "Vues de vos fiches, demandes recues, vehicules les plus consultes : vous savez ce qui fonctionne.",
-  },
-  {
-    icon: Zap,
-    title: "En ligne en 10 minutes",
-    text: "Creez votre compte, renseignez votre agence, ajoutez un vehicule. C'est publie.",
+    text: "Un abonnement mensuel indexé sur vos véhicules publiés. Le client vous règle directement.",
   },
 ];
 
-export default function ProLandingPage() {
+export default function ProPage() {
   return (
-    <>
-      <section className="hero-glow border-b border-ink-100">
-        <div className="container-page grid items-center gap-10 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
-          <div className="space-y-6">
-            <Badge variant="accent">Espace professionnel</Badge>
-            <h1 className="text-4xl font-semibold leading-tight text-ink-900 sm:text-5xl">
-              Vos voitures sont disponibles.
-              <br />
-              <span className="text-amber-brand-dark">Encore faut-il qu&apos;on les trouve.</span>
-            </h1>
-            <p className="max-w-xl text-lg text-ink-600">
-              RentMap referencie les loueurs de voitures ville par ville. Vous publiez votre flotte,
-              les particuliers vous contactent en direct. Pas de commission, pas
-              d&apos;intermediaire, pas d&apos;engagement.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <ButtonLink href="/inscription?profil=pro" size="lg">
-                Creer mon compte pro
-              </ButtonLink>
-              <ButtonLink href="/tarifs" variant="outline" size="lg">
-                Voir les tarifs
-              </ButtonLink>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Palier gratuit disponible. Aucune carte bancaire requise pour commencer.
-            </p>
-          </div>
-
-          <Card className="bg-ink-900 text-white">
-            <CardContent className="space-y-5 p-8">
-              <p className="text-sm font-medium text-amber-brand">Ce que vous obtenez</p>
-              <ul className="space-y-4">
-                {[
-                  ["Fiche agence", "Adresse, horaires, services, photos, avis clients."],
-                  ["Fiches vehicules", "Prix jour / semaine / mois, options, caution, conditions."],
-                  ["Demandes qualifiees", "Nom, telephone, e-mail, dates et vehicule souhaite."],
-                  ["Tableau de bord", "Publiez, modifiez, suivez vos statistiques."],
-                ].map(([title, text]) => (
-                  <li key={title} className="border-l-2 border-amber-brand/50 pl-4">
-                    <p className="font-medium">{title}</p>
-                    <p className="text-sm text-ink-300">{text}</p>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+    <div className="container-page py-12">
+      <div className="max-w-2xl">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-tint">
+          Loueurs professionnels
+        </p>
+        <h1 className="mt-2 text-3xl font-extrabold text-ink-900 md:text-4xl">
+          Votre flotte devant des clients qui cherchent à louer près de chez vous.
+        </h1>
+        <p className="mt-3 text-muted-foreground">
+          Tout se pilote depuis l&apos;application, sur votre téléphone : création de l&apos;espace,
+          vérification, véhicules, demandes, messages et abonnement.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <ButtonLink href="#application" size="lg">
+            <Smartphone /> Obtenir l&apos;application
+          </ButtonLink>
+          <ButtonLink href="/tarifs" variant="outline" size="lg">
+            Voir les tarifs
+          </ButtonLink>
         </div>
+      </div>
+      <ul className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {STEPS.map(({ Icon, title, text }) => (
+          <li key={title} className="rounded-card border border-ink-200 bg-surface p-5">
+            <Icon className="size-5 text-brand-tint" />
+            <p className="mt-3 font-semibold text-ink-900">{title}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+          </li>
+        ))}
+      </ul>
+      <section
+        id="application"
+        className="mt-14 rounded-card border border-brand/30 bg-brand-soft/60 p-8"
+      >
+        <h2 className="text-2xl font-bold text-ink-900">
+          L&apos;application arrive sur l&apos;App Store et Google Play
+        </h2>
+        <p className="mt-2 max-w-xl text-ink-700">
+          Les liens de téléchargement seront affichés ici dès la publication. En attendant,
+          laissez-nous votre adresse et nous vous prévenons.
+        </p>
+        <ButtonLink href="/contact" className="mt-5" variant="outline">
+          Être prévenu
+        </ButtonLink>
       </section>
-
-      <section className="container-page py-16">
-        <h2 className="text-2xl font-semibold text-ink-900">Pourquoi rejoindre RentMap</h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {BENEFITS.map((benefit) => (
-            <Card key={benefit.title}>
-              <CardContent className="space-y-3">
-                <span className="inline-flex size-10 items-center justify-center rounded-full bg-surface-muted text-ink-800">
-                  <benefit.icon className="size-5" />
-                </span>
-                <p className="font-semibold text-ink-900">{benefit.title}</p>
-                <p className="text-sm text-muted-foreground">{benefit.text}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="container-page pb-20">
-        <Card>
-          <CardContent className="grid gap-8 p-8 sm:p-12 lg:grid-cols-[1fr_1.2fr]">
-            <div className="space-y-3">
-              <h2 className="text-2xl font-semibold text-ink-900">Combien ca coute ?</h2>
-              <p className="text-sm text-muted-foreground">
-                Le tarif depend uniquement du nombre de vehicules que vous publiez. Rien
-                d&apos;autre.
-              </p>
-              <ButtonLink href="/tarifs" variant="outline" size="sm">
-                Detail des paliers
-              </ButtonLink>
-            </div>
-
-            <div className="space-y-3">
-              {PLANS.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-ink-100 p-4"
-                >
-                  <div>
-                    <p className="font-medium text-ink-900">{plan.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {plan.vehicleLimit === null
-                        ? "Vehicules illimites"
-                        : `Jusqu'a ${plan.vehicleLimit} vehicule${plan.vehicleLimit > 1 ? "s" : ""}`}
-                    </p>
-                  </div>
-                  <p className="text-right">
-                    <span className="text-xl font-semibold text-ink-900">
-                      {plan.monthlyPrice === 0 ? "Gratuit" : `${plan.monthlyPrice} €`}
-                    </span>
-                    {plan.monthlyPrice > 0 ? (
-                      <span className="block text-xs text-muted-foreground">/ mois HT</span>
-                    ) : null}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-    </>
+    </div>
   );
 }

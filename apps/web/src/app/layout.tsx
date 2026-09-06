@@ -1,27 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "sonner";
+import { Manrope } from "next/font/google";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { publicEnv } from "@/lib/env";
 
 import "./globals.css";
-import "maplibre-gl/dist/maplibre-gl.css";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  weight: ["500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
   title: {
-    default: `${publicEnv.siteName} - Tous les loueurs de voitures, ville par ville`,
+    default: `${publicEnv.siteName} — Loueurs de voitures professionnels, sans commission`,
     template: `%s | ${publicEnv.siteName}`,
   },
   description:
-    "Trouvez un loueur de voitures pres de chez vous : carte interactive, prix, options et contact direct avec les agences. Sans commission sur la location.",
+    "Trouvez un loueur de voitures professionnel vérifié près de chez vous, comparez les prix et réservez directement avec lui. Aucune commission sur la location.",
   keywords: [
     "location de voiture",
     "loueur de voiture",
     "agence de location",
     "louer une voiture",
-    "comparateur loueurs",
+    "loueur vérifié",
   ],
   openGraph: {
     type: "website",
@@ -33,22 +38,22 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#141b2b",
+  themeColor: "#0e0e11",
   width: "device-width",
   initialScale: 1,
-  // Le site est majoritairement consulte sur telephone : on occupe l'ecran
-  // jusqu'aux bords et on gere les encoches avec env(safe-area-inset-*).
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body className="flex min-h-dvh flex-col">
+    <html lang="fr" className={manrope.variable}>
+      <body
+        className="flex min-h-dvh flex-col"
+        style={{ fontFamily: "var(--font-manrope), var(--font-sans)" }}
+      >
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
-        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );

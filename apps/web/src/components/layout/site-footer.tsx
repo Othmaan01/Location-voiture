@@ -7,47 +7,40 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Louer",
     links: [
-      { href: "/recherche", label: "Rechercher un vehicule" },
+      { href: "/recherche", label: "Rechercher un véhicule" },
       { href: "/villes", label: "Toutes les villes" },
-      { href: "/recherche?categories=utilitaire", label: "Utilitaires" },
-      { href: "/recherche?categories=prestige", label: "Vehicules de prestige" },
+      { href: "/recherche?categories=prestige", label: "Véhicules de prestige" },
     ],
   },
   {
-    title: "Professionnels",
+    title: "Loueurs",
     links: [
-      { href: "/pro", label: "Referencer mon agence" },
-      { href: "/tarifs", label: "Tarifs et paliers" },
-      { href: "/inscription?profil=pro", label: "Creer un compte pro" },
-      { href: "/connexion", label: "Acceder a mon tableau de bord" },
+      { href: "/pro", label: "Publier ma flotte" },
+      { href: "/tarifs", label: "Abonnement et paliers" },
     ],
   },
   {
     title: "Plateforme",
     links: [
-      { href: "/a-propos", label: "A propos" },
+      { href: "/a-propos", label: "À propos" },
       { href: "/contact", label: "Contact" },
-      { href: "/mentions-legales", label: "Mentions legales" },
-      { href: "/confidentialite", label: "Confidentialite" },
+      { href: "/mentions-legales", label: "Mentions légales" },
+      { href: "/confidentialite", label: "Confidentialité" },
     ],
   },
 ];
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-ink-100 bg-surface-muted/70">
+    <footer className="mt-24 border-t border-ink-200 bg-surface/60">
       <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="space-y-4">
           <Logo />
           <p className="max-w-xs text-sm text-muted-foreground">
-            L&apos;annuaire cartographie des loueurs de voitures. Les particuliers trouvent une
-            agence pres de chez eux, les professionnels gagnent en visibilite.
-          </p>
-          <p className="text-xs text-ink-400">
-            Aucune commission sur les locations. La mise en relation est directe.
+            La mise en relation directe avec des loueurs de voitures professionnels vérifiés. Aucune
+            commission : vous réglez le loueur, jamais la plateforme.
           </p>
         </div>
-
         {COLUMNS.map((column) => (
           <div key={column.title} className="space-y-3">
             <p className="text-sm font-semibold text-ink-900">{column.title}</p>
@@ -66,13 +59,9 @@ export function SiteFooter() {
           </div>
         ))}
       </div>
-
-      <div className="border-t border-ink-100">
-        <div className="container-page flex flex-col items-start justify-between gap-2 py-5 text-xs text-ink-400 sm:flex-row sm:items-center">
-          <p>
-            &copy; {new Date().getFullYear()} {publicEnv.siteName}. Tous droits reserves.
-          </p>
-          <p>Fonds de carte &copy; OpenStreetMap contributors.</p>
+      <div className="border-t border-ink-200">
+        <div className="container-page py-5 text-xs text-ink-500">
+          &copy; {new Date().getFullYear()} {publicEnv.siteName}. Tous droits réservés.
         </div>
       </div>
     </footer>

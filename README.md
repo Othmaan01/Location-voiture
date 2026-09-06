@@ -49,6 +49,7 @@ Sans Docker, tout compile et les tests unitaires passent ; seuls les tests d'int
 
 - **API staging** : Fly.io, app `location-voiture-api-staging`, région Paris, `https://location-voiture-api-staging.fly.dev`. Depuis le Mac : `~/.fly/bin/flyctl deploy --config apps/api/fly.toml --dockerfile apps/api/Dockerfile --remote-only .` ; secrets via `scripts/fly-set-secrets.sh location-voiture-api-staging` (lit `.env.local`).
 - **Base et Auth** : projet Supabase `kgvblvfsypcyocpacydb` (eu-west-1), migrations appliquées via le connecteur Supabase, e-mails via Resend.
+- **Web** : `apps/web` est un site public (SEO) qui ne parle qu'à l'API : `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SITE_NAME` (voir `apps/web/.env.example`), déployable sur Netlify (`netlify.toml`). Aucun secret côté site.
 - **Mobile** : `apps/mobile/.env.local` pointe `EXPO_PUBLIC_API_URL` vers l'API staging ; `npx expo start --go` puis Expo Go (même compte Expo sur le Mac et le téléphone). Hors Wi-Fi commun : `npx expo start --go --tunnel` (passe par internet, dépendance `@expo/ngrok`).
 
 ## Documentation

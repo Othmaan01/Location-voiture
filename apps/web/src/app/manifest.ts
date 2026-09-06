@@ -14,14 +14,14 @@ export default function manifest(): MetadataRoute.Manifest {
     name: `${publicEnv.siteName} - Location de voiture pres de chez vous`,
     short_name: publicEnv.siteName,
     description:
-      "Trouvez un loueur de voitures pres de chez vous : carte interactive, prix, options et contact direct avec les agences.",
+      "Des loueurs de voitures professionnels vérifiés près de chez vous. Contact direct, sans commission.",
     lang: "fr",
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",
-    background_color: "#fdfcfa",
-    theme_color: "#141b2b",
+    background_color: "#0e0e11",
+    theme_color: "#0e0e11",
     categories: ["travel", "shopping", "navigation"],
     icons: [
       { src: "/icon-512.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },

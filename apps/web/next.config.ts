@@ -1,26 +1,18 @@
 import type { NextConfig } from "next";
 
-const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
-  : undefined;
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
+    // Photos et logos servis par Supabase Storage (bucket public), via l'API.
     remotePatterns: [
-      // Photos des vehicules stockees dans Supabase Storage.
-      ...(supabaseHost
-        ? [
-            {
-              protocol: "https" as const,
-              hostname: supabaseHost,
-              pathname: "/storage/v1/object/public/**",
-            },
-          ]
-        : []),
-      // Images de demonstration (a retirer en production).
-      { protocol: "https" as const, hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
     ],
+  },
+  // Les contrats partages sont ecrits en TypeScript avec des imports ".js" (ESM) :
+  // on laisse webpack resoudre ".js" vers ".ts" (Turbopack ne le fait pas encore).
+  webpack: (config) => {
+    config.resolve.extensionAlias = { ".js": [".ts", ".tsx", ".js"] };
+    return config;
   },
 };
 

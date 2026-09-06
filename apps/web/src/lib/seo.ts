@@ -1,5 +1,6 @@
+import type { LoueurProfile } from "@lv/contracts";
+
 import { publicEnv } from "@/lib/env";
-import type { Agency, City, Vehicle } from "@/types/database";
 
 export function absoluteUrl(path: string) {
   return `${publicEnv.siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
@@ -17,58 +18,37 @@ export function organizationSchema() {
     name: publicEnv.siteName,
     url: publicEnv.siteUrl,
     description:
-      "Annuaire cartographie des loueurs de voitures : comparez les agences et contactez-les directement.",
+      "Plateforme de mise en relation avec des loueurs de voitures professionnels vérifiés. Sans commission sur la location.",
   };
 }
 
-export function agencySchema(agency: Agency) {
+export function loueurSchema(l: LoueurProfile) {
+  const agency = l.agencies[0];
   return {
     "@context": "https://schema.org",
     "@type": "AutoRental",
-    name: agency.name,
-    url: absoluteUrl(`/agence/${agency.slug}`),
-    description: agency.description ?? undefined,
-    image: agency.logo_url ?? undefined,
-    telephone: agency.phone ?? undefined,
-    email: agency.email ?? undefined,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: agency.address_line ?? undefined,
-      postalCode: agency.postal_code ?? undefined,
-      addressLocality: agency.city_name ?? undefined,
-      addressCountry: "FR",
-    },
+    name: l.name,
+    url: absoluteUrl(`/loueurs/${l.id}`),
+    description: l.bio ?? undefined,
+    image: l.logoUrl ?? undefined,
+    telephone: agency?.phone ?? undefined,
+    address: agency
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: agency.addressLine ?? undefined,
+          postalCode: agency.postalCode ?? undefined,
+          addressLocality: agency.cityName ?? undefined,
+          addressCountry: "FR",
+        }
+      : undefined,
     geo:
-      agency.latitude && agency.longitude
+      agency && agency.latitude !== null && agency.longitude !== null
         ? { "@type": "GeoCoordinates", latitude: agency.latitude, longitude: agency.longitude }
         : undefined,
     aggregateRating:
-      agency.rating_count > 0
-        ? {
-            "@type": "AggregateRating",
-            ratingValue: agency.rating_average,
-            reviewCount: agency.rating_count,
-          }
+      l.ratingCount > 0
+        ? { "@type": "AggregateRating", ratingValue: l.ratingAverage, reviewCount: l.ratingCount }
         : undefined,
-  };
-}
-
-export function vehicleSchema(vehicle: Vehicle, agency: Agency) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: `${vehicle.brand} ${vehicle.model}${vehicle.version ? ` ${vehicle.version}` : ""}`,
-    description: vehicle.description ?? undefined,
-    image: vehicle.images?.length ? vehicle.images : undefined,
-    brand: { "@type": "Brand", name: vehicle.brand },
-    offers: {
-      "@type": "Offer",
-      price: vehicle.price_per_day,
-      priceCurrency: "EUR",
-      availability: "https://schema.org/InStock",
-      url: absoluteUrl(`/vehicule/${vehicle.id}`),
-      seller: { "@type": "AutoRental", name: agency.name },
-    },
   };
 }
 
@@ -83,17 +63,4 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
       item: absoluteUrl(item.url),
     })),
   };
-}
-
-export function cityTitle(city: Pick<City, "name">) {
-  return `Location de voiture a ${city.name} : tous les loueurs`;
-}
-
-export function cityDescription(
-  city: Pick<City, "name">,
-  agencyCount: number,
-  minPrice?: number | null,
-) {
-  const price = minPrice ? ` a partir de ${Math.round(minPrice)} € par jour` : "";
-  return `Comparez ${agencyCount} agence${agencyCount > 1 ? "s" : ""} de location de voiture a ${city.name}${price}. Carte interactive, prix, options et contact direct avec le loueur.`;
 }

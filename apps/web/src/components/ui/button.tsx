@@ -5,17 +5,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        primary: "bg-ink-900 text-white hover:bg-ink-800 active:bg-ink-950",
-        accent: "bg-amber-brand text-ink-950 hover:bg-amber-brand-dark hover:text-white",
-        outline: "border border-ink-200 bg-surface text-ink-800 hover:bg-surface-muted",
-        ghost: "text-ink-700 hover:bg-surface-muted",
-        subtle: "bg-surface-muted text-ink-800 hover:bg-ink-100",
+        primary: "bg-brand text-white hover:bg-brand-dark",
+        accent: "bg-brand text-white hover:bg-brand-dark",
+        outline: "border border-ink-200 bg-surface text-ink-900 hover:bg-surface-muted",
+        ghost: "text-ink-700 hover:bg-surface-muted hover:text-ink-900",
+        subtle: "bg-surface-muted text-ink-900 hover:bg-ink-200",
         danger: "bg-danger text-white hover:opacity-90",
-        link: "text-ink-900 underline underline-offset-4 hover:text-amber-brand-dark",
+        link: "text-brand-tint underline underline-offset-4 hover:text-ink-900",
       },
       size: {
         sm: "h-9 px-3.5 text-sm [&_svg]:size-4",
@@ -29,7 +29,6 @@ export const buttonVariants = cva(
 );
 
 type ButtonBaseProps = VariantProps<typeof buttonVariants> & { className?: string };
-
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & ButtonBaseProps;
 
 export function Button({ className, variant, size, ...props }: ButtonProps) {
