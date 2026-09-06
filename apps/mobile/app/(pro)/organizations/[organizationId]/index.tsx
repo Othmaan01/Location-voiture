@@ -106,6 +106,7 @@ export default function OrganizationScreen() {
           icon={<Building2 size={22} color={theme.colors.text} />}
           title="Informations"
           subtitle={org.data.siret ? `SIRET ${org.data.siret}` : "SIRET à renseigner"}
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/edit`)}
           last
         />
       </Card>
