@@ -3,7 +3,7 @@ app = "location-voiture-api-staging"
 primary_region = "cdg"
 
 [build]
-  dockerfile = "apps/api/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [env]
   API_HOST = "0.0.0.0"
