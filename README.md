@@ -45,6 +45,12 @@ Sans Docker, tout compile et les tests unitaires passent ; seuls les tests d'int
 | `pnpm db:reset`              | réapplique migrations + seed                          |
 | `pnpm db:types`              | régénère les types Supabase dans `packages/contracts` |
 
+## Déploiement
+
+- **API staging** : Fly.io, app `location-voiture-api-staging`, région Paris, `https://location-voiture-api-staging.fly.dev`. Depuis le Mac : `~/.fly/bin/flyctl deploy --config apps/api/fly.toml --dockerfile apps/api/Dockerfile --remote-only .` ; secrets via `scripts/fly-set-secrets.sh location-voiture-api-staging` (lit `.env.local`).
+- **Base et Auth** : projet Supabase `kgvblvfsypcyocpacydb` (eu-west-1), migrations appliquées via le connecteur Supabase, e-mails via Resend.
+- **Mobile** : `apps/mobile/.env.local` pointe `EXPO_PUBLIC_API_URL` vers l'API staging ; `npx expo start --go` puis Expo Go (même compte Expo sur le Mac et le téléphone).
+
 ## Documentation
 
 [ARCHITECTURE.md](ARCHITECTURE.md) · [SECURITY.md](SECURITY.md) · [DATABASE.md](DATABASE.md) · [API.md](API.md) · [DECISIONS.md](DECISIONS.md) · [ROADMAP.md](ROADMAP.md)
