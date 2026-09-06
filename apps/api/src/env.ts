@@ -44,6 +44,9 @@ const EnvSchema = z.object({
    * un compte Auth. Jamais exposee, jamais loggee.
    */
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(16).optional(),
+  /** Stripe Billing (Phase 5). Absents : le paiement est "bientot disponible", rien n'est bloque. */
+  STRIPE_SECRET_KEY: z.string().min(16).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

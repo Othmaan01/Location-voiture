@@ -27,10 +27,22 @@ export const SubscriptionOverviewSchema = z
   .object({
     plan: PlanSchema,
     publishedCount: z.number().int(),
-    /** trialing : essai en cours ; trial_expired : essai termine, paiement a venir (Phase 5) ; active : paye. */
-    status: z.enum(["trialing", "trial_expired", "active"]),
+    /**
+     * trialing : essai en cours ; trial_expired : essai termine sans abonnement ; active : abonnement paye ;
+     * past_due : paiement en echec ; canceled : resilie.
+     */
+    status: z.enum(["trialing", "trial_expired", "active", "past_due", "canceled"]),
     trialEndsAt: IsoDateTimeSchema.nullable(),
+    /** Fin de la periode payee en cours (abonnement Stripe). */
+    currentPeriodEnd: IsoDateTimeSchema.nullable(),
+    cancelAtPeriodEnd: z.boolean(),
+    /** Paiement en ligne disponible (Stripe configure) et abonnement existant (portail). */
+    billingEnabled: z.boolean(),
+    hasBillingAccount: z.boolean(),
     plans: z.array(PlanSchema),
   })
   .strict();
+
+export const CheckoutBodySchema = z.object({ planCode: z.string().min(1).max(40) }).strict();
+export const BillingUrlSchema = z.object({ url: z.url() }).strict();
 export type SubscriptionOverview = z.infer<typeof SubscriptionOverviewSchema>;

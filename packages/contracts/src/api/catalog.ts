@@ -242,6 +242,7 @@ export const PublishBlockerSchema = z.enum([
   "no_rate_plan",
   "agency_incomplete",
   "quota_reached",
+  "subscription_required",
 ]);
 export const PublishCheckSchema = z
   .object({ canPublish: z.boolean(), blockers: z.array(PublishBlockerSchema) })

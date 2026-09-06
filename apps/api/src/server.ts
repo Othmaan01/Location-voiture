@@ -33,6 +33,7 @@ import { reviewsRoutes } from "./modules/reviews/routes.js";
 import { subscriptionsRoutes } from "./modules/subscriptions/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
+import type { BillingGateway } from "./shared/billing.js";
 import { DomainError } from "./shared/errors.js";
 import { idempotencyPlugin } from "./shared/idempotency.js";
 import { authPlugin } from "./shared/plugins.js";
@@ -53,6 +54,8 @@ export interface BuildServerOptions {
   supabaseAdmin: SupabaseAdmin;
   storage: StorageClient;
   notifications: NotificationsService;
+  /** Passerelle de facturation ; `null` tant qu'aucune cle Stripe n'est configuree. */
+  billing: BillingGateway | null;
   logger: Logger;
 }
 
@@ -170,7 +173,10 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(vehiclesRoutes);
   await app.register(documentsRoutes);
   await app.register(publicCatalogRoutes);
-  await app.register(subscriptionsRoutes);
+  await app.register(subscriptionsRoutes, {
+    billing: opts.billing,
+    deepLinkScheme: opts.env.APP_DEEP_LINK_SCHEME,
+  });
   await app.register(availabilityRoutes);
   await app.register(bookingsRoutes);
   await app.register(messagingRoutes);

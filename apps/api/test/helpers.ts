@@ -1,5 +1,6 @@
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pino from "pino";
+import type { BillingEvent, BillingGateway } from "../src/shared/billing.js";
 
 import { createDatabase, type Database } from "../src/db/client.js";
 import { buildServer } from "../src/server.js";
@@ -54,6 +55,7 @@ export async function createTestServer(db: Database, verifyToken: TokenVerifier)
     supabaseAdmin: { deleteUser: async () => undefined },
     storage: fakeStorage(),
     notifications: { notifyUser: async () => undefined, notifyOrganization: async () => undefined },
+    billing: fakeBilling(),
     db,
     verifyToken,
     logger: pino({ level: process.env["TEST_LOG_LEVEL"] ?? "silent" }),
@@ -98,6 +100,28 @@ export function fakeStorage(): StorageClient & { issued: Set<string>; removed: s
     },
     async exists(bucket, path) {
       return issued.has(`${bucket}/${path}`);
+    },
+  };
+}
+
+/** Passerelle de facturation simulee : URLs deterministes, signature = corps JSON en clair. */
+export function fakeBilling(): BillingGateway {
+  return {
+    async ensureCustomer({ existingId, organizationId }) {
+      return existingId ?? `cus_test_${organizationId.slice(0, 8)}`;
+    },
+    async ensurePrice(plan) {
+      return plan.existingPriceId ?? `price_test_${plan.code}`;
+    },
+    async createCheckoutSession({ planCode }) {
+      return { url: `https://checkout.test/${planCode}` };
+    },
+    async createPortalSession() {
+      return { url: "https://portal.test/session" };
+    },
+    constructEvent(rawBody, signature) {
+      if (signature !== "test-signature") throw new Error("bad signature");
+      return JSON.parse(rawBody.toString("utf8")) as BillingEvent;
     },
   };
 }

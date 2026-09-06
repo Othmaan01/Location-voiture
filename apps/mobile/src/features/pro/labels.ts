@@ -66,6 +66,7 @@ export const BLOCKER_LABEL: Record<string, string> = {
   no_photo: "Ajoutez au moins une photo",
   no_rate_plan: "Définissez un tarif",
   quota_reached: "Quota de votre offre atteint",
+  subscription_required: "Abonnement résilié ou impayé : réactivez-le",
 };
 
 export const DOCUMENT_KIND_LABEL: Record<string, string> = {

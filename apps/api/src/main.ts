@@ -8,6 +8,7 @@ import {
 import { loadEnv } from "./env.js";
 import { buildServer } from "./server.js";
 import { createTokenVerifier } from "./shared/auth.js";
+import { createStripeGateway } from "./shared/billing.js";
 import { createLogger } from "./shared/logger.js";
 import { createStorageClient } from "./shared/storage.js";
 import { createSupabaseAdmin } from "./shared/supabase-admin.js";
@@ -25,8 +26,13 @@ const app = await buildServer({
   supabaseAdmin: createSupabaseAdmin(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
   storage,
   notifications,
+  billing: env.STRIPE_SECRET_KEY
+    ? createStripeGateway(env.STRIPE_SECRET_KEY, env.STRIPE_WEBHOOK_SECRET)
+    : null,
   logger,
 });
+if (!env.STRIPE_SECRET_KEY)
+  logger.warn("facturation : aucune cle Stripe, paiement en ligne desactive");
 
 const stopJobs = startExpireBookingsJob(
   createBookingsService(database.db, storage, notifications),

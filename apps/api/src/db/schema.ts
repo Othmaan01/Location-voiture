@@ -124,6 +124,35 @@ export const plans = pgTable("plans", {
   monthlyPriceCents: integer("monthly_price_cents").notNull().default(0),
   currency: char("currency", { length: 3 }).notNull().default("EUR"),
   sortOrder: integer("sort_order").notNull().default(0),
+  stripePriceId: text("stripe_price_id"),
+});
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "trialing",
+  "active",
+  "past_due",
+  "canceled",
+  "incomplete",
+  "unpaid",
+  "paused",
+]);
+
+export const subscriptions = pgTable("subscriptions", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripePriceId: text("stripe_price_id"),
+  planCode: text("plan_code").notNull(),
+  status: subscriptionStatusEnum("status").notNull().default("active"),
+  quantity: integer("quantity").notNull().default(1),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const organizations = pgTable("organizations", {

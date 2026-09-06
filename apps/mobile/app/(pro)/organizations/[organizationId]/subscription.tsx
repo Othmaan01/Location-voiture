@@ -1,16 +1,49 @@
 import { useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Linking, StyleSheet, View } from "react-native";
+import { useEffect } from "react";
+import { ActivityIndicator, Alert, AppState, Linking, StyleSheet, View } from "react-native";
 import { Check } from "lucide-react-native";
 
 import { Badge, Button, Card, Screen, Text } from "@/components/ui";
 import { formatEuros } from "@/features/pro/labels";
-import { useSubscription } from "@/lib/queries-subscriptions";
+import { ApiRequestError } from "@/lib/api";
+import {
+  useBillingPortal,
+  useCheckout,
+  useRefreshSubscription,
+  useSubscription,
+} from "@/lib/queries-subscriptions";
 import { theme } from "@/theme";
 
 /** Abonnement (D10) : offre en cours, essai, grille. Le changement d'offre arrive avec le paiement (Phase 5). */
 export default function SubscriptionScreen() {
-  const { organizationId } = useLocalSearchParams<{ organizationId: string }>();
+  const { organizationId, checkout: checkoutResult } = useLocalSearchParams<{
+    organizationId: string;
+    checkout?: string;
+  }>();
   const sub = useSubscription(organizationId);
+  const checkout = useCheckout(organizationId);
+  const portal = useBillingPortal(organizationId);
+  const refresh = useRefreshSubscription(organizationId);
+
+  // Retour du navigateur (paiement ou portail) : on relit l'abonnement.
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void refresh();
+    });
+    return () => subscription.remove();
+  }, [refresh]);
+  useEffect(() => {
+    if (checkoutResult === "success")
+      Alert.alert(
+        "Merci",
+        "Votre abonnement est en cours d'activation, cela prend quelques secondes.",
+      );
+  }, [checkoutResult]);
+
+  const openUrl = (url: string) =>
+    Linking.openURL(url).catch(() => Alert.alert("Ouverture impossible", "Réessayez."));
+  const fail = (e: unknown) =>
+    Alert.alert("Indisponible", e instanceof ApiRequestError ? e.message : "Réessayez.");
 
   if (sub.isPending) {
     return (
@@ -42,9 +75,19 @@ export default function SubscriptionScreen() {
                 ? `Essai · ${trialDays} j`
                 : s.status === "trial_expired"
                   ? "Essai terminé"
-                  : "Active"
+                  : s.status === "past_due"
+                    ? "Paiement en échec"
+                    : s.status === "canceled"
+                      ? "Résiliée"
+                      : "Active"
             }
-            tone={s.status === "trial_expired" ? "warning" : "success"}
+            tone={
+              s.status === "trial_expired" || s.status === "past_due"
+                ? "warning"
+                : s.status === "canceled"
+                  ? "accent"
+                  : "success"
+            }
           />
         </View>
         <Text variant="h1">
@@ -60,9 +103,27 @@ export default function SubscriptionScreen() {
         </Text>
         {s.status === "trial_expired" ? (
           <Text variant="sm" tone="warning">
-            Votre essai est terminé. Le paiement en ligne arrive bientôt : rien ne change pour vous
-            d'ici là.
+            {s.billingEnabled
+              ? "Votre essai est terminé : choisissez une offre ci-dessous pour continuer."
+              : "Votre essai est terminé. Le paiement en ligne arrive bientôt : rien ne change pour vous d'ici là."}
           </Text>
+        ) : null}
+        {s.currentPeriodEnd ? (
+          <Text variant="small" tone="dim">
+            {s.cancelAtPeriodEnd ? "Prend fin le " : "Prochain renouvellement le "}
+            {new Date(s.currentPeriodEnd).toLocaleDateString("fr-FR")}.
+          </Text>
+        ) : null}
+        {s.billingEnabled && s.hasBillingAccount ? (
+          <Button
+            label="Gérer mon abonnement et mes factures"
+            variant="ghost"
+            size="sm"
+            loading={portal.isPending}
+            onPress={() =>
+              portal.mutate(undefined, { onSuccess: (r) => void openUrl(r.url), onError: fail })
+            }
+          />
         ) : null}
       </Card>
 
@@ -101,14 +162,24 @@ export default function SubscriptionScreen() {
                 size="sm"
                 onPress={() => void Linking.openURL("mailto:contact@locationvoiture.app")}
               />
+            ) : s.billingEnabled &&
+              (!current || s.status === "canceled" || s.status === "trial_expired") ? (
+              <Button
+                label={current ? "Réactiver cette offre" : "Choisir cette offre"}
+                size="sm"
+                loading={checkout.isPending && checkout.variables === p.code}
+                onPress={() =>
+                  checkout.mutate(p.code, { onSuccess: (r) => void openUrl(r.url), onError: fail })
+                }
+              />
             ) : null}
           </Card>
         );
       })}
-      <Button label="Changer d'offre — bientôt" disabled onPress={() => undefined} />
       <Text variant="small" tone="dim">
-        Le paiement par carte et les factures arrivent avec la prochaine version. Les prix sont hors
-        taxes.
+        {s.billingEnabled
+          ? "Paiement sécurisé par Stripe, dans votre navigateur. Prix hors taxes, résiliable à tout moment."
+          : "Le paiement par carte et les factures arrivent avec la prochaine version. Les prix sont hors taxes."}
       </Text>
     </Screen>
   );

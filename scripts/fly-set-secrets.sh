@@ -12,5 +12,7 @@ FLY="${FLYCTL:-$HOME/.fly/bin/flyctl}"
   SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
   API_JWT_ISSUER="$API_JWT_ISSUER" \
   API_CORS_ORIGINS="${API_CORS_ORIGINS:-}" \
-  API_PUBLIC_URL="https://$APP.fly.dev" >/dev/null
+  API_PUBLIC_URL="https://$APP.fly.dev" \
+  ${STRIPE_SECRET_KEY:+STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY"} \
+  ${STRIPE_WEBHOOK_SECRET:+STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"} >/dev/null
 echo "secrets poses sur $APP (appliques au prochain deploiement)"

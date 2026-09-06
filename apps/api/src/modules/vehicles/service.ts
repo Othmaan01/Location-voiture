@@ -19,6 +19,7 @@ import {
   plans,
   quotes,
   ratePlans,
+  subscriptions,
   vehiclePhotos,
   vehicles,
 } from "../../db/schema.js";
@@ -40,7 +41,12 @@ const EXT: Record<string, string> = {
 
 type VehicleRow = typeof vehicles.$inferSelect;
 type PublishBlocker =
-  "organization_not_verified" | "no_photo" | "no_rate_plan" | "agency_incomplete" | "quota_reached";
+  | "organization_not_verified"
+  | "no_photo"
+  | "no_rate_plan"
+  | "agency_incomplete"
+  | "quota_reached"
+  | "subscription_required";
 
 function ratePlanDto(row: typeof ratePlans.$inferSelect): RatePlan {
   return {
@@ -231,6 +237,21 @@ export function createVehiclesService(db: Database, storage: StorageClient): Veh
       .where(and(eq(ratePlans.vehicleId, row.id), eq(ratePlans.isActive, true)))
       .limit(1);
     if (!plan) blockers.push("no_rate_plan");
+    // Abonnement en ligne resilie ou impaye : plus de nouvelle publication (ADR-0014).
+    const [sub] = await db
+      .select({
+        status: subscriptions.status,
+        stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+      })
+      .from(subscriptions)
+      .where(eq(subscriptions.organizationId, row.organizationId))
+      .limit(1);
+    if (
+      sub?.stripeSubscriptionId &&
+      (sub.status === "canceled" || sub.status === "unpaid") &&
+      row.status !== "published"
+    )
+      blockers.push("subscription_required");
     if (org && row.status !== "published") {
       const [limit] = await db
         .select({ max: plans.maxPublishedVehicles })

@@ -294,4 +294,118 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
     await sql`delete from public.quotes where organization_id = ${orgId}`;
     await sql`delete from public.organizations where id = ${orgId}`;
   });
+
+  it("abonnement en ligne : session de paiement, portail, webhook signe qui change l'offre", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { name: "Facturation Test", siren: "356000000" },
+    });
+    expect(created.statusCode).toBe(201);
+    const orgId = created.json<{ id: string }>().id;
+    const quote = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/subscription/checkout`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { planCode: "fleet" },
+    });
+    expect(quote.statusCode).toBe(409);
+    const portalBefore = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/subscription/portal`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(portalBefore.statusCode).toBe(409);
+    const checkout = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/subscription/checkout`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { planCode: "pro" },
+    });
+    expect(checkout.statusCode).toBe(200);
+    expect(checkout.json()).toEqual({ url: "https://checkout.test/pro" });
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/organizations/${orgId}/subscription/checkout`,
+          headers: { authorization: `Bearer ${bobToken}` },
+          payload: { planCode: "pro" },
+        })
+      ).statusCode,
+    ).toBe(404);
+    const portal = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/subscription/portal`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(portal.statusCode).toBe(200);
+
+    // Webhook : signature invalide refusee ; valide -> abonnement Pro actif, plan de l'organisation synchronise.
+    const event = {
+      id: "evt_test_1",
+      type: "customer.subscription.created",
+      data: {
+        object: {
+          id: "sub_test_1",
+          customer: `cus_test_${orgId.slice(0, 8)}`,
+          status: "active",
+          current_period_end: Math.floor(Date.now() / 1000) + 30 * 86_400,
+          cancel_at_period_end: false,
+          items: { data: [{ price: { id: "price_test_pro" } }] },
+          metadata: { organizationId: orgId, planCode: "pro" },
+        },
+      },
+    };
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/v1/billing/webhook",
+          headers: { "content-type": "application/json", "stripe-signature": "wrong" },
+          payload: JSON.stringify(event),
+        })
+      ).statusCode,
+    ).toBe(403);
+    const hook = await app.inject({
+      method: "POST",
+      url: "/v1/billing/webhook",
+      headers: { "content-type": "application/json", "stripe-signature": "test-signature" },
+      payload: JSON.stringify(event),
+    });
+    expect(hook.statusCode).toBe(200);
+    const overview = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}/subscription`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(overview.json()).toMatchObject({
+      plan: { code: "pro" },
+      status: "active",
+      billingEnabled: true,
+      hasBillingAccount: true,
+      cancelAtPeriodEnd: false,
+    });
+    const orgRow = await database.sql<
+      { plan_code: string }[]
+    >`select plan_code from public.organizations where id = ${orgId}::uuid`;
+    expect(orgRow[0]?.plan_code).toBe("pro");
+
+    // Resiliation : le plan retombe sur l'offre par defaut.
+    const deleted = { ...event, id: "evt_test_2", type: "customer.subscription.deleted" };
+    await app.inject({
+      method: "POST",
+      url: "/v1/billing/webhook",
+      headers: { "content-type": "application/json", "stripe-signature": "test-signature" },
+      payload: JSON.stringify(deleted),
+    });
+    const after = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}/subscription`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(after.json()).toMatchObject({ status: "canceled", plan: { code: "starter" } });
+    await database.sql`delete from public.organizations where id = ${orgId}::uuid`;
+  });
 });

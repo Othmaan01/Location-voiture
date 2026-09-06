@@ -65,6 +65,9 @@ importers:
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
+      stripe:
+        specifier: ^18.5.0
+        version: 18.5.0(@types/node@22.20.1)
       zod:
         specifier: ^4.4.3
         version: 4.5.4
@@ -231,7 +234,7 @@ importers:
         version: 5.24.0
       next:
         specifier: ^16.2.7
-        version: 16.3.4(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -10547,7 +10550,7 @@ snapshots:
     dependencies:
       content-type: 2.1.0
 
-  next@16.3.4(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
       '@next/env': 16.3.4
       '@swc/helpers': 0.5.23
@@ -10556,7 +10559,7 @@ snapshots:
       postcss: 8.5.23
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      styled-jsx: 5.1.6(react@19.2.3)
+      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.3)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.3.4
       '@next/swc-darwin-x64': 16.3.4
@@ -11493,12 +11496,20 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.43
 
+  stripe@18.5.0(@types/node@22.20.1):
+    dependencies:
+      qs: 6.16.0
+    optionalDependencies:
+      '@types/node': 22.20.1
+
   structured-headers@0.4.1: {}
 
-  styled-jsx@5.1.6(react@19.2.3):
+  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.2.3):
     dependencies:
       client-only: 0.0.1
       react: 19.2.3
+    optionalDependencies:
+      '@babel/core': 7.29.7
 
   supports-color@5.5.0:
     dependencies:
