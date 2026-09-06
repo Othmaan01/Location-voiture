@@ -34,7 +34,17 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
 
   afterAll(async () => {
     await app.close();
-    await database.sql`delete from auth.users where id in (${alice}, ${bob})`;
+    const sql = database.sql;
+    const orgs = await sql<
+      { organization_id: string }[]
+    >`select organization_id from public.organization_members where user_id in (${alice}, ${bob})`;
+    const ids = orgs.map((o) => o.organization_id);
+    if (ids.length > 0) {
+      await sql`delete from public.bookings where organization_id in ${sql(ids)}`;
+      await sql`delete from public.quotes where organization_id in ${sql(ids)}`;
+      await sql`delete from public.organizations where id in ${sql(ids)}`;
+    }
+    await sql`delete from auth.users where id in (${alice}, ${bob})`;
     await database.close();
   });
 
@@ -160,6 +170,8 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
     await insertBooking("confirmed");
     await expect(insertBooking("confirmed")).rejects.toThrow(/bookings_no_overlap/);
     await insertBooking("requested"); // une demande peut chevaucher, le pro arbitre
+    await sql`delete from public.bookings where organization_id = ${orgId}`;
+    await sql`delete from public.quotes where organization_id = ${orgId}`;
     await sql`delete from public.organizations where id = ${orgId}`;
   });
 });

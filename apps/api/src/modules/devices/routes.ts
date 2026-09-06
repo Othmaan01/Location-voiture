@@ -42,7 +42,7 @@ export const devicesRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ["devices"],
         params: z.object({ token: z.string().min(10).max(200) }).strict(),
-        response: { 204: { type: "null" } },
+        response: { 204: z.null() },
       },
       onRequest: [app.requireAuth],
     },
@@ -55,7 +55,7 @@ export const devicesRoutes: FastifyPluginAsyncZod = async (app) => {
             eq(deviceTokens.userId, request.identity!.userId),
           ),
         );
-      return reply.code(204).send();
+      return reply.code(204).send(null);
     },
   );
 };

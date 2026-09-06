@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { DeleteAccountBodySchema, MeResponseSchema, UpdateProfileBodySchema } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
@@ -36,14 +37,14 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ["identity"],
         body: DeleteAccountBodySchema,
-        response: { 204: { type: "null" } },
+        response: { 204: z.null() },
       },
       onRequest: [app.requireAuth],
       config: { rateLimit: { max: 3, timeWindow: "1 hour" } },
     },
     async (request, reply) => {
       await service.deleteAccount(request.actor, request.id);
-      return reply.code(204).send();
+      return reply.code(204).send(null);
     },
   );
 };

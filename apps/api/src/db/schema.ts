@@ -90,6 +90,7 @@ export const organizations = pgTable("organizations", {
   siret: text("siret"),
   countryCode: char("country_code", { length: 2 }).notNull().default("FR"),
   status: organizationStatusEnum("status").notNull().default("draft"),
+  billingEmail: text("billing_email"),
   planCode: text("plan_code").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

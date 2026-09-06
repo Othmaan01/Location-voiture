@@ -46,7 +46,7 @@ describe.skipIf(!testDatabaseUrl)("membres, invitations, appareils, suppression 
 
   afterAll(async () => {
     await app.close();
-    await database.sql`delete from public.organizations where id = ${orgId}::uuid`;
+    if (orgId) await database.sql`delete from public.organizations where id = ${orgId}::uuid`;
     await database.sql`delete from auth.users where id in (${owner}, ${invitee}, ${stranger})`;
     await database.close();
   });

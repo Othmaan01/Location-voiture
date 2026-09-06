@@ -6,8 +6,18 @@ interface PgError {
   constraint_name?: string;
 }
 
+/**
+ * Drizzle enveloppe les erreurs Postgres (DrizzleQueryError -> cause). On remonte
+ * la chaine des causes jusqu'a trouver une erreur portant un code SQLSTATE.
+ */
 function asPg(error: unknown): PgError | null {
-  return typeof error === "object" && error !== null && "code" in error ? (error as PgError) : null;
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && typeof current === "object" && current !== null; depth += 1) {
+    if ("code" in current && typeof (current as PgError).code === "string")
+      return current as PgError;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return null;
 }
 
 export function isUniqueViolation(error: unknown): boolean {

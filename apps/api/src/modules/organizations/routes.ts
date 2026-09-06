@@ -24,7 +24,7 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
   const orgParams = z.object({ organizationId: UuidSchema }).strict();
   const memberParams = orgParams.extend({ userId: UuidSchema }).strict();
   const invitationParams = orgParams.extend({ invitationId: UuidSchema }).strict();
-  const noContent = { 204: { type: "null" } } as const;
+  const noContent = { 204: z.null() } as const;
 
   app.post(
     "/v1/organizations",
@@ -99,7 +99,7 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
         request.body.role,
         request.id,
       );
-      return reply.code(204).send();
+      return reply.code(204).send(null);
     },
   );
 
@@ -116,7 +116,7 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
         request.params.userId,
         request.id,
       );
-      return reply.code(204).send();
+      return reply.code(204).send(null);
     },
   );
 
@@ -174,7 +174,7 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
         request.params.invitationId,
         request.id,
       );
-      return reply.code(204).send();
+      return reply.code(204).send(null);
     },
   );
 
