@@ -1,9 +1,18 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { Building2, Car, FileCheck2, MapPin, Users } from "lucide-react-native";
+import {
+  Building2,
+  CalendarDays,
+  Car,
+  FileCheck2,
+  Inbox,
+  MapPin,
+  Users,
+} from "lucide-react-native";
 
 import { Avatar, Badge, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { useMembers, useOrganization } from "@/lib/queries";
+import { useOrgBookings } from "@/lib/queries-bookings";
 import { useAgencies, useVehicles, useVerification } from "@/lib/queries-catalog";
 import { ORG_STATUS } from "@/features/pro/labels";
 import { theme } from "@/theme";
@@ -16,6 +25,7 @@ export default function OrganizationScreen() {
   const agencies = useAgencies(organizationId);
   const vehicles = useVehicles(organizationId);
   const verification = useVerification(organizationId);
+  const pending = useOrgBookings(organizationId, "upcoming", "requested");
 
   if (org.isPending) {
     return (
@@ -60,6 +70,27 @@ export default function OrganizationScreen() {
           </Text>
         </Card>
       ) : null}
+      <Card padded={false}>
+        <ListItem
+          icon={<Inbox size={22} color={theme.colors.accentTint} />}
+          title="Demandes et réservations"
+          subtitle={
+            pending.data
+              ? pending.data.bookings.length > 0
+                ? `${pending.data.bookings.length} demande${pending.data.bookings.length > 1 ? "s" : ""} à traiter`
+                : "Aucune demande en attente"
+              : undefined
+          }
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/bookings`)}
+        />
+        <ListItem
+          icon={<CalendarDays size={22} color={theme.colors.text} />}
+          title="Calendrier"
+          subtitle="Réservations et blocages par véhicule"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/calendar`)}
+          last
+        />
+      </Card>
 
       <Card padded={false}>
         <ListItem

@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ApiRequestError } from "@/lib/api";
+import { PushListener } from "@/lib/push-listener";
 import { SessionProvider } from "@/lib/session";
 import { theme } from "@/theme";
 
@@ -50,6 +51,7 @@ export default function RootLayout() {
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="light" />
+          <PushListener />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -61,6 +63,7 @@ export default function RootLayout() {
             <Stack.Screen name="(pro)" />
             <Stack.Screen name="(admin)" />
             <Stack.Screen name="loueurs/[loueurId]" />
+            <Stack.Screen name="reservations/[bookingId]" />
             <Stack.Screen
               name="vehicules/[vehicleId]/demande"
               options={{ presentation: "modal" }}
