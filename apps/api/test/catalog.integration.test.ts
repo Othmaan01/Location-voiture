@@ -386,6 +386,16 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
       headers: auth(ownerToken),
     });
     expect(status.json()).toMatchObject({ status: "verified" });
+    const accepted = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}/documents`,
+      headers: auth(ownerToken),
+    });
+    expect(
+      accepted
+        .json<{ documents: { status: string }[] }>()
+        .documents.every((d) => d.status === "accepted"),
+    ).toBe(true);
 
     const agencyPub = await app.inject({
       method: "POST",

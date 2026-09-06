@@ -63,3 +63,15 @@ Toutes les écritures produisent une ligne dans `audit_log`.
 | POST           | `/v1/admin/vehicles/:id/suspension`                         | admin                                                    | suspend (invisible du public) ou lève                                                                     |
 
 Les routes `/v1/admin/*` exigent un rôle plateforme et, en production, une session avec double authentification (`aal2`).
+
+## Routes Phase 3 — catalogue public et favoris
+
+| Méthode            | Route                                                                                                                 | Qui      | Description                                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| GET                | `/v1/feed?tab=all\|nearby\|premium\|utility\|new&lat&lng&radiusKm&limit&cursor`                                       | public   | feed des loueurs vérifiés ayant au moins un véhicule publié : ville, distance, nombre de véhicules, prix « dès », 3 vignettes       |
+| GET                | `/v1/loueurs/:id?from&to`                                                                                             | public   | profil public : agences publiées, grille des véhicules publiés (sans plaque), disponibilité par véhicule si des dates sont fournies |
+| GET                | `/v1/search?citySlug\|lat,lng&radiusKm&from&to&categories&transmission&fuel&minSeats&maxDailyCents&sort&limit&offset` | public   | recherche par rayon, disponibilité réelle (blocages et réservations fermes), total calculé par le moteur de prix pour les dates     |
+| GET                | `/v1/cities`                                                                                                          | public   | villes de référence                                                                                                                 |
+| GET / PUT / DELETE | `/v1/me/favorites[/:vehicleId]`                                                                                       | connecté | favoris (uniquement des véhicules publiés)                                                                                          |
+
+Règle absolue du catalogue public : organisation vérifiée, agence publiée, véhicule publié et non suspendu. Jamais de plaque, jamais de document.

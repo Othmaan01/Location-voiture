@@ -7,3 +7,4 @@ export * from "./api/identity.js";
 export * from "./api/organizations.js";
 export * from "./api/catalog.js";
 export * from "./api/documents.js";
+export * from "./api/public-catalog.js";

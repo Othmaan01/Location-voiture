@@ -127,6 +127,20 @@ export function createAdminService(db: Database): AdminService {
               isNull(verificationRequests.decidedAt),
             ),
           );
+        // Dossier valide : les documents encore en attente sont acceptes avec lui (un refus individuel reste possible avant).
+        if (decision === "verified") {
+          await tx
+            .update(documents)
+            .set({
+              status: "accepted",
+              reviewedBy: actor.userId,
+              reviewedAt: new Date(),
+              rejectionReason: null,
+            })
+            .where(
+              and(eq(documents.organizationId, organizationId), eq(documents.status, "pending")),
+            );
+        }
         await audit(tx, {
           actorId: actor.userId,
           actorType: "platform",

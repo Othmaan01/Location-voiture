@@ -313,3 +313,20 @@ export const verificationRequests = pgTable("verification_requests", {
   decision: text("decision"),
   notes: text("notes"),
 });
+
+export const cities = pgTable("cities", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  postalCode: text("postal_code"),
+  departmentCode: text("department_code"),
+  departmentName: text("department_name"),
+  regionName: text("region_name"),
+  countryCode: text("country_code").notNull().default("FR"),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  population: integer("population"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

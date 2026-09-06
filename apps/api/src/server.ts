@@ -22,6 +22,7 @@ import { documentsRoutes } from "./modules/documents/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { identityRoutes } from "./modules/identity/routes.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
+import { publicCatalogRoutes } from "./modules/public-catalog/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
 import { DomainError } from "./shared/errors.js";
@@ -147,6 +148,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(agenciesRoutes);
   await app.register(vehiclesRoutes);
   await app.register(documentsRoutes);
+  await app.register(publicCatalogRoutes);
   await app.register(adminRoutes, { requireMfa: opts.env.NODE_ENV === "production" });
 
   app.get("/openapi.json", { config: { rateLimit: false } }, async () => app.swagger());
