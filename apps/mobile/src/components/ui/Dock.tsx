@@ -11,6 +11,7 @@ import {
   Home,
   Inbox,
   LayoutDashboard,
+  MessageCircle,
   Search,
   ShieldCheck,
   User,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react-native";
 
 import { MODE_TABS, useMode } from "@/lib/mode";
+import { useUnread } from "@/lib/queries-messaging";
 import { theme } from "@/theme";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -30,6 +32,8 @@ const ICONS: Record<string, LucideIcon> = {
   "pro-bookings": Inbox,
   "pro-vehicles": Car,
   "pro-calendar": CalendarDays,
+  messages: MessageCircle,
+  "pro-messages": MessageCircle,
   "admin-verifications": ShieldCheck,
   "admin-loueurs": Building2,
 };
@@ -44,6 +48,11 @@ type DockProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[
 export function Dock({ state, descriptors, navigation }: DockProps) {
   const mode = useMode((s) => s.mode);
   const allowed = MODE_TABS[mode];
+  const unread = useUnread();
+  const unreadOrg = Object.values(unread.data?.organizations ?? {}).reduce((a, b) => a + b, 0);
+  const dotFor = (name: string) =>
+    (name === "messages" && (unread.data?.customer ?? 0) > 0) ||
+    (name === "pro-messages" && unreadOrg > 0);
   const content = (
     <View style={styles.items}>
       {state.routes.map((route, index) => {
@@ -75,6 +84,7 @@ export function Dock({ state, descriptors, navigation }: DockProps) {
               color={focused ? "#ffffff" : theme.colors.textDim}
               strokeWidth={focused ? 2.25 : 1.75}
             />
+            {dotFor(route.name) ? <View style={styles.dot} /> : null}
           </Pressable>
         );
       })}
@@ -127,6 +137,17 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.full,
     alignItems: "center",
     justifyContent: "center",
+  },
+  dot: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.accentTint,
+    borderWidth: 1,
+    borderColor: theme.colors.background,
   },
   itemActive: {
     backgroundColor: theme.colors.accent,

@@ -117,6 +117,12 @@ export const BookingSchema = z
     /** Delai de reponse du loueur pour une demande en attente. */
     expiresAt: IsoDateTimeSchema.nullable(),
     events: z.array(BookingEventSchema),
+    /** Le client peut laisser un avis : location terminee, moins de 30 jours, pas encore d'avis. */
+    canReview: z.boolean(),
+    review: z
+      .object({ id: UuidSchema, rating: z.number().int(), comment: z.string().nullable() })
+      .strict()
+      .nullable(),
     createdAt: IsoDateTimeSchema,
   })
   .strict();

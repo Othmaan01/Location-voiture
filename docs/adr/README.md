@@ -15,3 +15,4 @@ Une décision structurante par fichier. Format : contexte, options, décision, c
 | [0009](./0009-direction-produit-et-design-validee.md)         | Direction produit et interface validée : feed de loueurs, mise en relation pure, mode nuit premium | accepté                          |
 | [0010](./0010-siren-siret-suppressions-verrouillage.md)       | SIREN par organisation, SIRET par agence ; politique de suppression ; verrouillage Face ID         | accepté                          |
 | [0011](./0011-modes-personnalisation-abonnement.md)           | Un compte, trois espaces ; personnalisation des espaces pro ; grille d'abonnement provisoire       | accepté                          |
+| [0012](./0012-messagerie-et-avis.md)                          | Messagerie client-loueur (fils, non-lus, push) et avis après location (note, réponse, modération)  | accepté                          |

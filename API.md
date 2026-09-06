@@ -85,6 +85,22 @@ Les routes `/v1/admin/*` exigent un rôle plateforme et, en production, une sess
 
 Règle absolue du catalogue public : organisation vérifiée, agence publiée, véhicule publié et non suspendu. Jamais de plaque, jamais de document.
 
+## Routes Phase 6 — messagerie et avis (ADR-0012)
+
+| Méthode | Route                                 | Qui                 | Effet                                                                                                                  |
+| ------- | ------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| POST    | `/v1/conversations`                   | connecté            | ouvre (ou retrouve) un fil : `{ organizationId, vehicleId?, bookingId?, body }` ; côté loueur, `bookingId` obligatoire |
+| GET     | `/v1/me/conversations`                | connecté            | fils du client, non-lus inclus                                                                                         |
+| GET     | `/v1/me/unread`                       | connecté            | non-lus : client et par organisation                                                                                   |
+| GET     | `/v1/organizations/:id/conversations` | membre              | fils du loueur                                                                                                         |
+| GET     | `/v1/conversations/:id?after=`        | participant / staff | fil et messages (`after` pour un rafraîchissement léger) ; étranger → `404`                                            |
+| POST    | `/v1/conversations/:id/messages`      | participant         | envoie (`{ body }`, 2000 caractères, 30/min), notifie l'autre côté                                                     |
+| POST    | `/v1/conversations/:id/read`          | participant         | marque lu                                                                                                              |
+| POST    | `/v1/bookings/:id/review`             | client              | avis (`{ rating 1-5, comment? }`) : réservation terminée, < 30 jours, une seule fois (`409` sinon)                     |
+| GET     | `/v1/loueurs/:id/reviews`             | public              | avis publiés, moyenne et nombre                                                                                        |
+| POST    | `/v1/reviews/:id/reply`               | manager+            | réponse publique du loueur                                                                                             |
+| POST    | `/v1/admin/reviews/:id/moderation`    | admin+              | masque ou republie (`{ hidden, reason? }`)                                                                             |
+
 ## Routes Phase 4 — réservation, disponibilités
 
 | Méthode  | Route                                                  | Qui                                     | Description                                                                                                                                        |

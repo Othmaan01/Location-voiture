@@ -4,12 +4,15 @@ import {
   AdminOrganizationsResponseSchema,
   DocumentReviewSchema,
   DocumentSchema,
+  ModerateReviewBodySchema,
+  ReviewSchema,
   UuidSchema,
   VerificationDecisionSchema,
   VerificationQueueSchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
+import { createReviewsService } from "../reviews/service.js";
 import { createAdminService } from "./service.js";
 
 const SuspendBody = z
@@ -19,6 +22,7 @@ const SuspendBody = z
 /** Routes d'administration : role plateforme obligatoire, MFA exigee (aal2) en production. */
 export const adminRoutes: FastifyPluginAsyncZod<{ requireMfa: boolean }> = async (app, opts) => {
   const service = createAdminService(app.db);
+  const reviewsService = createReviewsService(app.db, app.notifications);
   const tags = ["admin"];
 
   app.addHook("onRequest", async (request) => {
@@ -30,6 +34,26 @@ export const adminRoutes: FastifyPluginAsyncZod<{ requireMfa: boolean }> = async
       );
     }
   });
+
+  app.post(
+    "/v1/admin/reviews/:reviewId/moderation",
+    {
+      schema: {
+        tags,
+        params: z.object({ reviewId: UuidSchema }).strict(),
+        body: ModerateReviewBodySchema,
+        response: { 200: ReviewSchema },
+      },
+    },
+    async (request) =>
+      reviewsService.moderate(
+        request.actor,
+        request.params.reviewId,
+        request.body.hidden,
+        request.body.reason,
+        request.id,
+      ),
+  );
 
   app.get(
     "/v1/admin/organizations",

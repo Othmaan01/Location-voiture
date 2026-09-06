@@ -24,9 +24,11 @@ import { devicesRoutes } from "./modules/devices/routes.js";
 import { documentsRoutes } from "./modules/documents/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { identityRoutes } from "./modules/identity/routes.js";
+import { messagingRoutes } from "./modules/messaging/routes.js";
 import type { NotificationsService } from "./modules/notifications/service.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
 import { publicCatalogRoutes } from "./modules/public-catalog/routes.js";
+import { reviewsRoutes } from "./modules/reviews/routes.js";
 import { subscriptionsRoutes } from "./modules/subscriptions/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
@@ -170,6 +172,8 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(subscriptionsRoutes);
   await app.register(availabilityRoutes);
   await app.register(bookingsRoutes);
+  await app.register(messagingRoutes);
+  await app.register(reviewsRoutes);
   await app.register(adminRoutes, {
     requireMfa: opts.env.API_ADMIN_REQUIRE_MFA ?? opts.env.NODE_ENV === "production",
   });

@@ -33,8 +33,10 @@ export function PushListener() {
 
   useEffect(() => {
     const open = (response: Notifications.NotificationResponse) => {
-      const data = response.notification.request.content.data as { bookingId?: string } | undefined;
-      if (data?.bookingId) router.push(`/reservations/${data.bookingId}`);
+      const data = response.notification.request.content.data as
+        { bookingId?: string; conversationId?: string } | undefined;
+      if (data?.conversationId) router.push(`/conversations/${data.conversationId}`);
+      else if (data?.bookingId) router.push(`/reservations/${data.bookingId}`);
     };
     const sub = Notifications.addNotificationResponseReceivedListener(open);
     void Notifications.getLastNotificationResponseAsync().then((r) => r && open(r));

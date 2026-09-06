@@ -1,6 +1,14 @@
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
-import { Building2, CreditCard, FileCheck2, MapPin, Palette, Users } from "lucide-react-native";
+import {
+  Building2,
+  CalendarDays,
+  CreditCard,
+  FileCheck2,
+  MapPin,
+  Palette,
+  Users,
+} from "lucide-react-native";
 
 import { Avatar, Badge, Button, Card, ListItem, Screen, Select, Text } from "@/components/ui";
 import { ORG_STATUS } from "@/features/pro/labels";
@@ -10,6 +18,7 @@ import { useMode } from "@/lib/mode";
 import { useMe, useOrganization } from "@/lib/queries";
 import { useOrgBookings } from "@/lib/queries-bookings";
 import { useVerification } from "@/lib/queries-catalog";
+import { useUnread } from "@/lib/queries-messaging";
 import { useSubscription } from "@/lib/queries-subscriptions";
 import { theme } from "@/theme";
 
@@ -28,6 +37,8 @@ function Dashboard({ organizationId }: { organizationId: string }) {
   const verification = useVerification(organizationId);
   const subscription = useSubscription(organizationId);
   const requested = useOrgBookings(organizationId, "upcoming", "requested");
+  const unread = useUnread();
+  const unreadCount = unread.data?.organizations[organizationId] ?? 0;
   const memberships = me.data?.memberships ?? [];
 
   if (org.isPending) {
@@ -98,13 +109,20 @@ function Dashboard({ organizationId }: { organizationId: string }) {
           onPress={() => router.push("/(tabs)/pro-vehicles")}
         />
         <Kpi
-          value={sub ? (sub.status === "trialing" ? `${trialDays} j` : sub.plan.name) : "—"}
-          label={sub?.status === "trialing" ? "d'essai restants" : "offre actuelle"}
-          onPress={() => router.push(`/(pro)/organizations/${organizationId}/subscription`)}
+          value={String(unreadCount)}
+          label={unreadCount > 1 ? "messages non lus" : "message non lu"}
+          onPress={() => router.push("/(tabs)/pro-messages")}
+          accent={unreadCount > 0}
         />
       </View>
 
       <Card padded={false}>
+        <ListItem
+          icon={<CalendarDays size={22} color={theme.colors.text} />}
+          title="Calendrier"
+          subtitle="Réservations et blocages par véhicule"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/calendar`)}
+        />
         <ListItem
           icon={<MapPin size={22} color={theme.colors.text} />}
           title="Agences"
@@ -126,7 +144,9 @@ function Dashboard({ organizationId }: { organizationId: string }) {
           icon={<CreditCard size={22} color={theme.colors.text} />}
           title="Abonnement"
           subtitle={
-            sub ? `${sub.plan.name}${sub.status === "trialing" ? " · essai" : ""}` : undefined
+            sub
+              ? `${sub.plan.name}${sub.status === "trialing" ? ` · essai, ${trialDays} j restants` : ""}`
+              : undefined
           }
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/subscription`)}
         />

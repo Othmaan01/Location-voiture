@@ -2,15 +2,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Globe, MapPin, Phone, ShieldCheck } from "lucide-react-native";
+import { Globe, MapPin, MessageCircle, Phone, ShieldCheck, Star } from "lucide-react-native";
 import type { PublicVehicleCard } from "@lv/contracts";
 
 import { Avatar, Badge, Button, EmptyState, Screen, Text } from "@/components/ui";
 import { VehicleActionSheet } from "@/features/client/VehicleActionSheet";
+import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { VehicleCard } from "@/features/client/VehicleCard";
 import { ACCENT_COLOR } from "@/features/client/accent";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
 import { useFavorites, useLoueur, useToggleFavorite } from "@/lib/queries-public";
+import { useLoueurReviews } from "@/lib/queries-reviews";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
 
@@ -25,7 +27,9 @@ export default function LoueurScreen() {
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
   const [selected, setSelected] = useState<PublicVehicleCard | null>(null);
-  const [tab, setTab] = useState<"vehicles" | "info">("vehicles");
+  const [tab, setTab] = useState<"vehicles" | "reviews" | "info">("vehicles");
+  const [contact, setContact] = useState<{ vehicleId?: string } | null>(null);
+  const reviews = useLoueurReviews(loueurId, tab === "reviews");
 
   if (loueur.isPending) {
     return (
@@ -52,6 +56,13 @@ export default function LoueurScreen() {
     mainAgency?.phone
       ? void Linking.openURL(`tel:${mainAgency.phone.replace(/\s/g, "")}`)
       : Alert.alert("Contact", "Ce loueur n'a pas renseigné de téléphone.");
+  const openContact = (vehicleId?: string) => {
+    if (!session) {
+      router.push("/(auth)/sign-in");
+      return;
+    }
+    setContact(vehicleId ? { vehicleId } : {});
+  };
   const directions = () => {
     if (!mainAgency || mainAgency.latitude === null || mainAgency.longitude === null) return;
     void Linking.openURL(
@@ -125,10 +136,18 @@ export default function LoueurScreen() {
         <Button
           label="Contacter"
           variant="primary"
-          icon={<Phone size={18} color={theme.colors.textInverse} strokeWidth={2} />}
+          icon={<MessageCircle size={18} color={theme.colors.textInverse} strokeWidth={2} />}
           style={styles.flex}
-          onPress={call}
+          onPress={() => openContact()}
         />
+        {mainAgency?.phone ? (
+          <Button
+            label="Appeler"
+            variant="ghost"
+            icon={<Phone size={18} color={theme.colors.text} strokeWidth={2} />}
+            onPress={call}
+          />
+        ) : null}
         <Button
           label="Itinéraire"
           variant="ghost"
@@ -138,7 +157,7 @@ export default function LoueurScreen() {
         />
       </View>
       <View style={styles.tabs}>
-        {(["vehicles", "info"] as const).map((t) => (
+        {(["vehicles", "reviews", "info"] as const).map((t) => (
           <Pressable
             key={t}
             accessibilityRole="tab"
@@ -147,7 +166,11 @@ export default function LoueurScreen() {
             style={[styles.tab, tab === t ? styles.tabOn : null]}
           >
             <Text variant="smStrong" tone={tab === t ? "default" : "dim"}>
-              {t === "vehicles" ? "Véhicules" : "Infos"}
+              {t === "vehicles"
+                ? "Véhicules"
+                : t === "reviews"
+                  ? `Avis${l.ratingCount > 0 ? ` (${l.ratingCount})` : ""}`
+                  : "Infos"}
             </Text>
           </Pressable>
         ))}
@@ -173,6 +196,49 @@ export default function LoueurScreen() {
           </View>
           {l.vehicles.length === 0 ? <EmptyState title="Aucun véhicule publié" /> : null}
         </>
+      ) : tab === "reviews" ? (
+        <View style={styles.info}>
+          {reviews.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
+          {reviews.data && reviews.data.reviews.length === 0 ? (
+            <EmptyState
+              title="Pas encore d'avis"
+              description="Les avis sont laissés par des clients après une location terminée."
+            />
+          ) : null}
+          {reviews.data?.reviews.map((r) => (
+            <View key={r.id} style={styles.agency}>
+              <View style={styles.reviewHead}>
+                <View style={styles.stars}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      size={14}
+                      color={theme.colors.text}
+                      fill={n <= r.rating ? theme.colors.text : "transparent"}
+                    />
+                  ))}
+                </View>
+                <Text variant="small" tone="muted">
+                  {r.customerName} · {new Date(r.createdAt).toLocaleDateString("fr-FR")}
+                </Text>
+              </View>
+              {r.vehicleLabel ? (
+                <Text variant="small" tone="dim">
+                  {r.vehicleLabel}
+                </Text>
+              ) : null}
+              {r.comment ? <Text variant="sm">{r.comment}</Text> : null}
+              {r.reply ? (
+                <View style={styles.reply}>
+                  <Text variant="smStrong">Réponse de {l.name}</Text>
+                  <Text variant="sm" tone="muted">
+                    {r.reply}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </View>
       ) : (
         <View style={styles.info}>
           {l.website ? (
@@ -222,6 +288,18 @@ export default function LoueurScreen() {
           setSelected(null);
           if (v) router.push(`/vehicules/${v.id}/demande`);
         }}
+        onMessage={() => {
+          const v = selected;
+          setSelected(null);
+          openContact(v?.id);
+        }}
+      />
+      <ContactSheet
+        visible={contact !== null}
+        onClose={() => setContact(null)}
+        organizationId={l.id}
+        organizationName={l.name}
+        {...(contact?.vehicleId ? { vehicleId: contact.vehicleId } : {})}
       />
     </Screen>
   );
@@ -273,6 +351,15 @@ const styles = StyleSheet.create({
     rowGap: theme.space["3"],
   },
   info: { gap: theme.space["3"] },
+  reviewHead: { gap: 2 },
+  stars: { flexDirection: "row", gap: 2 },
+  reply: {
+    marginTop: theme.space["2"],
+    paddingLeft: theme.space["3"],
+    borderLeftWidth: 2,
+    borderLeftColor: theme.colors.border,
+    gap: 2,
+  },
   agency: {
     gap: 2,
     padding: theme.space["3"],

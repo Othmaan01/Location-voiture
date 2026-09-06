@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Alert, Linking, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Car, Check, MapPin, Phone } from "lucide-react-native";
+import { Car, Check, MapPin, MessageCircle, Phone, Star } from "lucide-react-native";
 import type { Booking, BookingStatus } from "@lv/contracts";
 
-import { Badge, Button, Card, EmptyState, Screen, Text } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Input, Screen, Text } from "@/components/ui";
+import { ContactSheet } from "@/features/messaging/ContactSheet";
 import {
   BOOKING_STATUS,
   EVENT_LABEL,
@@ -15,6 +17,7 @@ import {
 import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
 import { useBooking, useBookingAction } from "@/lib/queries-bookings";
+import { useCreateReview } from "@/lib/queries-reviews";
 import { theme } from "@/theme";
 
 const STEPS: BookingStatus[] = ["requested", "confirmed", "active", "completed"];
@@ -25,6 +28,10 @@ export default function BookingScreen() {
   const router = useRouter();
   const booking = useBooking(bookingId);
   const act = useBookingAction(bookingId);
+  const review = useCreateReview(bookingId);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
 
   if (booking.isPending) {
     return (
@@ -210,6 +217,84 @@ export default function BookingScreen() {
           </View>
         </View>
       </Card>
+      <Button
+        label="Écrire au loueur"
+        variant="ghost"
+        icon={<MessageCircle size={18} color={theme.colors.text} strokeWidth={2} />}
+        onPress={() => setContactOpen(true)}
+      />
+      {b.canReview ? (
+        <Card style={styles.review}>
+          <Text variant="bodyStrong">Comment s'est passée votre location ?</Text>
+          <View style={styles.stars}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Pressable
+                key={n}
+                accessibilityRole="radio"
+                accessibilityLabel={`${n} étoile${n > 1 ? "s" : ""}`}
+                accessibilityState={{ selected: rating === n }}
+                onPress={() => setRating(n)}
+                hitSlop={6}
+              >
+                <Star
+                  size={30}
+                  color={theme.colors.accentTint}
+                  fill={n <= rating ? theme.colors.accentTint : "transparent"}
+                />
+              </Pressable>
+            ))}
+          </View>
+          <Input
+            label="Commentaire (optionnel)"
+            value={comment}
+            onChangeText={setComment}
+            multiline
+            numberOfLines={3}
+            maxLength={1000}
+            placeholder="État du véhicule, accueil, ponctualité…"
+          />
+          <Button
+            label="Publier mon avis"
+            disabled={rating === 0}
+            loading={review.isPending}
+            onPress={() =>
+              review.mutate(
+                { rating, ...(comment.trim() ? { comment: comment.trim() } : {}) },
+                {
+                  onError: (e) =>
+                    Alert.alert(
+                      "Avis non publié",
+                      e instanceof ApiRequestError ? e.message : "Réessayez.",
+                    ),
+                },
+              )
+            }
+          />
+          <Text variant="small" tone="dim">
+            Votre prénom et l'initiale de votre nom apparaîtront avec votre avis.
+          </Text>
+        </Card>
+      ) : null}
+      {b.review ? (
+        <Card style={styles.review}>
+          <Text variant="bodyStrong">Votre avis</Text>
+          <View style={styles.stars}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Star
+                key={n}
+                size={20}
+                color={theme.colors.accentTint}
+                fill={n <= b.review!.rating ? theme.colors.accentTint : "transparent"}
+              />
+            ))}
+          </View>
+          {b.review.comment ? (
+            <Text variant="sm" tone="muted">
+              {b.review.comment}
+            </Text>
+          ) : null}
+        </Card>
+      ) : null}
       {b.status === "requested" || b.status === "confirmed" ? (
         <Button
           label="Annuler la réservation"
@@ -218,6 +303,13 @@ export default function BookingScreen() {
           onPress={cancel}
         />
       ) : null}
+      <ContactSheet
+        visible={contactOpen}
+        onClose={() => setContactOpen(false)}
+        organizationId={b.loueurId}
+        organizationName={b.loueurName}
+        bookingId={b.id}
+      />
     </Screen>
   );
 }
@@ -277,6 +369,8 @@ function Countdown({ booking: b }: { booking: Booking }) {
 }
 
 const styles = StyleSheet.create({
+  review: { gap: theme.space["3"] },
+  stars: { flexDirection: "row", gap: theme.space["2"] },
   countdown: { gap: theme.space["1"], backgroundColor: theme.colors.surfaceRaised },
   bar: {
     height: 6,

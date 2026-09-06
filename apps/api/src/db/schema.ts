@@ -437,6 +437,51 @@ export const availabilityBlocks = pgTable("availability_blocks", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const conversations = pgTable("conversations", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  customerId: uuid("customer_id").notNull(),
+  bookingId: uuid("booking_id"),
+  vehicleId: uuid("vehicle_id"),
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
+  lastMessagePreview: text("last_message_preview"),
+  customerReadAt: timestamp("customer_read_at", { withTimezone: true }),
+  organizationReadAt: timestamp("organization_read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const messages = pgTable("messages", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  conversationId: uuid("conversation_id").notNull(),
+  senderId: uuid("sender_id"),
+  senderType: actorTypeEnum("sender_type").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const reviews = pgTable("reviews", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  bookingId: uuid("booking_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  vehicleId: uuid("vehicle_id"),
+  customerId: uuid("customer_id").notNull(),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  reply: text("reply"),
+  repliedAt: timestamp("replied_at", { withTimezone: true }),
+  status: text("status").notNull().default("published"),
+  hiddenReason: text("hidden_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const notifications = pgTable("notifications", {
   id: uuid("id")
     .primaryKey()

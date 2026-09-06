@@ -408,4 +408,215 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
       ).json(),
     ).toMatchObject({ status: "expired" });
   });
+
+  it("messagerie : le client ouvre un fil, le loueur repond, les non-lus se mettent a jour, un etranger ne voit rien", async () => {
+    const start = await app.inject({
+      method: "POST",
+      url: "/v1/conversations",
+      headers: auth(customerToken),
+      payload: {
+        organizationId: orgId,
+        vehicleId,
+        body: "Bonjour, le vehicule est-il disponible ce week-end ?",
+      },
+    });
+    expect(start.statusCode).toBe(201);
+    const conversationId = start.json<{ conversation: { id: string } }>().conversation.id;
+    expect(start.json()).toMatchObject({
+      conversation: { organizationId: orgId, unreadCount: 0 },
+      messages: [{ senderSide: "customer", mine: true }],
+    });
+    // Le meme client qui reecrit au meme loueur retombe sur le meme fil.
+    const again = await app.inject({
+      method: "POST",
+      url: "/v1/conversations",
+      headers: auth(customerToken),
+      payload: { organizationId: orgId, body: "Et la semaine prochaine ?" },
+    });
+    expect(again.json<{ conversation: { id: string } }>().conversation.id).toBe(conversationId);
+
+    const orgList = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}/conversations`,
+      headers: auth(ownerToken),
+    });
+    expect(orgList.statusCode).toBe(200);
+    expect(orgList.json()).toMatchObject({
+      conversations: [{ id: conversationId, unreadCount: 2 }],
+    });
+    const unreadOrg = await app.inject({
+      method: "GET",
+      url: "/v1/me/unread",
+      headers: auth(ownerToken),
+    });
+    expect(unreadOrg.json<{ organizations: Record<string, number> }>().organizations[orgId]).toBe(
+      2,
+    );
+
+    const replyMsg = await app.inject({
+      method: "POST",
+      url: `/v1/conversations/${conversationId}/messages`,
+      headers: auth(ownerToken),
+      payload: { body: "Oui, disponible. Passez a l'agence." },
+    });
+    expect(replyMsg.statusCode).toBe(201);
+    expect(replyMsg.json()).toMatchObject({ senderSide: "organization", mine: true });
+
+    const asCustomer = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${conversationId}`,
+      headers: auth(customerToken),
+    });
+    expect(asCustomer.json()).toMatchObject({ conversation: { unreadCount: 1 } });
+    expect(
+      asCustomer.json<{ messages: { mine: boolean }[] }>().messages.map((m) => m.mine),
+    ).toEqual([true, true, false]);
+    await app.inject({
+      method: "POST",
+      url: `/v1/conversations/${conversationId}/read`,
+      headers: auth(customerToken),
+    });
+    const unreadCustomer = await app.inject({
+      method: "GET",
+      url: "/v1/me/unread",
+      headers: auth(customerToken),
+    });
+    expect(unreadCustomer.json()).toMatchObject({ customer: 0 });
+
+    // Etranger : 404, jamais 403.
+    expect(
+      (
+        await app.inject({
+          method: "GET",
+          url: `/v1/conversations/${conversationId}`,
+          headers: auth(otherToken),
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/conversations/${conversationId}/messages`,
+          headers: auth(otherToken),
+          payload: { body: "intrus" },
+        })
+      ).statusCode,
+    ).toBe(404);
+    // Le loueur ecrit au client depuis une reservation (jamais sans contexte).
+    const noContext = await app.inject({
+      method: "POST",
+      url: "/v1/conversations",
+      headers: auth(ownerToken),
+      payload: { organizationId: orgId, body: "Bonjour" },
+    });
+    expect(noContext.statusCode).toBe(422);
+    const bookingRow = await database.sql<
+      { id: string }[]
+    >`select id from public.bookings where organization_id = ${orgId} and customer_id = ${customer} order by created_at limit 1`;
+    const fromOrg = await app.inject({
+      method: "POST",
+      url: "/v1/conversations",
+      headers: auth(ownerToken),
+      payload: {
+        organizationId: orgId,
+        bookingId: bookingRow[0]!.id,
+        body: "Pensez a votre permis.",
+      },
+    });
+    expect(fromOrg.statusCode).toBe(201);
+    expect(fromOrg.json()).toMatchObject({
+      conversation: { bookingId: bookingRow[0]!.id, customerId: customer },
+      messages: [{ senderSide: "organization", mine: true }],
+    });
+    // Message vide refuse.
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/conversations/${conversationId}/messages`,
+          headers: auth(customerToken),
+          payload: { body: "   " },
+        })
+      ).statusCode,
+    ).toBe(422);
+  });
+
+  it("avis : seulement apres une location terminee, une fois, avec reponse du loueur et note publique", async () => {
+    const completed = await database.sql<
+      { id: string }[]
+    >`select id from public.bookings where organization_id = ${orgId} and status = 'completed' order by created_at limit 1`;
+    const requested = await database.sql<
+      { id: string }[]
+    >`select id from public.bookings where organization_id = ${orgId} and customer_id = ${customer} and status <> 'completed' order by created_at limit 1`;
+    const completedId = completed[0]!.id;
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/bookings/${requested[0]!.id}/review`,
+          headers: auth(customerToken),
+          payload: { rating: 5 },
+        })
+      ).statusCode,
+    ).toBe(409);
+    const before = await app.inject({
+      method: "GET",
+      url: `/v1/bookings/${completedId}`,
+      headers: auth(customerToken),
+    });
+    expect(before.json()).toMatchObject({ canReview: true, review: null });
+    const created = await app.inject({
+      method: "POST",
+      url: `/v1/bookings/${completedId}/review`,
+      headers: auth(customerToken),
+      payload: { rating: 4, comment: "Vehicule propre, accueil rapide." },
+    });
+    expect(created.statusCode).toBe(201);
+    const reviewId = created.json<{ id: string }>().id;
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/bookings/${completedId}/review`,
+          headers: auth(customerToken),
+          payload: { rating: 1 },
+        })
+      ).statusCode,
+    ).toBe(409);
+    const after = await app.inject({
+      method: "GET",
+      url: `/v1/bookings/${completedId}`,
+      headers: auth(customerToken),
+    });
+    expect(after.json()).toMatchObject({ canReview: false, review: { rating: 4 } });
+
+    const replied = await app.inject({
+      method: "POST",
+      url: `/v1/reviews/${reviewId}/reply`,
+      headers: auth(ownerToken),
+      payload: { reply: "Merci, a bientot !" },
+    });
+    expect(replied.statusCode).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/reviews/${reviewId}/reply`,
+          headers: auth(otherToken),
+          payload: { reply: "intrus" },
+        })
+      ).statusCode,
+    ).toBe(404);
+
+    const publicList = await app.inject({ method: "GET", url: `/v1/loueurs/${orgId}/reviews` });
+    expect(publicList.statusCode).toBe(200);
+    expect(publicList.json()).toMatchObject({
+      ratingAverage: 4,
+      ratingCount: 1,
+      reviews: [{ rating: 4, reply: "Merci, a bientot !" }],
+    });
+    const profile = await app.inject({ method: "GET", url: `/v1/loueurs/${orgId}` });
+    expect(profile.json()).toMatchObject({ ratingAverage: 4, ratingCount: 1 });
+  });
 });

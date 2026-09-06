@@ -22,6 +22,7 @@ import {
 import { assertCan, type Actor } from "../../shared/authz.js";
 import { notFound } from "../../shared/errors.js";
 import type { StorageClient } from "../../shared/storage.js";
+import { ratingsFor } from "../reviews/service.js";
 import { PHOTOS_BUCKET } from "../vehicles/service.js";
 
 const UTILITY_CATEGORIES = ["utilitaire", "minibus"] as const;
@@ -137,6 +138,8 @@ export function createPublicCatalogService(
         slug: string;
         logo_path: string | null;
         accent: string;
+        rating_avg: number | null;
+        rating_count: number;
         created_at: string;
         city_name: string | null;
         distance_km: number | null;
@@ -145,6 +148,8 @@ export function createPublicCatalogService(
       }>(sql`
         with orgs as (
           select o.id, o.name, o.slug, o.logo_path, o.accent, o.created_at,
+            (select round(avg(r.rating)::numeric, 1)::float from public.reviews r where r.organization_id = o.id and r.status = 'published') as rating_avg,
+            (select count(*)::int from public.reviews r where r.organization_id = o.id and r.status = 'published') as rating_count,
             (select a.city_name from ${agencies} a where a.organization_id = o.id and a.status <> 'suspended' and a.location is not null order by a.created_at limit 1) as city_name,
             ${origin ? sql`(select min(extensions.st_distance(a.location, ${origin})) / 1000.0 from ${agencies} a where a.organization_id = o.id and a.status <> 'suspended' and a.location is not null and a.location is not null)` : sql`null::double precision`} as distance_km,
             (select count(*) from ${vehicles} v join ${agencies} a on a.id = v.agency_id
@@ -183,8 +188,8 @@ export function createPublicCatalogService(
         fromDailyCents: r.from_daily_cents === null ? null : Number(r.from_daily_cents),
         currency: "EUR",
         verified: true,
-        ratingAverage: null,
-        ratingCount: 0,
+        ratingAverage: r.rating_avg === null ? null : Number(r.rating_avg),
+        ratingCount: Number(r.rating_count ?? 0),
         thumbnails: thumbRows
           .filter((v) => v.organizationId === r.id)
           .slice(0, 3)
@@ -223,6 +228,10 @@ export function createPublicCatalogService(
         .where(and(eq(vehicles.organizationId, organizationId), publishedVehicleFilter(false)))
         .orderBy(vehicles.createdAt);
       const { photos, plans } = await decorate(vehicleRows);
+      const rating = (await ratingsFor(db, [organizationId])).get(organizationId) ?? {
+        average: null,
+        count: 0,
+      };
       let availability = new Map<string, boolean>();
       if (period && vehicleRows.length > 0) {
         const rows = await db.execute<{ id: string; available: boolean }>(sql`
@@ -256,8 +265,8 @@ export function createPublicCatalogService(
         website: org.website,
         accent: org.accent as LoueurProfile["accent"],
         verified: true,
-        ratingAverage: null,
-        ratingCount: 0,
+        ratingAverage: rating.average,
+        ratingCount: rating.count,
         vehicleCount: cards.length,
         responseRate: null,
         responseTimeHours: null,

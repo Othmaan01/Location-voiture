@@ -11,6 +11,7 @@ import {
   profiles,
   quotes,
   ratePlans,
+  reviews,
   vehiclePhotos,
   vehicles,
 } from "../../db/schema.js";
@@ -21,6 +22,7 @@ import { DomainError, notFound } from "../../shared/errors.js";
 import type { StorageClient } from "../../shared/storage.js";
 import { parseRange, toRange } from "../availability/service.js";
 import type { NotificationsService } from "../notifications/service.js";
+import { canReviewBooking } from "../reviews/service.js";
 import { PHOTOS_BUCKET } from "../vehicles/service.js";
 import { canTransition, type ActorKind } from "./state-machine.js";
 
@@ -124,6 +126,7 @@ export function createBookingsService(
       customerRows,
       events,
       completedRows,
+      reviewRows,
     ] = await Promise.all([
       db.select().from(vehicles).where(inArray(vehicles.id, vehicleIds)),
       db.select().from(agencies).where(inArray(agencies.id, agencyIds)),
@@ -163,6 +166,20 @@ export function createBookingsService(
         .from(bookings)
         .where(and(inArray(bookings.customerId, customerIds), eq(bookings.status, "completed")))
         .groupBy(bookings.customerId),
+      db
+        .select({
+          id: reviews.id,
+          bookingId: reviews.bookingId,
+          rating: reviews.rating,
+          comment: reviews.comment,
+        })
+        .from(reviews)
+        .where(
+          inArray(
+            reviews.bookingId,
+            rows.map((r) => r.id),
+          ),
+        ),
     ]);
     const byId = <T extends { id: string }>(xs: T[]) => new Map(xs.map((x) => [x.id, x]));
     const vehicleMap = byId(vehicleRows);
@@ -172,6 +189,7 @@ export function createBookingsService(
     const photoMap = new Map(photoRows.map((p) => [p.vehicleId, p.path]));
     const planMap = new Map(planRows.map((p) => [p.vehicleId, p]));
     const completedMap = new Map(completedRows.map((c) => [c.customerId, c.n]));
+    const reviewMap = new Map(reviewRows.map((rv) => [rv.bookingId, rv]));
 
     return rows.map((r) => {
       const v = vehicleMap.get(r.vehicleId)!;
@@ -255,6 +273,14 @@ export function createBookingsService(
             reason: e.reason,
             createdAt: e.createdAt.toISOString(),
           })),
+        canReview: isCustomer && !reviewMap.has(r.id) && canReviewBooking(r),
+        review: reviewMap.has(r.id)
+          ? {
+              id: reviewMap.get(r.id)!.id,
+              rating: reviewMap.get(r.id)!.rating,
+              comment: reviewMap.get(r.id)!.comment,
+            }
+          : null,
         createdAt: r.createdAt.toISOString(),
       };
     });
@@ -608,6 +634,14 @@ export function createBookingsService(
           ),
         );
         const [dto] = await hydrate([updated], actor);
+        if (to === "completed") {
+          void notify.notifyUser(row.customerId, {
+            kind: "review.request",
+            title: "Comment s'est passee votre location ?",
+            body: `Laissez un avis sur ${dto!.loueurName} : cela aide les autres clients.`,
+            data: { bookingId: row.id },
+          });
+        }
         if (to === "cancelled") {
           if (actorType === "customer")
             void notify.notifyOrganization(row.organizationId, {

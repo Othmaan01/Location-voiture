@@ -8,6 +8,7 @@ import { Button, EmptyState, Screen, Select, Sheet, Text } from "@/components/ui
 import { CitySheet } from "@/features/client/CitySheet";
 import { PeriodSheet } from "@/features/client/PeriodSheet";
 import { VehicleActionSheet } from "@/features/client/VehicleActionSheet";
+import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { VehicleCard } from "@/features/client/VehicleCard";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
 import {
@@ -38,13 +39,18 @@ export default function ExploreScreen() {
   const { session } = useSession();
   const { citySlug, cityName, origin, from, to, setCity, setOrigin, setPeriod } = useSearchState();
   const [sheet, setSheet] = useState<"city" | "period" | "filters" | null>(null);
+  const [contact, setContact] = useState<{
+    organizationId: string;
+    name: string;
+    vehicleId: string;
+  } | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [transmission, setTransmission] = useState<string | null>(null);
   const [fuel, setFuel] = useState<string | null>(null);
   const [sort, setSort] = useState<Sort>("relevance");
-  const [selected, setSelected] = useState<(PublicVehicleCard & { loueurName: string }) | null>(
-    null,
-  );
+  const [selected, setSelected] = useState<
+    (PublicVehicleCard & { loueurName: string; loueurId: string }) | null
+  >(null);
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
   const favSet = new Set(favorites.data?.vehicles.map((v) => v.id) ?? []);
@@ -210,7 +216,26 @@ export default function ExploreScreen() {
           setSelected(null);
           if (v) router.push(`/vehicules/${v.id}/demande`);
         }}
+        onMessage={() => {
+          const v = selected;
+          setSelected(null);
+          if (!v) return;
+          if (!session) {
+            router.push("/(auth)/sign-in");
+            return;
+          }
+          setContact({ organizationId: v.loueurId, name: v.loueurName, vehicleId: v.id });
+        }}
       />
+      {contact ? (
+        <ContactSheet
+          visible
+          onClose={() => setContact(null)}
+          organizationId={contact.organizationId}
+          organizationName={contact.name}
+          vehicleId={contact.vehicleId}
+        />
+      ) : null}
     </Screen>
   );
 }

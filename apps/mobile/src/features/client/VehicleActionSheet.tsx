@@ -1,6 +1,6 @@
-import { Alert, Linking, StyleSheet, View } from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Calendar, Car, Info, Phone } from "lucide-react-native";
+import { Calendar, Car, Info, MessageCircle, Phone } from "lucide-react-native";
 import type { PublicVehicleCard } from "@lv/contracts";
 
 import { Button, Sheet, Text } from "@/components/ui";
@@ -13,20 +13,19 @@ interface Props {
   phone: string | null;
   onClose: () => void;
   onRequest: () => void;
+  /** Ouvre la redaction d'un message au loueur (ADR-0012). */
+  onMessage: () => void;
 }
 
 /** Les deux seules actions sur un vehicule (ADR-0009) : demander une reservation, contacter le loueur. */
-export function VehicleActionSheet({ vehicle, loueurName, phone, onClose, onRequest }: Props) {
-  const contact = () => {
-    if (!phone) {
-      Alert.alert(
-        "Contact",
-        "Ce loueur n'a pas renseigné de téléphone. Faites une demande de réservation, il vous répondra directement.",
-      );
-      return;
-    }
-    void Linking.openURL(`tel:${phone.replace(/\s/g, "")}`);
-  };
+export function VehicleActionSheet({
+  vehicle,
+  loueurName,
+  phone,
+  onClose,
+  onRequest,
+  onMessage,
+}: Props) {
   return (
     <Sheet visible={vehicle !== null} onClose={onClose}>
       {vehicle ? (
@@ -72,9 +71,18 @@ export function VehicleActionSheet({ vehicle, loueurName, phone, onClose, onRequ
             <Button
               label="Contacter le loueur"
               variant="ghost"
-              icon={<Phone size={20} color={theme.colors.text} strokeWidth={2} />}
-              onPress={contact}
+              icon={<MessageCircle size={20} color={theme.colors.text} strokeWidth={2} />}
+              onPress={onMessage}
             />
+            {phone ? (
+              <Button
+                label="Appeler"
+                variant="ghost"
+                size="sm"
+                icon={<Phone size={16} color={theme.colors.text} strokeWidth={2} />}
+                onPress={() => void Linking.openURL(`tel:${phone.replace(/\s/g, "")}`)}
+              />
+            ) : null}
           </View>
           <View style={styles.note}>
             <Info size={16} color={theme.colors.textDim} strokeWidth={2} />
