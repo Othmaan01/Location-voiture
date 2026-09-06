@@ -135,6 +135,8 @@ export function createPublicCatalogService(
         id: string;
         name: string;
         slug: string;
+        logo_path: string | null;
+        accent: string;
         created_at: string;
         city_name: string | null;
         distance_km: number | null;
@@ -142,7 +144,7 @@ export function createPublicCatalogService(
         from_daily_cents: number | null;
       }>(sql`
         with orgs as (
-          select o.id, o.name, o.slug, o.created_at,
+          select o.id, o.name, o.slug, o.logo_path, o.accent, o.created_at,
             (select a.city_name from ${agencies} a where a.organization_id = o.id and a.status <> 'suspended' and a.location is not null order by a.created_at limit 1) as city_name,
             ${origin ? sql`(select min(extensions.st_distance(a.location, ${origin})) / 1000.0 from ${agencies} a where a.organization_id = o.id and a.status <> 'suspended' and a.location is not null and a.location is not null)` : sql`null::double precision`} as distance_km,
             (select count(*) from ${vehicles} v join ${agencies} a on a.id = v.agency_id
@@ -173,6 +175,8 @@ export function createPublicCatalogService(
         id: r.id,
         name: r.name,
         slug: r.slug,
+        logoUrl: publicUrl(r.logo_path),
+        accent: r.accent as LoueurSummary["accent"],
         cityName: r.city_name,
         distanceKm: r.distance_km === null ? null : Math.round(Number(r.distance_km) * 10) / 10,
         vehicleCount: Number(r.vehicle_count),
@@ -246,6 +250,11 @@ export function createPublicCatalogService(
         id: org.id,
         name: org.name,
         slug: org.slug,
+        logoUrl: publicUrl(org.logoPath),
+        bannerUrl: publicUrl(org.bannerPath),
+        bio: org.bio,
+        website: org.website,
+        accent: org.accent as LoueurProfile["accent"],
         verified: true,
         ratingAverage: null,
         ratingCount: 0,
@@ -258,6 +267,8 @@ export function createPublicCatalogService(
           addressLine: a.addressLine,
           postalCode: a.postalCode,
           cityName: a.cityName,
+          description: a.description,
+          photoUrl: publicUrl(a.photoPath),
           latitude: a.latitude,
           longitude: a.longitude,
           phone: a.phone,

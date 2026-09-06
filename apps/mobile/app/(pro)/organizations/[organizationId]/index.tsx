@@ -4,9 +4,11 @@ import {
   Building2,
   CalendarDays,
   Car,
+  CreditCard,
   FileCheck2,
   Inbox,
   MapPin,
+  Palette,
   Users,
 } from "lucide-react-native";
 
@@ -51,7 +53,7 @@ export default function OrganizationScreen() {
   return (
     <Screen eyebrow="Espace professionnel" back>
       <View style={styles.identity}>
-        <Avatar name={org.data.name} size={64} />
+        <Avatar name={org.data.name} uri={org.data.logoUrl} size={64} />
         <View style={styles.identityTexts}>
           <Text variant="h1">{org.data.name}</Text>
           <Badge label={status.label} tone={status.tone} />
@@ -132,6 +134,18 @@ export default function OrganizationScreen() {
               : undefined
           }
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/members`)}
+        />
+        <ListItem
+          icon={<Palette size={22} color={theme.colors.text} />}
+          title="Apparence"
+          subtitle="Logo, bannière, présentation, couleur"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/branding`)}
+        />
+        <ListItem
+          icon={<CreditCard size={22} color={theme.colors.text} />}
+          title="Abonnement"
+          subtitle="Offre, essai, grille"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/subscription`)}
         />
         <ListItem
           icon={<Building2 size={22} color={theme.colors.text} />}

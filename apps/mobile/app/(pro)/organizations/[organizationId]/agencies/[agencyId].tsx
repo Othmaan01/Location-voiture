@@ -1,12 +1,21 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Alert } from "react-native";
-import { Trash2 } from "lucide-react-native";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
+import { Camera, Trash2 } from "lucide-react-native";
 
 import { Badge, Button, Screen, Text } from "@/components/ui";
 import { AgencyForm } from "@/features/pro/AgencyForm";
 import { ApiRequestError } from "@/lib/api";
 import { useOrganization } from "@/lib/queries";
-import { useAgencies, useDeleteAgency, useUpdateAgency } from "@/lib/queries-catalog";
+import {
+  useAgencies,
+  useAgencyPhotoUploadUrl,
+  useConfirmAgencyPhoto,
+  useDeleteAgency,
+  useUpdateAgency,
+} from "@/lib/queries-catalog";
+import { UploadError, pickAndPrepareImage, uploadToSignedUrl } from "@/lib/upload";
 import { theme } from "@/theme";
 
 /** Une agence devient visible d'elle-meme des que SIRET et adresse sont renseignes ; aucune etape de publication. */
@@ -20,7 +29,33 @@ export default function EditAgencyScreen() {
   const org = useOrganization(organizationId);
   const update = useUpdateAgency(organizationId);
   const remove = useDeleteAgency(organizationId);
+  const photoUrl = useAgencyPhotoUploadUrl(agencyId);
+  const confirmPhoto = useConfirmAgencyPhoto(organizationId, agencyId);
+  const [uploading, setUploading] = useState(false);
   const agency = agencies.data?.agencies.find((a) => a.id === agencyId);
+
+  const changePhoto = async () => {
+    try {
+      const picked = await pickAndPrepareImage();
+      if (!picked) return;
+      setUploading(true);
+      const signed = await photoUrl.mutateAsync({
+        mimeType: picked.mimeType,
+        sizeBytes: picked.sizeBytes,
+      });
+      await uploadToSignedUrl(signed.uploadUrl, signed.token, picked.uri, picked.mimeType);
+      await confirmPhoto.mutateAsync({ path: signed.path });
+    } catch (e) {
+      Alert.alert(
+        "Photo non enregistrée",
+        e instanceof ApiRequestError || e instanceof UploadError
+          ? e.message
+          : "Vérifiez votre connexion et réessayez.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const confirmDelete = () =>
     Alert.alert(
@@ -71,6 +106,23 @@ export default function EditAgencyScreen() {
         />
       }
     >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Changer la photo de l'agence"
+        onPress={() => void changePhoto()}
+        style={styles.photo}
+      >
+        {agency.photoUrl ? (
+          <Image source={{ uri: agency.photoUrl }} style={styles.photoImage} contentFit="cover" />
+        ) : (
+          <View style={styles.photoEmpty}>
+            <Camera size={24} color={theme.colors.textDim} />
+            <Text variant="small" tone="muted">
+              {uploading ? "Envoi en cours…" : "Ajouter une photo de l'agence"}
+            </Text>
+          </View>
+        )}
+      </Pressable>
       <AgencyForm
         initial={agency}
         siren={org.data?.siren ?? null}
@@ -95,3 +147,18 @@ export default function EditAgencyScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  photo: { height: 140, borderRadius: theme.radius.card, overflow: "hidden" },
+  photoImage: { width: "100%", height: "100%" },
+  photoEmpty: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.card,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.space["1"],
+  },
+});

@@ -3,8 +3,21 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import type { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
-import { Car, Heart, Home, Search, User, type LucideIcon } from "lucide-react-native";
+import {
+  Building2,
+  CalendarDays,
+  Car,
+  Heart,
+  Home,
+  Inbox,
+  LayoutDashboard,
+  Search,
+  ShieldCheck,
+  User,
+  type LucideIcon,
+} from "lucide-react-native";
 
+import { MODE_TABS, useMode } from "@/lib/mode";
 import { theme } from "@/theme";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -13,6 +26,12 @@ const ICONS: Record<string, LucideIcon> = {
   locations: Car,
   favoris: Heart,
   profil: User,
+  "pro-home": LayoutDashboard,
+  "pro-bookings": Inbox,
+  "pro-vehicles": Car,
+  "pro-calendar": CalendarDays,
+  "admin-verifications": ShieldCheck,
+  "admin-loueurs": Building2,
 };
 
 /**
@@ -23,9 +42,12 @@ const ICONS: Record<string, LucideIcon> = {
 type DockProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
 export function Dock({ state, descriptors, navigation }: DockProps) {
+  const mode = useMode((s) => s.mode);
+  const allowed = MODE_TABS[mode];
   const content = (
     <View style={styles.items}>
       {state.routes.map((route, index) => {
+        if (!allowed.includes(route.name)) return null;
         const focused = state.index === index;
         const Icon = ICONS[route.name] ?? Home;
         const label = descriptors[route.key]?.options.title ?? route.name;

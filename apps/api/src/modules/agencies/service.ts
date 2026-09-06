@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { and, count, eq } from "drizzle-orm";
 import type { Agency, AgencyInput, AgencyUpdate } from "@lv/contracts";
 
@@ -8,7 +8,15 @@ import { audit } from "../../shared/audit.js";
 import { assertCan, assertCanOrHide, type Actor } from "../../shared/authz.js";
 import { translateDbError } from "../../shared/db-errors.js";
 import { DomainError, notFound } from "../../shared/errors.js";
+import { PHOTOS_BUCKET, type StorageClient } from "../../shared/storage.js";
 import { isValidSiret } from "../organizations/service.js";
+
+const PHOTO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+const UPLOAD_TTL_SECONDS = 600;
 
 function slugify(name: string): string {
   const base = name
@@ -20,7 +28,7 @@ function slugify(name: string): string {
   return `${base || "agence"}-${randomBytes(3).toString("hex")}`;
 }
 
-export function agencyDto(row: typeof agencies.$inferSelect): Agency {
+export function agencyDto(row: typeof agencies.$inferSelect, storage?: StorageClient): Agency {
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -37,6 +45,8 @@ export function agencyDto(row: typeof agencies.$inferSelect): Agency {
     email: row.email,
     openingHours: row.openingHours ?? {},
     services: row.services,
+    description: row.description,
+    photoUrl: row.photoPath && storage ? storage.publicUrl(PHOTOS_BUCKET, row.photoPath) : null,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
   };
@@ -75,6 +85,7 @@ function toRow(input: AgencyUpdate) {
     ...(input.email !== undefined ? { email: input.email } : {}),
     ...(input.openingHours !== undefined ? { openingHours: input.openingHours } : {}),
     ...(input.services !== undefined ? { services: input.services } : {}),
+    ...(input.description !== undefined ? { description: input.description } : {}),
   };
 }
 
@@ -94,9 +105,15 @@ export interface AgenciesService {
     requestId: string,
   ): Promise<Agency>;
   remove(actor: Actor, agencyId: string, requestId: string): Promise<void>;
+  createPhotoUpload(
+    actor: Actor,
+    agencyId: string,
+    mimeType: string,
+  ): Promise<{ path: string; uploadUrl: string; token: string; expiresAt: string }>;
+  confirmPhoto(actor: Actor, agencyId: string, path: string, requestId: string): Promise<Agency>;
 }
 
-export function createAgenciesService(db: Database): AgenciesService {
+export function createAgenciesService(db: Database, storage: StorageClient): AgenciesService {
   async function load(actor: Actor, agencyId: string) {
     const [row] = await db.select().from(agencies).where(eq(agencies.id, agencyId)).limit(1);
     if (!row) throw notFound("Agence");
@@ -138,7 +155,7 @@ export function createAgenciesService(db: Database): AgenciesService {
         .from(agencies)
         .where(eq(agencies.organizationId, organizationId))
         .orderBy(agencies.createdAt);
-      return rows.map(agencyDto);
+      return rows.map((r) => agencyDto(r, storage));
     },
 
     async create(actor, organizationId, input, requestId) {
@@ -173,7 +190,7 @@ export function createAgenciesService(db: Database): AgenciesService {
             organizationId,
             requestId,
           });
-          return agencyDto(row!);
+          return agencyDto(row!, storage);
         });
       } catch (error) {
         return translateDbError(error, "Un etablissement avec ce SIRET existe deja.");
@@ -207,7 +224,7 @@ export function createAgenciesService(db: Database): AgenciesService {
           metadata: { fields: Object.keys(input) },
           requestId,
         });
-        return agencyDto(row!);
+        return agencyDto(row!, storage);
       } catch (error) {
         return translateDbError(error, "Un etablissement avec ce SIRET existe deja.");
       }
@@ -245,6 +262,44 @@ export function createAgenciesService(db: Database): AgenciesService {
           requestId,
         });
       });
+    },
+
+    async createPhotoUpload(actor, agencyId, mimeType) {
+      const current = await load(actor, agencyId);
+      assertCan(actor, "vehicle.write", { organizationId: current.organizationId });
+      const path = `branding/${current.organizationId}/agency-${agencyId}-${randomUUID()}.${PHOTO_EXT[mimeType] ?? "bin"}`;
+      const signed = await storage.createSignedUploadUrl(PHOTOS_BUCKET, path);
+      return {
+        path,
+        uploadUrl: signed.uploadUrl,
+        token: signed.token,
+        expiresAt: new Date(Date.now() + UPLOAD_TTL_SECONDS * 1000).toISOString(),
+      };
+    },
+
+    async confirmPhoto(actor, agencyId, path, requestId) {
+      const current = await load(actor, agencyId);
+      assertCan(actor, "vehicle.write", { organizationId: current.organizationId });
+      if (!path.startsWith(`branding/${current.organizationId}/agency-${agencyId}-`))
+        throw notFound("Fichier");
+      if (!(await storage.exists(PHOTOS_BUCKET, path))) throw notFound("Fichier");
+      const [row] = await db
+        .update(agencies)
+        .set({ photoPath: path })
+        .where(eq(agencies.id, agencyId))
+        .returning();
+      await audit(db, {
+        actorId: actor.userId,
+        actorType: "organization_member",
+        action: "agency.photo",
+        subjectType: "agency",
+        subjectId: agencyId,
+        organizationId: current.organizationId,
+        requestId,
+      });
+      if (current.photoPath && current.photoPath !== path)
+        await storage.remove(PHOTOS_BUCKET, [current.photoPath]);
+      return agencyDto(row!, storage);
     },
 
     /** Publication : organisation verifiee et agence complete. Depublication toujours possible. */
@@ -286,7 +341,7 @@ export function createAgenciesService(db: Database): AgenciesService {
         organizationId: current.organizationId,
         requestId,
       });
-      return agencyDto(row!);
+      return agencyDto(row!, storage);
     },
   };
 }

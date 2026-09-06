@@ -23,7 +23,7 @@ export function LoueurCard({ loueur, onPress }: { loueur: LoueurSummary; onPress
       style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
     >
       <View style={styles.head}>
-        <Avatar name={loueur.name} size={44} />
+        <Avatar name={loueur.name} uri={loueur.logoUrl} size={44} />
         <View style={styles.headTexts}>
           <View style={styles.nameRow}>
             <Text variant="bodyStrong" numberOfLines={1} style={styles.name}>

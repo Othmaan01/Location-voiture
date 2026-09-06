@@ -2,10 +2,11 @@
 --  Seed local / staging — donnees synthetiques uniquement.
 -- =====================================================================
 
-insert into public.plans (code, name, max_published_vehicles, monthly_price_cents, is_default) values
-  ('free',    'Decouverte', 1,    0,     true),
-  ('starter', 'Starter',    5,    2900,  false),
-  ('pro',     'Pro',        null, 7900,  false)
+insert into public.plans (code, name, min_vehicles, max_published_vehicles, monthly_price_cents, is_default, is_active, is_quote, sort_order) values
+  ('starter',  'Starter',  1,  3,    2900,  true,  true, false, 1),
+  ('pro',      'Pro',      4,  10,   7900,  false, true, false, 2),
+  ('business', 'Business', 11, 30,   17900, false, true, false, 3),
+  ('fleet',    'Flotte',   31, null, 0,     false, true, true,  4)
 on conflict (code) do nothing;
 
 insert into public.cities (name, slug, postal_code, department_code, department_name, region_name, latitude, longitude, population) values

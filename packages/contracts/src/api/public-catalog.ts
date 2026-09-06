@@ -3,6 +3,7 @@ import { z } from "zod";
 import { FuelSchema, TransmissionSchema, VehicleCategorySchema } from "../enums.js";
 import { CurrencySchema } from "../money.js";
 import { IsoDateTimeSchema, UuidSchema } from "./common.js";
+import { AccentSchema } from "./organizations.js";
 
 // ---------------------------------------------------------------------
 // Feed des loueurs (accueil)
@@ -38,6 +39,8 @@ export const LoueurSummarySchema = z
     id: UuidSchema,
     name: z.string(),
     slug: z.string(),
+    logoUrl: z.string().nullable(),
+    accent: AccentSchema,
     cityName: z.string().nullable(),
     distanceKm: z.number().nullable(),
     vehicleCount: z.number().int(),
@@ -71,6 +74,8 @@ export const PublicAgencySchema = z
     longitude: z.number().nullable(),
     phone: z.string().nullable(),
     openingHours: z.record(z.string(), z.array(z.tuple([z.string(), z.string()]))),
+    description: z.string().nullable(),
+    photoUrl: z.string().nullable(),
   })
   .strict();
 
@@ -100,6 +105,11 @@ export const LoueurProfileSchema = z
     id: UuidSchema,
     name: z.string(),
     slug: z.string(),
+    logoUrl: z.string().nullable(),
+    bannerUrl: z.string().nullable(),
+    bio: z.string().nullable(),
+    website: z.string().nullable(),
+    accent: AccentSchema,
     verified: z.boolean(),
     ratingAverage: z.number().nullable(),
     ratingCount: z.number().int(),

@@ -11,6 +11,15 @@ import { IsoDateTimeSchema, UuidSchema } from "./common.js";
 export const SirenSchema = z.string().regex(/^[0-9]{9}$/, "SIREN : 9 chiffres attendus");
 export const SiretSchema = z.string().regex(/^[0-9]{14}$/, "SIRET : 14 chiffres attendus");
 
+/** Accent visuel de l'espace pro : choix ferme pour garder l'unite du mode nuit (ADR-0011). */
+export const AccentSchema = z.enum(["red", "gold", "blue", "green"]);
+export type Accent = z.infer<typeof AccentSchema>;
+const WebsiteSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .regex(/^https?:\/\/[^\s]+$/, "Adresse web : commencez par https://");
+
 export const CreateOrganizationBodySchema = z
   .object({
     name: z.string().trim().min(2).max(120),
@@ -27,6 +36,9 @@ export const UpdateOrganizationBodySchema = z
     legalName: z.string().trim().min(2).max(200).nullable().optional(),
     siren: SirenSchema.nullable().optional(),
     billingEmail: z.email().nullable().optional(),
+    bio: z.string().trim().max(600).nullable().optional(),
+    website: WebsiteSchema.nullable().optional(),
+    accent: AccentSchema.optional(),
   })
   .strict();
 export type UpdateOrganizationBody = z.infer<typeof UpdateOrganizationBodySchema>;
@@ -39,10 +51,30 @@ export const OrganizationSchema = z
     siren: z.string().nullable(),
     countryCode: z.string(),
     status: OrganizationStatusSchema,
+    logoUrl: z.string().nullable(),
+    bannerUrl: z.string().nullable(),
+    bio: z.string().nullable(),
+    website: z.string().nullable(),
+    accent: AccentSchema,
+    planCode: z.string(),
+    trialEndsAt: IsoDateTimeSchema.nullable(),
     createdAt: IsoDateTimeSchema,
   })
   .strict();
 export type Organization = z.infer<typeof OrganizationSchema>;
+
+/** Logo (carre) ou banniere (large) : envoi signe puis confirmation, comme les photos de vehicule. */
+export const BrandingKindSchema = z.enum(["logo", "banner"]);
+export const BrandingUploadRequestSchema = z
+  .object({
+    kind: BrandingKindSchema,
+    mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+    sizeBytes: z.number().int().min(1).max(8_388_608),
+  })
+  .strict();
+export const BrandingConfirmSchema = z
+  .object({ kind: BrandingKindSchema, path: z.string().min(10).max(300) })
+  .strict();
 
 /** Suppression d'une organisation : confirmation explicite, comme pour le compte. */
 export const DeleteOrganizationBodySchema = z

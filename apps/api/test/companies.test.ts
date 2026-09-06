@@ -57,7 +57,8 @@ describe("annuaire des entreprises", () => {
     let calls = 0;
     const fetchImpl = (async (url: string | URL | Request) => {
       calls += 1;
-      const q = new URL(String(url)).searchParams.get("q");
+      const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
+      const q = new URL(href).searchParams.get("q");
       if (q === "000000000") return new Response(JSON.stringify({ results: [] }), { status: 200 });
       if (q === "111111111") return new Response("boom", { status: 502 });
       return new Response(JSON.stringify(danone), { status: 200 });

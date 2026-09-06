@@ -94,7 +94,73 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
     const plan = await database.sql<
       { plan_code: string }[]
     >`select plan_code from public.organizations where id = ${org.id}::uuid`;
-    expect(plan[0]?.plan_code).toBe("free");
+    expect(plan[0]?.plan_code).toBe("starter");
+
+    // Abonnement : essai de 14 jours sur Starter, grille visible
+    const overview = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${org.id}/subscription`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(overview.statusCode).toBe(200);
+    expect(overview.json()).toMatchObject({
+      plan: { code: "starter", maxVehicles: 3, monthlyPriceCents: 2900 },
+      status: "trialing",
+      publishedCount: 0,
+    });
+    expect(overview.json<{ plans: { code: string }[] }>().plans.map((p) => p.code)).toEqual([
+      "starter",
+      "pro",
+      "business",
+      "fleet",
+    ]);
+
+    // Personnalisation : bio, site, accent ; accent hors liste refuse
+    const branded = await app.inject({
+      method: "PATCH",
+      url: `/v1/organizations/${org.id}`,
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { bio: "Location premium a Lyon", website: "https://exemple.fr", accent: "gold" },
+    });
+    expect(branded.statusCode).toBe(200);
+    expect(branded.json()).toMatchObject({ bio: "Location premium a Lyon", accent: "gold" });
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: `/v1/organizations/${org.id}`,
+          headers: { authorization: `Bearer ${aliceToken}` },
+          payload: { accent: "pink" },
+        })
+      ).statusCode,
+    ).toBe(422);
+  });
+
+  it("mode prefere : client par defaut, modifiable, jamais un role", async () => {
+    const before = await app.inject({
+      method: "GET",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${aliceToken}` },
+    });
+    expect(before.json()).toMatchObject({ preferredMode: "client" });
+    const updated = await app.inject({
+      method: "PATCH",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${aliceToken}` },
+      payload: { preferredMode: "pro" },
+    });
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json()).toMatchObject({ preferredMode: "pro", platformRole: null });
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: "/v1/me",
+          headers: { authorization: `Bearer ${aliceToken}` },
+          payload: { preferredMode: "admin" },
+        })
+      ).statusCode,
+    ).toBe(422);
   });
 
   it("IDOR : un autre utilisateur obtient 404 (pas 403) sur l'organisation et ses membres", async () => {

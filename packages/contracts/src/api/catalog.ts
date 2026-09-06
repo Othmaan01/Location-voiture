@@ -45,6 +45,7 @@ export const AgencyInputSchema = z
     email: z.email().nullable().optional(),
     openingHours: OpeningHoursSchema.optional(),
     services: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+    description: z.string().trim().max(600).nullable().optional(),
   })
   .strict();
 export type AgencyInput = z.infer<typeof AgencyInputSchema>;
@@ -68,11 +69,14 @@ export const AgencySchema = z
     email: z.string().nullable(),
     openingHours: OpeningHoursSchema,
     services: z.array(z.string()),
+    description: z.string().nullable(),
+    photoUrl: z.string().nullable(),
     status: AgencyStatusSchema,
     createdAt: IsoDateTimeSchema,
   })
   .strict();
 export type Agency = z.infer<typeof AgencySchema>;
+export const AgencyPhotoConfirmSchema = z.object({ path: z.string().min(10).max(300) }).strict();
 export const AgenciesResponseSchema = z.object({ agencies: z.array(AgencySchema) }).strict();
 
 /**

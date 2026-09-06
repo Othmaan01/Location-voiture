@@ -1,5 +1,7 @@
 import { z } from "zod";
 import {
+  AdminOrganizationsQuerySchema,
+  AdminOrganizationsResponseSchema,
   DocumentReviewSchema,
   DocumentSchema,
   UuidSchema,
@@ -28,6 +30,20 @@ export const adminRoutes: FastifyPluginAsyncZod<{ requireMfa: boolean }> = async
       );
     }
   });
+
+  app.get(
+    "/v1/admin/organizations",
+    {
+      schema: {
+        tags,
+        querystring: AdminOrganizationsQuerySchema,
+        response: { 200: AdminOrganizationsResponseSchema },
+      },
+    },
+    async (request) => ({
+      items: await service.listOrganizations(request.actor, request.query),
+    }),
+  );
 
   app.get(
     "/v1/admin/verifications",

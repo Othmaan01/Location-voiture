@@ -2,8 +2,11 @@ import { z } from "zod";
 import {
   AgenciesResponseSchema,
   AgencyInputSchema,
+  AgencyPhotoConfirmSchema,
   AgencySchema,
   AgencyUpdateSchema,
+  PhotoUploadRequestSchema,
+  SignedUploadSchema,
   UuidSchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
@@ -11,7 +14,7 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { createAgenciesService } from "./service.js";
 
 export const agenciesRoutes: FastifyPluginAsyncZod = async (app) => {
-  const service = createAgenciesService(app.db);
+  const service = createAgenciesService(app.db, app.storage);
   const orgParams = z.object({ organizationId: UuidSchema }).strict();
   const agencyParams = z.object({ agencyId: UuidSchema }).strict();
 
@@ -64,6 +67,37 @@ export const agenciesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request) =>
       service.update(request.actor, request.params.agencyId, request.body, request.id),
+  );
+
+  app.post(
+    "/v1/agencies/:agencyId/photo/upload-url",
+    {
+      schema: {
+        tags: ["agencies"],
+        params: agencyParams,
+        body: PhotoUploadRequestSchema,
+        response: { 200: SignedUploadSchema },
+      },
+      onRequest: [app.requireAuth],
+      config: { rateLimit: { max: 30, timeWindow: "1 hour" } },
+    },
+    async (request) =>
+      service.createPhotoUpload(request.actor, request.params.agencyId, request.body.mimeType),
+  );
+
+  app.post(
+    "/v1/agencies/:agencyId/photo",
+    {
+      schema: {
+        tags: ["agencies"],
+        params: agencyParams,
+        body: AgencyPhotoConfirmSchema,
+        response: { 200: AgencySchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) =>
+      service.confirmPhoto(request.actor, request.params.agencyId, request.body.path, request.id),
   );
 
   app.delete(

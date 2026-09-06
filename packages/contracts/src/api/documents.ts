@@ -77,6 +77,33 @@ export const VerificationQueueSchema = z
   .object({ items: z.array(VerificationQueueItemSchema) })
   .strict();
 
+/** Liste des loueurs pour l'administration : etat, plan, volume. */
+export const AdminOrganizationsQuerySchema = z
+  .object({
+    status: OrganizationStatusSchema.optional(),
+    q: z.string().trim().max(80).optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .strict();
+export const AdminOrganizationSchema = z
+  .object({
+    id: UuidSchema,
+    name: z.string(),
+    legalName: z.string().nullable(),
+    siren: z.string().nullable(),
+    status: OrganizationStatusSchema,
+    statusReason: z.string().nullable(),
+    planCode: z.string(),
+    vehicleCount: z.number().int(),
+    publishedCount: z.number().int(),
+    agencyCount: z.number().int(),
+    createdAt: IsoDateTimeSchema,
+  })
+  .strict();
+export const AdminOrganizationsResponseSchema = z
+  .object({ items: z.array(AdminOrganizationSchema) })
+  .strict();
+
 export const VerificationDecisionSchema = z
   .object({
     decision: z.enum(["verified", "rejected"]),

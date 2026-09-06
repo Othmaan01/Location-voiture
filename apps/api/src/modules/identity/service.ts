@@ -45,6 +45,7 @@ export function createIdentityService(db: Database, supabaseAdmin: SupabaseAdmin
       lastName: profile?.lastName ?? null,
       phone: profile?.phone ?? null,
       platformRole: actor.platformRole,
+      preferredMode: profile?.preferredMode === "pro" ? "pro" : "client",
       memberships: rows,
     };
   }
@@ -61,6 +62,7 @@ export function createIdentityService(db: Database, supabaseAdmin: SupabaseAdmin
             ...(body.firstName !== undefined ? { firstName: body.firstName } : {}),
             ...(body.lastName !== undefined ? { lastName: body.lastName } : {}),
             ...(body.phone !== undefined ? { phone: body.phone } : {}),
+            ...(body.preferredMode !== undefined ? { preferredMode: body.preferredMode } : {}),
           })
           .where(eq(profiles.id, userId));
         await audit(tx, {

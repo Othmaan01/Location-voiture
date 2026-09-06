@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
-import type { Document } from "@lv/contracts";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import type { Document, OrganizationStatus } from "@lv/contracts";
 
 import type { Database } from "../../db/client.js";
 import {
@@ -15,6 +15,24 @@ import { DomainError, notFound } from "../../shared/errors.js";
 import { documentDto } from "../documents/service.js";
 
 export interface AdminService {
+  listOrganizations(
+    actor: Actor,
+    query: { status?: OrganizationStatus | undefined; q?: string | undefined; limit: number },
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      legalName: string | null;
+      siren: string | null;
+      status: OrganizationStatus;
+      statusReason: string | null;
+      planCode: string;
+      vehicleCount: number;
+      publishedCount: number;
+      agencyCount: number;
+      createdAt: string;
+    }[]
+  >;
   verificationQueue(actor: Actor): Promise<
     {
       organizationId: string;
@@ -64,6 +82,39 @@ export interface AdminService {
  */
 export function createAdminService(db: Database): AdminService {
   return {
+    async listOrganizations(actor, query) {
+      assertCan(actor, "organization.suspend");
+      const filters = [
+        query.status ? eq(organizations.status, query.status) : undefined,
+        query.q
+          ? or(
+              ilike(organizations.name, `%${query.q}%`),
+              ilike(organizations.legalName, `%${query.q}%`),
+              ilike(organizations.siren, `${query.q}%`),
+            )
+          : undefined,
+      ].filter((f): f is NonNullable<typeof f> => f !== undefined);
+      const rows = await db
+        .select({
+          id: organizations.id,
+          name: organizations.name,
+          legalName: organizations.legalName,
+          siren: organizations.siren,
+          status: organizations.status,
+          statusReason: organizations.statusReason,
+          planCode: organizations.planCode,
+          createdAt: organizations.createdAt,
+          vehicleCount: sql<number>`(select count(*)::int from ${vehicles} v where v.organization_id = "organizations"."id" and v.status <> 'archived')`,
+          publishedCount: sql<number>`(select count(*)::int from ${vehicles} v where v.organization_id = "organizations"."id" and v.status = 'published')`,
+          agencyCount: sql<number>`(select count(*)::int from ${agencies} a where a.organization_id = "organizations"."id")`,
+        })
+        .from(organizations)
+        .where(filters.length > 0 ? and(...filters) : undefined)
+        .orderBy(desc(organizations.createdAt))
+        .limit(query.limit);
+      return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+    },
+
     async verificationQueue(actor) {
       assertCan(actor, "organization.verify");
       const orgs = await db

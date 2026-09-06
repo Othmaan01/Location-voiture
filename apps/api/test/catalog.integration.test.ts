@@ -458,7 +458,8 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
     });
     expect(member.json()).toMatchObject({ licensePlate: "AB-123-CD" });
 
-    // Quota du plan gratuit : 1 vehicule publie.
+    // Quota : on place l'organisation sur l'ancienne offre a 1 vehicule pour tester la limite.
+    await database.sql`update public.organizations set plan_code = 'free' where id = ${orgId}::uuid`;
     const second = await app.inject({
       method: "POST",
       url: `/v1/organizations/${orgId}/vehicles`,
@@ -498,6 +499,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
     });
     expect(quota.statusCode).toBe(409);
     expect(quota.json()).toMatchObject({ error: { details: { blockers: ["quota_reached"] } } });
+    await database.sql`update public.organizations set plan_code = 'starter' where id = ${orgId}::uuid`;
 
     // Suspension plateforme : le vehicule disparait du public.
     const susp = await app.inject({
@@ -547,5 +549,29 @@ describe.skipIf(!testDatabaseUrl)("catalogue, documents, verification, administr
       { n: string }[]
     >`select count(*)::text as n from public.vehicles where id = ${id}::uuid`;
     expect(rows[0]?.n).toBe("0");
+  });
+
+  it("administration : liste des loueurs avec filtre et recherche, refusee sans role", async () => {
+    expect(
+      (
+        await app.inject({
+          method: "GET",
+          url: "/v1/admin/organizations",
+          headers: auth(ownerToken),
+        })
+      ).statusCode,
+    ).toBe(403);
+    const all = await app.inject({
+      method: "GET",
+      url: "/v1/admin/organizations?q=Catalogue",
+      headers: auth(adminToken),
+    });
+    expect(all.statusCode).toBe(200);
+    const items = all.json<{ items: { id: string; agencyCount: number; planCode: string }[] }>()
+      .items;
+    const mine = items.find((i) => i.id === orgId);
+    expect(mine).toBeDefined();
+    expect(mine?.agencyCount).toBeGreaterThanOrEqual(1);
+    expect(mine?.planCode).toBe("starter");
   });
 });

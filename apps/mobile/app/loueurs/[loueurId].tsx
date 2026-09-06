@@ -1,12 +1,14 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
-import { MapPin, Phone, ShieldCheck } from "lucide-react-native";
+import { Image } from "expo-image";
+import { Globe, MapPin, Phone, ShieldCheck } from "lucide-react-native";
 import type { PublicVehicleCard } from "@lv/contracts";
 
 import { Avatar, Badge, Button, EmptyState, Screen, Text } from "@/components/ui";
 import { VehicleActionSheet } from "@/features/client/VehicleActionSheet";
 import { VehicleCard } from "@/features/client/VehicleCard";
+import { ACCENT_COLOR } from "@/features/client/accent";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
 import { useFavorites, useLoueur, useToggleFavorite } from "@/lib/queries-public";
 import { useSession } from "@/lib/session";
@@ -43,6 +45,7 @@ export default function LoueurScreen() {
     );
   }
   const l = loueur.data;
+  const accent = ACCENT_COLOR[l.accent];
   const mainAgency = l.agencies[0] ?? null;
   const favSet = new Set(favorites.data?.vehicles.map((v) => v.id) ?? []);
   const call = () =>
@@ -65,8 +68,15 @@ export default function LoueurScreen() {
 
   return (
     <Screen back>
+      {l.bannerUrl ? (
+        <Image source={{ uri: l.bannerUrl }} style={styles.banner} contentFit="cover" />
+      ) : (
+        <View style={[styles.banner, styles.bannerEmpty, { borderColor: accent }]} />
+      )}
       <View style={styles.head}>
-        <Avatar name={l.name} size={64} />
+        <View style={[styles.logoRing, { borderColor: accent }]}>
+          <Avatar name={l.name} uri={l.logoUrl} size={64} />
+        </View>
         <View style={styles.headTexts}>
           <View style={styles.nameRow}>
             <Text variant="h1" style={styles.name}>
@@ -87,6 +97,11 @@ export default function LoueurScreen() {
           ) : null}
         </View>
       </View>
+      {l.bio ? (
+        <Text variant="sm" tone="muted">
+          {l.bio}
+        </Text>
+      ) : null}
       <View style={styles.stats}>
         <Stat
           value={String(l.vehicleCount)}
@@ -160,9 +175,29 @@ export default function LoueurScreen() {
         </>
       ) : (
         <View style={styles.info}>
+          {l.website ? (
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => void Linking.openURL(l.website!)}
+              style={styles.website}
+            >
+              <Globe size={16} color={theme.colors.accentTint} />
+              <Text variant="smStrong" tone="accent" numberOfLines={1}>
+                {l.website.replace(/^https?:\/\//, "")}
+              </Text>
+            </Pressable>
+          ) : null}
           {l.agencies.map((a) => (
             <View key={a.id} style={styles.agency}>
+              {a.photoUrl ? (
+                <Image source={{ uri: a.photoUrl }} style={styles.agencyPhoto} contentFit="cover" />
+              ) : null}
               <Text variant="bodyStrong">{a.name}</Text>
+              {a.description ? (
+                <Text variant="sm" tone="muted">
+                  {a.description}
+                </Text>
+              ) : null}
               <Text variant="sm" tone="muted">
                 {[a.addressLine, [a.postalCode, a.cityName].filter(Boolean).join(" ")]
                   .filter(Boolean)
@@ -204,6 +239,11 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
+  banner: { height: 120, borderRadius: theme.radius.card, backgroundColor: theme.colors.surface },
+  bannerEmpty: { borderWidth: 1, opacity: 0.6 },
+  logoRing: { borderWidth: 2, borderRadius: 20, padding: 2 },
+  website: { flexDirection: "row", alignItems: "center", gap: theme.space["2"], minHeight: 40 },
+  agencyPhoto: { height: 110, borderRadius: 10, marginBottom: theme.space["2"] },
   head: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
   headTexts: { flex: 1, gap: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: theme.space["2"], flexWrap: "wrap" },

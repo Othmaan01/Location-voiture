@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ActivityIndicator, Alert, StyleSheet, Switch, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, View } from "react-native";
 import {
   Bell,
   Building2,
@@ -16,7 +16,8 @@ import {
 import { Avatar, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
 import { useAppLockSetting } from "@/lib/app-lock";
-import { useMe } from "@/lib/queries";
+import { MODE_HOME, MODE_LABEL, useMode, type AppMode } from "@/lib/mode";
+import { useMe, useUpdateProfile } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { theme } from "@/theme";
@@ -26,6 +27,17 @@ export default function ProfileScreen() {
   const router = useRouter();
   const me = useMe();
   const appLock = useAppLockSetting();
+  const { mode, setMode } = useMode();
+  const updateProfile = useUpdateProfile();
+
+  /** Bascule d'espace (D9) : immediate, memorisee sur le compte pour les prochaines connexions. */
+  const switchMode = (next: AppMode) => {
+    if (next === mode) return;
+    setMode(next);
+    if (next !== "admin") updateProfile.mutate({ preferredMode: next });
+    router.replace(MODE_HOME[next]);
+  };
+  const modes: AppMode[] = me.data?.platformRole ? ["client", "pro", "admin"] : ["client", "pro"];
 
   const toggleLock = async (next: boolean) => {
     if (next && !appLock.biometrics.available) {
@@ -91,6 +103,32 @@ export default function ProfileScreen() {
           </Text>
         </Card>
       ) : null}
+
+      <Card style={styles.modeCard}>
+        <Text variant="bodyStrong">Mon espace</Text>
+        <View style={styles.modes}>
+          {modes.map((m) => (
+            <Pressable
+              key={m}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: mode === m }}
+              onPress={() => switchMode(m)}
+              style={[styles.modeChip, mode === m ? styles.modeChipOn : null]}
+            >
+              <Text variant="smStrong" tone={mode === m ? "inverse" : "default"}>
+                {MODE_LABEL[m]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text variant="small" tone="dim">
+          {mode === "client"
+            ? "Chercher et réserver des véhicules."
+            : mode === "pro"
+              ? "Gérer votre flotte, vos agences et vos demandes."
+              : "Vérifier et administrer les loueurs."}
+        </Text>
+      </Card>
 
       <Card padded={false}>
         <ListItem
@@ -207,4 +245,17 @@ const styles = StyleSheet.create({
   proCard: { borderColor: theme.colors.accentDark, gap: theme.space["3"] },
   proHeader: { flexDirection: "row", alignItems: "center", gap: theme.space["2"] },
   proButton: { alignSelf: "flex-start" },
+  modeCard: { gap: theme.space["3"] },
+  modes: { flexDirection: "row", gap: theme.space["2"] },
+  modeChip: {
+    flex: 1,
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modeChipOn: { backgroundColor: theme.colors.text, borderColor: theme.colors.text },
 });

@@ -64,6 +64,26 @@ export function useUpdateAgency(orgId: string) {
     },
   });
 }
+export function useAgencyPhotoUploadUrl(agencyId: string) {
+  return useMutation({
+    mutationFn: (body: {
+      mimeType: "image/jpeg" | "image/png" | "image/webp";
+      sizeBytes: number;
+    }) =>
+      apiRequest(`/v1/agencies/${agencyId}/photo/upload-url`, SignedUploadSchema, {
+        method: "POST",
+        body,
+      }),
+  });
+}
+export function useConfirmAgencyPhoto(orgId: string, agencyId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { path: string }) =>
+      apiRequest(`/v1/agencies/${agencyId}/photo`, AgencySchema, { method: "POST", body }),
+    onSuccess: () => client.invalidateQueries({ queryKey: catalogKeys.agencies(orgId) }),
+  });
+}
 /** Refuse (409) tant que des vehicules y sont rattaches. */
 export function useDeleteAgency(orgId: string) {
   const client = useQueryClient();

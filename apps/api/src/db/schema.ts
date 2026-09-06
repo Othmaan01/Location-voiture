@@ -78,6 +78,7 @@ export const profiles = pgTable("profiles", {
   phone: text("phone"),
   avatarPath: text("avatar_path"),
   locale: text("locale").notNull().default("fr"),
+  preferredMode: text("preferred_mode").notNull().default("client"),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   authDeletedAt: timestamp("auth_deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -116,7 +117,13 @@ export const plans = pgTable("plans", {
   code: text("code").primaryKey(),
   name: text("name").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  isQuote: boolean("is_quote").notNull().default(false),
+  minVehicles: integer("min_vehicles").notNull().default(1),
   maxPublishedVehicles: integer("max_published_vehicles"),
+  monthlyPriceCents: integer("monthly_price_cents").notNull().default(0),
+  currency: char("currency", { length: 3 }).notNull().default("EUR"),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 export const organizations = pgTable("organizations", {
@@ -133,6 +140,12 @@ export const organizations = pgTable("organizations", {
   statusReason: text("status_reason"),
   statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
   planCode: text("plan_code").notNull(),
+  logoPath: text("logo_path"),
+  bannerPath: text("banner_path"),
+  bio: text("bio"),
+  website: text("website"),
+  accent: text("accent").notNull().default("red"),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -198,6 +211,8 @@ export const agencies = pgTable("agencies", {
   email: text("email"),
   openingHours: jsonb("opening_hours").notNull().default({}),
   services: text("services").array().notNull().default([]),
+  description: text("description"),
+  photoPath: text("photo_path"),
   status: agencyStatusEnum("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

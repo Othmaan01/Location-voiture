@@ -2,15 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import {
   AcceptInvitationResponseSchema,
+  AdminOrganizationsResponseSchema,
   CompanyLookupSchema,
   CreatedInvitationSchema,
   InvitationsResponseSchema,
   MeResponseSchema,
   OrganizationMembersResponseSchema,
   OrganizationSchema,
+  SignedUploadSchema,
   type CreateInvitationBody,
   type CreateOrganizationBody,
   type OrganizationRole,
+  type OrganizationStatus,
+  type UpdateOrganizationBody,
   type UpdateProfileBody,
 } from "@lv/contracts";
 
@@ -85,6 +89,83 @@ export function useCompanyLookup() {
   return useMutation({
     mutationFn: (q: string) =>
       apiRequest(`/v1/companies/lookup?q=${encodeURIComponent(q)}`, CompanyLookupSchema),
+  });
+}
+
+export function useUpdateOrganization(organizationId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateOrganizationBody) =>
+      apiRequest(`/v1/organizations/${organizationId}`, OrganizationSchema, {
+        method: "PATCH",
+        body,
+      }),
+    onSuccess: (org) => {
+      client.setQueryData(queryKeys.organization(organizationId), org);
+      void client.invalidateQueries({ queryKey: queryKeys.me });
+    },
+  });
+}
+
+/** Logo ou banniere : URL signee puis confirmation (meme mecanique que les photos). */
+export function useBrandingUploadUrl(organizationId: string) {
+  return useMutation({
+    mutationFn: (body: {
+      kind: "logo" | "banner";
+      mimeType: "image/jpeg" | "image/png" | "image/webp";
+      sizeBytes: number;
+    }) =>
+      apiRequest(`/v1/organizations/${organizationId}/branding/upload-url`, SignedUploadSchema, {
+        method: "POST",
+        body,
+      }),
+  });
+}
+export function useConfirmBranding(organizationId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { kind: "logo" | "banner"; path: string }) =>
+      apiRequest(`/v1/organizations/${organizationId}/branding`, OrganizationSchema, {
+        method: "POST",
+        body,
+      }),
+    onSuccess: (org) => client.setQueryData(queryKeys.organization(organizationId), org),
+  });
+}
+
+/** Administration : liste des loueurs (role plateforme). */
+export function useAdminOrganizations(
+  enabled: boolean,
+  filters: { status?: OrganizationStatus; q?: string } = {},
+) {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.q) params.set("q", filters.q);
+  const qs = params.toString();
+  return useQuery({
+    queryKey: ["admin", "organizations", filters.status ?? "", filters.q ?? ""] as const,
+    queryFn: () =>
+      apiRequest(`/v1/admin/organizations${qs ? `?${qs}` : ""}`, AdminOrganizationsResponseSchema),
+    enabled,
+  });
+}
+export function useAdminSuspendOrganization() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      organizationId,
+      suspend,
+      reason,
+    }: {
+      organizationId: string;
+      suspend: boolean;
+      reason?: string;
+    }) =>
+      apiRequest(`/v1/admin/organizations/${organizationId}/suspension`, Empty, {
+        method: "POST",
+        body: { suspend, ...(reason ? { reason } : {}) },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["admin", "organizations"] }),
   });
 }
 

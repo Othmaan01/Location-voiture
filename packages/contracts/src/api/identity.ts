@@ -3,6 +3,10 @@ import { z } from "zod";
 import { OrganizationRoleSchema, PlatformRoleSchema } from "../enums.js";
 import { UuidSchema } from "./common.js";
 
+/** Mode prefere de l'app (choisi a l'inscription, modifiable). Jamais un role : le serveur ne s'en sert pas pour autoriser. */
+export const PreferredModeSchema = z.enum(["client", "pro"]);
+export type PreferredMode = z.infer<typeof PreferredModeSchema>;
+
 export const MembershipSummarySchema = z
   .object({
     organizationId: UuidSchema,
@@ -19,6 +23,7 @@ export const MeResponseSchema = z
     lastName: z.string().nullable(),
     phone: z.string().nullable(),
     platformRole: PlatformRoleSchema.nullable(),
+    preferredMode: PreferredModeSchema,
     memberships: z.array(MembershipSummarySchema),
   })
   .strict();
@@ -34,6 +39,7 @@ export const UpdateProfileBodySchema = z
     firstName: z.string().trim().min(1).max(80).optional(),
     lastName: z.string().trim().min(1).max(80).optional(),
     phone: PhoneSchema.nullable().optional(),
+    preferredMode: PreferredModeSchema.optional(),
   })
   .strict();
 export type UpdateProfileBody = z.infer<typeof UpdateProfileBodySchema>;

@@ -27,6 +27,7 @@ import { identityRoutes } from "./modules/identity/routes.js";
 import type { NotificationsService } from "./modules/notifications/service.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
 import { publicCatalogRoutes } from "./modules/public-catalog/routes.js";
+import { subscriptionsRoutes } from "./modules/subscriptions/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
 import { DomainError } from "./shared/errors.js";
@@ -166,6 +167,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(vehiclesRoutes);
   await app.register(documentsRoutes);
   await app.register(publicCatalogRoutes);
+  await app.register(subscriptionsRoutes);
   await app.register(availabilityRoutes);
   await app.register(bookingsRoutes);
   await app.register(adminRoutes, {

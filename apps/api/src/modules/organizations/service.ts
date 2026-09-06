@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, count, eq, isNull } from "drizzle-orm";
 import type {
+  Accent,
   CreateInvitationBody,
   CreateOrganizationBody,
   Invitation,
@@ -70,7 +71,15 @@ function slugify(name: string): string {
   return `${base || "organisation"}-${randomBytes(3).toString("hex")}`;
 }
 
-function toDto(row: typeof organizations.$inferSelect): Organization {
+const TRIAL_DAYS = 14;
+const BRANDING_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+const UPLOAD_TTL_SECONDS = 600;
+
+function toDto(row: typeof organizations.$inferSelect, storage: StorageClient): Organization {
   return {
     id: row.id,
     name: row.name,
@@ -78,6 +87,13 @@ function toDto(row: typeof organizations.$inferSelect): Organization {
     siren: row.siren,
     countryCode: row.countryCode,
     status: row.status,
+    logoUrl: row.logoPath ? storage.publicUrl(PHOTOS_BUCKET, row.logoPath) : null,
+    bannerUrl: row.bannerPath ? storage.publicUrl(PHOTOS_BUCKET, row.bannerPath) : null,
+    bio: row.bio,
+    website: row.website,
+    accent: row.accent as Accent,
+    planCode: row.planCode,
+    trialEndsAt: row.trialEndsAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -103,6 +119,19 @@ export interface OrganizationsService {
     requestId: string,
   ): Promise<Organization>;
   remove(actor: Actor, organizationId: string, requestId: string): Promise<void>;
+  createBrandingUpload(
+    actor: Actor,
+    organizationId: string,
+    kind: "logo" | "banner",
+    mimeType: string,
+  ): Promise<{ path: string; uploadUrl: string; token: string; expiresAt: string }>;
+  confirmBranding(
+    actor: Actor,
+    organizationId: string,
+    kind: "logo" | "banner",
+    path: string,
+    requestId: string,
+  ): Promise<Organization>;
   listMembers(actor: Actor, organizationId: string): Promise<OrganizationMember[]>;
   updateMemberRole(
     actor: Actor,
@@ -169,6 +198,7 @@ export function createOrganizationsService(
               siren: input.siren ?? null,
               countryCode: input.countryCode,
               planCode: defaultPlan.code,
+              trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
             })
             .returning();
         } catch (error) {
@@ -192,7 +222,7 @@ export function createOrganizationsService(
           organizationId: row.id,
           requestId,
         });
-        return toDto(row);
+        return toDto(row, storage);
       });
     },
 
@@ -204,7 +234,7 @@ export function createOrganizationsService(
         .where(eq(organizations.id, organizationId))
         .limit(1);
       if (!row) throw notFound("Organisation");
-      return toDto(row);
+      return toDto(row, storage);
     },
 
     async update(actor, organizationId, input, requestId) {
@@ -221,6 +251,9 @@ export function createOrganizationsService(
             ...(input.legalName !== undefined ? { legalName: input.legalName } : {}),
             ...(input.siren !== undefined ? { siren: input.siren } : {}),
             ...(input.billingEmail !== undefined ? { billingEmail: input.billingEmail } : {}),
+            ...(input.bio !== undefined ? { bio: input.bio } : {}),
+            ...(input.website !== undefined ? { website: input.website } : {}),
+            ...(input.accent !== undefined ? { accent: input.accent } : {}),
           })
           .where(eq(organizations.id, organizationId))
           .returning();
@@ -235,10 +268,54 @@ export function createOrganizationsService(
           metadata: { fields: Object.keys(input) },
           requestId,
         });
-        return toDto(row);
+        return toDto(row, storage);
       } catch (error) {
         return translateDbError(error, "Une organisation avec ce SIREN existe deja.");
       }
+    },
+
+    /** Logo ou banniere : meme mecanique que les photos (URL signee, puis confirmation du chemin). */
+    async createBrandingUpload(actor, organizationId, kind, mimeType) {
+      assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
+      assertCan(actor, "organization.write", { organizationId });
+      const path = `branding/${organizationId}/${kind}-${randomUUID()}.${BRANDING_EXT[mimeType] ?? "bin"}`;
+      const signed = await storage.createSignedUploadUrl(PHOTOS_BUCKET, path);
+      return {
+        path,
+        uploadUrl: signed.uploadUrl,
+        token: signed.token,
+        expiresAt: new Date(Date.now() + UPLOAD_TTL_SECONDS * 1000).toISOString(),
+      };
+    },
+
+    async confirmBranding(actor, organizationId, kind, path, requestId) {
+      assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
+      assertCan(actor, "organization.write", { organizationId });
+      if (!path.startsWith(`branding/${organizationId}/${kind}-`)) throw notFound("Fichier");
+      if (!(await storage.exists(PHOTOS_BUCKET, path))) throw notFound("Fichier");
+      const [previous] = await db
+        .select({ logoPath: organizations.logoPath, bannerPath: organizations.bannerPath })
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .limit(1);
+      if (!previous) throw notFound("Organisation");
+      const [row] = await db
+        .update(organizations)
+        .set(kind === "logo" ? { logoPath: path } : { bannerPath: path })
+        .where(eq(organizations.id, organizationId))
+        .returning();
+      await audit(db, {
+        actorId: actor.userId,
+        actorType: "organization_member",
+        action: `organization.branding.${kind}`,
+        subjectType: "organization",
+        subjectId: organizationId,
+        organizationId,
+        requestId,
+      });
+      const old = kind === "logo" ? previous.logoPath : previous.bannerPath;
+      if (old && old !== path) await storage.remove(PHOTOS_BUCKET, [old]);
+      return toDto(row!, storage);
     },
 
     /**

@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   AcceptInvitationBodySchema,
   AcceptInvitationResponseSchema,
+  BrandingConfirmSchema,
+  BrandingUploadRequestSchema,
   CreateInvitationBodySchema,
   CreateOrganizationBodySchema,
   CreatedInvitationSchema,
@@ -9,6 +11,7 @@ import {
   InvitationsResponseSchema,
   OrganizationMembersResponseSchema,
   OrganizationSchema,
+  SignedUploadSchema,
   UpdateMemberBodySchema,
   UpdateOrganizationBodySchema,
   UuidSchema,
@@ -64,6 +67,48 @@ export const organizationsRoutes: FastifyPluginAsyncZod<{ deepLinkScheme: string
     },
     async (request) =>
       service.update(request.actor, request.params.organizationId, request.body, request.id),
+  );
+
+  app.post(
+    "/v1/organizations/:organizationId/branding/upload-url",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: orgParams,
+        body: BrandingUploadRequestSchema,
+        response: { 200: SignedUploadSchema },
+      },
+      onRequest: [app.requireAuth],
+      config: { rateLimit: { max: 30, timeWindow: "1 hour" } },
+    },
+    async (request) =>
+      service.createBrandingUpload(
+        request.actor,
+        request.params.organizationId,
+        request.body.kind,
+        request.body.mimeType,
+      ),
+  );
+
+  app.post(
+    "/v1/organizations/:organizationId/branding",
+    {
+      schema: {
+        tags: ["organizations"],
+        params: orgParams,
+        body: BrandingConfirmSchema,
+        response: { 200: OrganizationSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) =>
+      service.confirmBranding(
+        request.actor,
+        request.params.organizationId,
+        request.body.kind,
+        request.body.path,
+        request.id,
+      ),
   );
 
   app.delete(

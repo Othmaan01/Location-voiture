@@ -18,6 +18,7 @@ const Schema = z.object({
   cityName: z.string().trim().max(120),
   phone: z.string().trim().max(20),
   email: z.union([z.literal(""), z.email("E-mail invalide")]),
+  description: z.string().trim().max(600, "600 caractères maximum"),
 });
 type Form = z.infer<typeof Schema>;
 
@@ -82,6 +83,7 @@ export function AgencyForm({
       cityName: initial?.cityName ?? "",
       phone: initial?.phone ?? "",
       email: initial?.email ?? "",
+      description: initial?.description ?? "",
     },
   });
 
@@ -129,6 +131,7 @@ export function AgencyForm({
         cityName: v.cityName || null,
         phone: v.phone || null,
         email: v.email || null,
+        description: v.description || null,
         latitude: coords?.latitude ?? null,
         longitude: coords?.longitude ?? null,
       });
@@ -292,6 +295,22 @@ export function AgencyForm({
             error={fieldState.error?.message}
             autoCapitalize="none"
             keyboardType="email-address"
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Input
+            label="Présentation de l'agence (optionnel)"
+            hint="Accès, parking, particularités. Visible par les clients."
+            value={field.value}
+            onChangeText={field.onChange}
+            onBlur={field.onBlur}
+            error={fieldState.error?.message}
+            multiline
+            numberOfLines={3}
           />
         )}
       />
