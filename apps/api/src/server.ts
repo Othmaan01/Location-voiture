@@ -35,7 +35,10 @@ import type { StorageClient } from "./shared/storage.js";
 import type { SupabaseAdmin } from "./shared/supabase-admin.js";
 
 export interface BuildServerOptions {
-  env: Pick<Env, "API_CORS_ORIGINS" | "API_VERSION" | "NODE_ENV" | "APP_DEEP_LINK_SCHEME">;
+  env: Pick<
+    Env,
+    "API_CORS_ORIGINS" | "API_VERSION" | "NODE_ENV" | "APP_DEEP_LINK_SCHEME" | "API_ADMIN_REQUIRE_MFA"
+  >;
   db: Database;
   verifyToken: TokenVerifier;
   supabaseAdmin: SupabaseAdmin;
@@ -159,7 +162,9 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(publicCatalogRoutes);
   await app.register(availabilityRoutes);
   await app.register(bookingsRoutes);
-  await app.register(adminRoutes, { requireMfa: opts.env.NODE_ENV === "production" });
+  await app.register(adminRoutes, {
+    requireMfa: opts.env.API_ADMIN_REQUIRE_MFA ?? opts.env.NODE_ENV === "production",
+  });
 
   app.get("/openapi.json", { config: { rateLimit: false } }, async () => app.swagger());
 

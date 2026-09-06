@@ -10,6 +10,8 @@ primary_region = "cdg"
   API_PORT = "4000"
   API_LOG_LEVEL = "info"
   APP_DEEP_LINK_SCHEME = "lv"
+  # Staging : MFA admin desactivee tant que l app mobile n enrole pas de second facteur (SECURITY.md).
+  API_ADMIN_REQUIRE_MFA = "false"
 
 [http_service]
   internal_port = 4000

@@ -12,6 +12,7 @@ Référence : [docs/phase-0/03-securite.md](docs/phase-0/03-securite.md) (rôles
 - Documents d'identité et professionnels : bucket privé, URL signées courtes émises par l'API, accès journalisé (`document_access_log`).
 - Montants : entiers en centimes (ADR-0004).
 - Créations idempotentes (`Idempotency-Key`) dès la Phase 4.
+- Administration : rôle plateforme obligatoire ; MFA (session `aal2`) exigée par défaut en production (`API_ADMIN_REQUIRE_MFA`). **TECH DEBT** : le staging la désactive tant que l'app mobile ne propose pas l'enrôlement d'un second facteur ; à livrer avant l'ouverture de la production.
 
 ## Signaler une vulnérabilité
 

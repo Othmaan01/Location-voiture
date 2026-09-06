@@ -44,6 +44,17 @@ export default function VerificationsScreen() {
   return (
     <Screen eyebrow="Administration" title="Vérifications" back>
       {queue.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
+      {queue.isError ? (
+        <EmptyState
+          title="File inaccessible"
+          description={
+            queue.error instanceof ApiRequestError
+              ? queue.error.message
+              : "Vérifiez votre connexion et réessayez."
+          }
+          action={<Button label="Réessayer" variant="ghost" onPress={() => queue.refetch()} />}
+        />
+      ) : null}
       {queue.data && queue.data.items.length === 0 ? (
         <EmptyState
           title="Rien à vérifier"

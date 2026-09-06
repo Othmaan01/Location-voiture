@@ -22,6 +22,12 @@ const EnvSchema = z.object({
   API_VERSION: z.string().default("0.1.0"),
   /** Schema de lien profond de l'app mobile (invitations, retours OAuth). */
   APP_DEEP_LINK_SCHEME: z.string().default("lv"),
+  /**
+   * Exige une session MFA (aal2) sur les routes d'administration.
+   * Defaut : vrai en production, faux ailleurs. Staging le desactive explicitement
+   * tant que l'app mobile ne propose pas l'enrolement MFA (TECH DEBT, voir SECURITY.md).
+   */
+  API_ADMIN_REQUIRE_MFA: z.stringbool().optional(),
 
   DATABASE_URL: z.string().min(1),
 
