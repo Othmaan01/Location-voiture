@@ -37,6 +37,8 @@ export interface BookingsService {
   create(actor: Actor, input: CreateBookingBody, requestId: string): Promise<Booking>;
   get(actor: Actor, bookingId: string): Promise<Booking>;
   listMine(actor: Actor, scope: "upcoming" | "past" | "all"): Promise<Booking[]>;
+  /** Administration : litiges ouverts, toutes organisations. */
+  listDisputed(actor: Actor): Promise<Booking[]>;
   listForOrganization(
     actor: Actor,
     organizationId: string,
@@ -53,7 +55,7 @@ export interface BookingsService {
   transition(
     actor: Actor,
     bookingId: string,
-    to: "active" | "completed" | "no_show" | "cancelled",
+    to: "active" | "completed" | "no_show" | "cancelled" | "disputed" | "resolved",
     reason: string | undefined,
     requestId: string,
   ): Promise<Booking>;
@@ -520,6 +522,17 @@ export function createBookingsService(
       return hydrate(rows, actor);
     },
 
+    async listDisputed(actor) {
+      assertCan(actor, "organization.suspend");
+      const rows = await db
+        .select()
+        .from(bookings)
+        .where(eq(bookings.status, "disputed"))
+        .orderBy(desc(bookings.statusChangedAt))
+        .limit(200);
+      return hydrate(rows, actor);
+    },
+
     async listForOrganization(actor, organizationId, scope, status) {
       assertCan(actor, "booking.read_org", { organizationId });
       const rows = await db
@@ -610,6 +623,8 @@ export function createBookingsService(
         throw new DomainError("validation_failed", "Indiquez un motif d'annulation.", {
           field: "reason",
         });
+      if ((to === "disputed" || to === "resolved") && !reason)
+        throw new DomainError("validation_failed", "Indiquez le motif.", { field: "reason" });
       try {
         const updated = await db.transaction(async (tx) =>
           applyTransition(
@@ -634,6 +649,26 @@ export function createBookingsService(
           ),
         );
         const [dto] = await hydrate([updated], actor);
+        if (to === "disputed") {
+          const payload = {
+            kind: "booking.disputed",
+            title: "Litige ouvert",
+            body: `${dto!.reference} : ${(reason ?? "").slice(0, 100)}`,
+            data: { bookingId: row.id },
+          };
+          if (actorType === "customer") void notify.notifyOrganization(row.organizationId, payload);
+          else void notify.notifyUser(row.customerId, payload);
+        }
+        if (to === "resolved") {
+          const payload = {
+            kind: "booking.resolved",
+            title: "Litige resolu",
+            body: `${dto!.reference} : ${(reason ?? "").slice(0, 100)}`,
+            data: { bookingId: row.id },
+          };
+          void notify.notifyOrganization(row.organizationId, payload);
+          void notify.notifyUser(row.customerId, payload);
+        }
         if (to === "completed") {
           void notify.notifyUser(row.customerId, {
             kind: "review.request",

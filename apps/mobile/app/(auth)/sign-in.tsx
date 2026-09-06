@@ -39,6 +39,12 @@ export default function SignInScreen() {
       setServerError(describeAuthError(error));
       return;
     }
+    // Double authentification : si un facteur est actif, la session reste "aal1" tant que le code n'est pas saisi.
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      router.replace("/(auth)/mfa");
+      return;
+    }
     void registerDeviceForPush();
     router.dismissAll();
   });

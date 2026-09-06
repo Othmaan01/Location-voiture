@@ -20,7 +20,7 @@ export const MODE_LABEL: Record<AppMode, string> = {
 export const MODE_TABS: Record<AppMode, readonly string[]> = {
   client: ["index", "messages", "locations", "favoris", "profil"],
   pro: ["pro-home", "pro-bookings", "pro-vehicles", "pro-messages", "profil"],
-  admin: ["admin-verifications", "admin-loueurs", "profil"],
+  admin: ["admin-verifications", "admin-loueurs", "admin-reports", "profil"],
 };
 
 export const MODE_HOME: Record<AppMode, Href> = {

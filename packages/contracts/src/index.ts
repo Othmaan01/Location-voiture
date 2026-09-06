@@ -9,6 +9,7 @@ export * from "./api/companies.js";
 export * from "./api/subscriptions.js";
 export * from "./api/messaging.js";
 export * from "./api/reviews.js";
+export * from "./api/reports.js";
 export * from "./api/catalog.js";
 export * from "./api/documents.js";
 export * from "./api/public-catalog.js";

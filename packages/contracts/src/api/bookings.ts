@@ -146,6 +146,9 @@ export const CancelBodySchema = z
   .object({ reason: z.string().trim().min(2).max(500).optional() })
   .strict();
 
+/** Litige et resolution : le motif est obligatoire (il est montre a l'autre partie). */
+export const DisputeBodySchema = z.object({ reason: z.string().trim().min(5).max(1000) }).strict();
+
 // ---------------------------------------------------------------------
 // Blocages de disponibilite (pro)
 // ---------------------------------------------------------------------

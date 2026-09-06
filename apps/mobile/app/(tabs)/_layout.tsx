@@ -54,6 +54,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="pro-calendar" options={{ title: "Calendrier" }} />
         <Tabs.Screen name="admin-verifications" options={{ title: "Vérifications" }} />
         <Tabs.Screen name="admin-loueurs" options={{ title: "Loueurs" }} />
+        <Tabs.Screen name="admin-reports" options={{ title: "Signalements" }} />
         <Tabs.Screen name="profil" options={{ title: "Profil" }} />
       </Tabs>
     </>

@@ -19,6 +19,8 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
   let ownerToken: string;
   let customerToken: string;
   let otherToken: string;
+  let admin: string;
+  let adminToken: string;
   let orgId: string;
   let agencyId: string;
   let vehicleId: string;
@@ -38,6 +40,9 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
     owner = await createAuthUser(database.sql, `owner-bk-${stamp}@test.local`);
     customer = await createAuthUser(database.sql, `customer-bk-${stamp}@test.local`);
     other = await createAuthUser(database.sql, `other-bk-${stamp}@test.local`);
+    admin = await createAuthUser(database.sql, `admin-bk-${stamp}@test.local`);
+    await database.sql`insert into public.platform_roles (user_id, role) values (${admin}, 'admin')`;
+    adminToken = await keys.sign(admin, { aal: "aal2" });
     ownerToken = await keys.sign(owner);
     customerToken = await keys.sign(customer);
     otherToken = await keys.sign(other);
@@ -64,7 +69,7 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
     await database.sql`delete from public.bookings where organization_id = ${orgId}`;
     await database.sql`delete from public.quotes where organization_id = ${orgId}`;
     await database.sql`delete from public.organizations where id = ${orgId}`;
-    await database.sql`delete from auth.users where id in (${owner}, ${customer}, ${other})`;
+    await database.sql`delete from auth.users where id in (${owner}, ${customer}, ${other}, ${admin})`;
     await database.close();
   });
 
@@ -618,5 +623,117 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
     });
     const profile = await app.inject({ method: "GET", url: `/v1/loueurs/${orgId}` });
     expect(profile.json()).toMatchObject({ ratingAverage: 4, ratingCount: 1 });
+  });
+
+  it("litige : motif obligatoire, ouvert par le client sur une location en cours, resolu par l'administration seule", async () => {
+    const q = (await makeQuote(customerToken, inDays(60), inDays(62))).json<{ id: string }>();
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/bookings",
+      headers: { ...auth(customerToken), "idempotency-key": `k-${stamp}-dispute` },
+      payload: { quoteId: q.id },
+    });
+    expect(created.statusCode).toBe(201);
+    const id = created.json<{ id: string }>().id;
+    for (const step of ["confirm", "start"]) {
+      expect(
+        (
+          await app.inject({
+            method: "POST",
+            url: `/v1/bookings/${id}/${step}`,
+            headers: auth(ownerToken),
+          })
+        ).statusCode,
+      ).toBe(200);
+    }
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/bookings/${id}/dispute`,
+          headers: auth(customerToken),
+          payload: { reason: "" },
+        })
+      ).statusCode,
+    ).toBe(422);
+    const disputed = await app.inject({
+      method: "POST",
+      url: `/v1/bookings/${id}/dispute`,
+      headers: auth(customerToken),
+      payload: { reason: "Vehicule rendu avec une rayure qui etait deja la." },
+    });
+    expect(disputed.statusCode).toBe(200);
+    expect(disputed.json()).toMatchObject({ status: "disputed" });
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/bookings/${id}/resolve`,
+          headers: auth(ownerToken),
+          payload: { reason: "On regle ca entre nous." },
+        })
+      ).statusCode,
+    ).toBe(409);
+    const list = await app.inject({
+      method: "GET",
+      url: "/v1/admin/disputes",
+      headers: auth(adminToken),
+    });
+    expect(list.statusCode).toBe(200);
+    expect(list.json<{ bookings: { id: string }[] }>().bookings.map((b) => b.id)).toContain(id);
+    const resolved = await app.inject({
+      method: "POST",
+      url: `/v1/bookings/${id}/resolve`,
+      headers: auth(adminToken),
+      payload: { reason: "Photos a l'appui : rayure anterieure, caution restituee." },
+    });
+    expect(resolved.statusCode).toBe(200);
+    expect(resolved.json()).toMatchObject({ status: "resolved" });
+  });
+
+  it("signalements : un client signale un loueur, pas sa propre organisation ; l'administration traite", async () => {
+    const own = await app.inject({
+      method: "POST",
+      url: "/v1/reports",
+      headers: auth(ownerToken),
+      payload: { targetType: "organization", targetId: orgId, reason: "spam" },
+    });
+    expect(own.statusCode).toBe(409);
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/reports",
+      headers: auth(customerToken),
+      payload: {
+        targetType: "vehicle",
+        targetId: vehicleId,
+        reason: "fraud",
+        details: "Annonce trompeuse.",
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({
+      organizationId: orgId,
+      status: "open",
+      reason: "fraud",
+    });
+    const reportId = created.json<{ id: string }>().id;
+    expect(
+      (await app.inject({ method: "GET", url: "/v1/admin/reports", headers: auth(customerToken) }))
+        .statusCode,
+    ).toBe(403);
+    const open = await app.inject({
+      method: "GET",
+      url: "/v1/admin/reports",
+      headers: auth(adminToken),
+    });
+    expect(open.json<{ reports: { id: string }[] }>().reports.map((r) => r.id)).toContain(reportId);
+    const done = await app.inject({
+      method: "POST",
+      url: `/v1/admin/reports/${reportId}/resolution`,
+      headers: auth(adminToken),
+      payload: { status: "dismissed", note: "Annonce conforme apres verification." },
+    });
+    expect(done.statusCode).toBe(200);
+    expect(done.json()).toMatchObject({ status: "dismissed" });
   });
 });

@@ -5,8 +5,9 @@ import { Image } from "expo-image";
 import { Car, Check, MapPin, MessageCircle, Phone, Star } from "lucide-react-native";
 import type { Booking, BookingStatus } from "@lv/contracts";
 
-import { Badge, Button, Card, EmptyState, Input, Screen, Text } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Input, Screen, Sheet, Text } from "@/components/ui";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
+import { useMe } from "@/lib/queries";
 import {
   BOOKING_STATUS,
   EVENT_LABEL,
@@ -29,7 +30,10 @@ export default function BookingScreen() {
   const booking = useBooking(bookingId);
   const act = useBookingAction(bookingId);
   const review = useCreateReview(bookingId);
+  const me = useMe();
   const [contactOpen, setContactOpen] = useState(false);
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
 
@@ -303,6 +307,65 @@ export default function BookingScreen() {
           onPress={cancel}
         />
       ) : null}
+      {b.status === "active" ? (
+        <Button
+          label="Signaler un problème"
+          variant="ghost"
+          size="sm"
+          onPress={() => setDisputeOpen(true)}
+        />
+      ) : null}
+      {b.status === "disputed" && me.data?.platformRole ? (
+        <Button
+          label="Marquer le litige résolu"
+          variant="ghost"
+          onPress={() => setDisputeOpen(true)}
+        />
+      ) : null}
+      <Sheet
+        visible={disputeOpen}
+        onClose={() => setDisputeOpen(false)}
+        title={b.status === "disputed" ? "Résolution du litige" : "Signaler un problème"}
+      >
+        <Text variant="sm" tone="muted">
+          {b.status === "disputed"
+            ? "Votre décision est envoyée au client et au loueur."
+            : "Décrivez le problème : le loueur est prévenu et notre équipe peut intervenir."}
+        </Text>
+        <Input
+          label="Motif"
+          value={disputeReason}
+          onChangeText={setDisputeReason}
+          multiline
+          numberOfLines={4}
+          maxLength={1000}
+        />
+        <Button
+          label={b.status === "disputed" ? "Clore le litige" : "Ouvrir un litige"}
+          variant={b.status === "disputed" ? "accent" : "danger"}
+          disabled={disputeReason.trim().length < 5}
+          loading={act.isPending}
+          onPress={() =>
+            act.mutate(
+              {
+                action: b.status === "disputed" ? "resolve" : "dispute",
+                reason: disputeReason.trim(),
+              },
+              {
+                onSuccess: () => {
+                  setDisputeOpen(false);
+                  setDisputeReason("");
+                },
+                onError: (e) =>
+                  Alert.alert(
+                    "Impossible",
+                    e instanceof ApiRequestError ? e.message : "Réessayez.",
+                  ),
+              },
+            )
+          }
+        />
+      </Sheet>
       <ContactSheet
         visible={contactOpen}
         onClose={() => setContactOpen(false)}

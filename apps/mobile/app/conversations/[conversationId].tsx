@@ -14,6 +14,7 @@ import {
 import { SendHorizontal } from "lucide-react-native";
 
 import { Button, EmptyState, Screen, Text } from "@/components/ui";
+import { ReportSheet } from "@/features/reports/ReportSheet";
 import { ApiRequestError } from "@/lib/api";
 import { useMe } from "@/lib/queries";
 import { useConversation, useMarkRead, useSendMessage } from "@/lib/queries-messaging";
@@ -28,6 +29,7 @@ export default function ConversationScreen() {
   const send = useSendMessage(conversationId);
   const markRead = useMarkRead(conversationId);
   const [text, setText] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const count = detail.data?.messages.length ?? 0;
   const unread = detail.data?.conversation.unreadCount ?? 0;
@@ -93,9 +95,18 @@ export default function ConversationScreen() {
                 : router.push(`/(pro)/organizations/${c.organizationId}/bookings/${c.bookingId}`)
             }
           />
+        ) : isCustomer ? (
+          <Button label="Signaler" variant="ghost" size="sm" onPress={() => setReportOpen(true)} />
         ) : undefined
       }
     >
+      <ReportSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetType="conversation"
+        targetId={c.id}
+        label="cette conversation"
+      />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

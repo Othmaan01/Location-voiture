@@ -2,6 +2,11 @@ import { z } from "zod";
 import {
   AdminOrganizationsQuerySchema,
   AdminOrganizationsResponseSchema,
+  BookingsResponseSchema,
+  ReportResolutionBodySchema,
+  ReportSchema,
+  ReportsQuerySchema,
+  ReportsResponseSchema,
   DocumentReviewSchema,
   DocumentSchema,
   ModerateReviewBodySchema,
@@ -12,6 +17,8 @@ import {
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
+import { createBookingsService } from "../bookings/service.js";
+import { createReportsService } from "../reports/service.js";
 import { createReviewsService } from "../reviews/service.js";
 import { createAdminService } from "./service.js";
 
@@ -23,6 +30,8 @@ const SuspendBody = z
 export const adminRoutes: FastifyPluginAsyncZod<{ requireMfa: boolean }> = async (app, opts) => {
   const service = createAdminService(app.db);
   const reviewsService = createReviewsService(app.db, app.notifications);
+  const reportsService = createReportsService(app.db);
+  const bookingsService = createBookingsService(app.db, app.storage, app.notifications);
   const tags = ["admin"];
 
   app.addHook("onRequest", async (request) => {
@@ -34,6 +43,40 @@ export const adminRoutes: FastifyPluginAsyncZod<{ requireMfa: boolean }> = async
       );
     }
   });
+
+  app.get(
+    "/v1/admin/reports",
+    { schema: { tags, querystring: ReportsQuerySchema, response: { 200: ReportsResponseSchema } } },
+    async (request) => ({
+      reports: await reportsService.list(request.actor, request.query.status),
+    }),
+  );
+
+  app.post(
+    "/v1/admin/reports/:reportId/resolution",
+    {
+      schema: {
+        tags,
+        params: z.object({ reportId: UuidSchema }).strict(),
+        body: ReportResolutionBodySchema,
+        response: { 200: ReportSchema },
+      },
+    },
+    async (request) =>
+      reportsService.resolve(
+        request.actor,
+        request.params.reportId,
+        request.body.status,
+        request.body.note,
+        request.id,
+      ),
+  );
+
+  app.get(
+    "/v1/admin/disputes",
+    { schema: { tags, response: { 200: BookingsResponseSchema } } },
+    async (request) => ({ bookings: await bookingsService.listDisputed(request.actor) }),
+  );
 
   app.post(
     "/v1/admin/reviews/:reviewId/moderation",

@@ -34,6 +34,8 @@ export default function OrgBookingScreen() {
   const [reason, setReason] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
   const existingThread = conversations.data?.conversations.find((c) => c.bookingId === bookingId);
   const fullReview = reviews.data?.reviews.find((r) => r.bookingId === bookingId);
 
@@ -195,6 +197,49 @@ export default function OrgBookingScreen() {
           disabled={reason.trim().length < 2}
           loading={act.isPending}
           onPress={() => run(reasonFor === "decline" ? "decline" : "cancel", reason.trim())}
+        />
+      </Sheet>
+      {b.status === "active" ? (
+        <Button
+          label="Ouvrir un litige"
+          variant="ghost"
+          size="sm"
+          onPress={() => setDisputeOpen(true)}
+        />
+      ) : null}
+      <Sheet visible={disputeOpen} onClose={() => setDisputeOpen(false)} title="Ouvrir un litige">
+        <Text variant="sm" tone="muted">
+          Le client est prévenu et notre équipe tranche. Décrivez les faits.
+        </Text>
+        <Input
+          label="Motif"
+          value={disputeReason}
+          onChangeText={setDisputeReason}
+          multiline
+          numberOfLines={4}
+          maxLength={1000}
+        />
+        <Button
+          label="Ouvrir le litige"
+          variant="danger"
+          disabled={disputeReason.trim().length < 5}
+          loading={act.isPending}
+          onPress={() =>
+            act.mutate(
+              { action: "dispute", reason: disputeReason.trim() },
+              {
+                onSuccess: () => {
+                  setDisputeOpen(false);
+                  setDisputeReason("");
+                },
+                onError: (e) =>
+                  Alert.alert(
+                    "Impossible",
+                    e instanceof ApiRequestError ? e.message : "Réessayez.",
+                  ),
+              },
+            )
+          }
         />
       </Sheet>
       <Button

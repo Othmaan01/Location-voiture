@@ -4,6 +4,7 @@ import {
   BookingSchema,
   BookingsResponseSchema,
   CancelBodySchema,
+  DisputeBodySchema,
   CreateBookingBodySchema,
   DecisionBodySchema,
   QuoteRequestSchema,
@@ -171,6 +172,46 @@ export const bookingsRoutes: FastifyPluginAsyncZod = async (app) => {
         request.params.bookingId,
         "completed",
         undefined,
+        request.id,
+      ),
+  );
+  app.post(
+    "/v1/bookings/:bookingId/dispute",
+    {
+      schema: {
+        tags,
+        params: bookingParams,
+        body: DisputeBodySchema,
+        response: { 200: BookingSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) =>
+      service.transition(
+        request.actor,
+        request.params.bookingId,
+        "disputed",
+        request.body.reason,
+        request.id,
+      ),
+  );
+  app.post(
+    "/v1/bookings/:bookingId/resolve",
+    {
+      schema: {
+        tags,
+        params: bookingParams,
+        body: DisputeBodySchema,
+        response: { 200: BookingSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) =>
+      service.transition(
+        request.actor,
+        request.params.bookingId,
+        "resolved",
+        request.body.reason,
         request.id,
       ),
   );

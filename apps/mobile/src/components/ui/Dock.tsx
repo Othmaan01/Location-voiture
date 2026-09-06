@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   Car,
+  Flag,
   Heart,
   Home,
   Inbox,
@@ -36,6 +37,7 @@ const ICONS: Record<string, LucideIcon> = {
   "pro-messages": MessageCircle,
   "admin-verifications": ShieldCheck,
   "admin-loueurs": Building2,
+  "admin-reports": Flag,
 };
 
 /**

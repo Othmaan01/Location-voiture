@@ -84,7 +84,8 @@ export function useBooking(id: string) {
   });
 }
 
-type Action = "confirm" | "decline" | "cancel" | "start" | "complete" | "no-show";
+type Action =
+  "confirm" | "decline" | "cancel" | "start" | "complete" | "no-show" | "dispute" | "resolve";
 export function useBookingAction(id: string) {
   const client = useQueryClient();
   return useMutation({
@@ -96,6 +97,7 @@ export function useBookingAction(id: string) {
     onSuccess: (booking) => {
       client.setQueryData(bookingKeys.one(id), booking);
       void client.invalidateQueries({ queryKey: ["bookings"] });
+      void client.invalidateQueries({ queryKey: ["admin", "disputes"] });
     },
   });
 }

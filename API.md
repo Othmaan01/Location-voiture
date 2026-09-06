@@ -85,6 +85,17 @@ Les routes `/v1/admin/*` exigent un rôle plateforme et, en production, une sess
 
 Règle absolue du catalogue public : organisation vérifiée, agence publiée, véhicule publié et non suspendu. Jamais de plaque, jamais de document.
 
+## Routes Phase 7 — signalements, litiges (ADR-0013)
+
+| Méthode | Route                              | Qui              | Effet                                                                                                                                         |
+| ------- | ---------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST    | `/v1/reports`                      | connecté         | signale un loueur, un véhicule, un avis ou une conversation (`{ targetType, targetId, reason, details? }`) ; `409` sur sa propre organisation |
+| GET     | `/v1/admin/reports?status=`        | admin+           | signalements (`open` par défaut)                                                                                                              |
+| POST    | `/v1/admin/reports/:id/resolution` | admin+           | `{ status: resolved \| dismissed, note? }`                                                                                                    |
+| GET     | `/v1/admin/disputes`               | admin+           | litiges ouverts, toutes organisations                                                                                                         |
+| POST    | `/v1/bookings/:id/dispute`         | client ou loueur | `active → disputed`, motif obligatoire, l'autre partie est notifiée                                                                           |
+| POST    | `/v1/bookings/:id/resolve`         | plateforme       | `disputed → resolved`, décision motivée envoyée aux deux parties                                                                              |
+
 ## Routes Phase 6 — messagerie et avis (ADR-0012)
 
 | Méthode | Route                                 | Qui                 | Effet                                                                                                                  |

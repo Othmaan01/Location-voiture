@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   Info,
+  KeyRound,
   LockKeyhole,
   LogOut,
   ScrollText,
@@ -141,6 +142,16 @@ export default function ProfileScreen() {
           icon={<Bell size={22} color={theme.colors.text} />}
           title="Notifications"
           subtitle="Réponses des loueurs, rappels"
+        />
+        <ListItem
+          icon={<KeyRound size={22} color={theme.colors.text} />}
+          title="Double authentification"
+          subtitle={
+            me.data?.platformRole
+              ? "Obligatoire pour l'administration"
+              : "Code en plus du mot de passe"
+          }
+          onPress={() => router.push("/profil/mfa")}
         />
         <ListItem
           icon={<LockKeyhole size={22} color={theme.colors.text} />}

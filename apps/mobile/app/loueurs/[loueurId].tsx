@@ -8,6 +8,7 @@ import type { PublicVehicleCard } from "@lv/contracts";
 import { Avatar, Badge, Button, EmptyState, Screen, Text } from "@/components/ui";
 import { VehicleActionSheet } from "@/features/client/VehicleActionSheet";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
+import { ReportSheet } from "@/features/reports/ReportSheet";
 import { VehicleCard } from "@/features/client/VehicleCard";
 import { ACCENT_COLOR } from "@/features/client/accent";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
@@ -29,6 +30,9 @@ export default function LoueurScreen() {
   const [selected, setSelected] = useState<PublicVehicleCard | null>(null);
   const [tab, setTab] = useState<"vehicles" | "reviews" | "info">("vehicles");
   const [contact, setContact] = useState<{ vehicleId?: string } | null>(null);
+  const [report, setReport] = useState<{ type: "organization" | "review"; id: string } | null>(
+    null,
+  );
   const reviews = useLoueurReviews(loueurId, tab === "reviews");
 
   if (loueur.isPending) {
@@ -228,6 +232,17 @@ export default function LoueurScreen() {
                 </Text>
               ) : null}
               {r.comment ? <Text variant="sm">{r.comment}</Text> : null}
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  session ? setReport({ type: "review", id: r.id }) : router.push("/(auth)/sign-in")
+                }
+                style={styles.reportLink}
+              >
+                <Text variant="small" tone="dim">
+                  Signaler cet avis
+                </Text>
+              </Pressable>
               {r.reply ? (
                 <View style={styles.reply}>
                   <Text variant="smStrong">Réponse de {l.name}</Text>
@@ -294,6 +309,25 @@ export default function LoueurScreen() {
           openContact(v?.id);
         }}
       />
+      {tab === "info" ? (
+        <Button
+          label="Signaler ce loueur"
+          variant="ghost"
+          size="sm"
+          onPress={() =>
+            session ? setReport({ type: "organization", id: l.id }) : router.push("/(auth)/sign-in")
+          }
+        />
+      ) : null}
+      {report ? (
+        <ReportSheet
+          visible
+          onClose={() => setReport(null)}
+          targetType={report.type}
+          targetId={report.id}
+          label={report.type === "review" ? "cet avis" : l.name}
+        />
+      ) : null}
       <ContactSheet
         visible={contact !== null}
         onClose={() => setContact(null)}
@@ -352,6 +386,7 @@ const styles = StyleSheet.create({
   },
   info: { gap: theme.space["3"] },
   reviewHead: { gap: 2 },
+  reportLink: { alignSelf: "flex-start", minHeight: 28, justifyContent: "center" },
   stars: { flexDirection: "row", gap: 2 },
   reply: {
     marginTop: theme.space["2"],
