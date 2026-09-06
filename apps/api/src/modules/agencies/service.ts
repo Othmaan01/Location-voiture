@@ -33,7 +33,7 @@ export function agencyDto(row: typeof agencies.$inferSelect): Agency {
     timezone: row.timezone,
     phone: row.phone,
     email: row.email,
-    openingHours: (row.openingHours ?? {}) as Agency["openingHours"],
+    openingHours: (row.openingHours ?? {}),
     services: row.services,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
