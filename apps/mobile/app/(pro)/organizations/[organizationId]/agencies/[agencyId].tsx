@@ -1,21 +1,17 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
+import { ActivityIndicator } from "react-native";
 
-import { Badge, Button, Screen, Text } from "@/components/ui";
+import { Badge, Screen, Text } from "@/components/ui";
 import { AgencyForm } from "@/features/pro/AgencyForm";
-import { ApiRequestError } from "@/lib/api";
-import { useAgencies, useSetAgencyPublished, useUpdateAgency } from "@/lib/queries-catalog";
+import { useAgencies, useUpdateAgency } from "@/lib/queries-catalog";
 import { theme } from "@/theme";
 
+/** Une agence devient visible d'elle-meme des que son adresse est positionnee ; aucune etape de publication. */
 export default function EditAgencyScreen() {
-  const { organizationId, agencyId } = useLocalSearchParams<{
-    organizationId: string;
-    agencyId: string;
-  }>();
+  const { organizationId, agencyId } = useLocalSearchParams<{ organizationId: string; agencyId: string }>();
   const router = useRouter();
   const agencies = useAgencies(organizationId);
   const update = useUpdateAgency(organizationId);
-  const publish = useSetAgencyPublished(organizationId);
   const agency = agencies.data?.agencies.find((a) => a.id === agencyId);
 
   if (!agency) {
@@ -25,29 +21,9 @@ export default function EditAgencyScreen() {
       </Screen>
     );
   }
-  const toggle = () =>
-    publish.mutate(
-      { agencyId, published: agency.status !== "published" },
-      {
-        onError: (e) =>
-          Alert.alert(
-            "Publication impossible",
-            e instanceof ApiRequestError ? e.message : "Réessayez plus tard.",
-          ),
-      },
-    );
-
+  const visible = agency.status === "published";
   return (
-    <Screen
-      title={agency.name}
-      back
-      headerRight={
-        <Badge
-          label={agency.status === "published" ? "Publiée" : "Brouillon"}
-          tone={agency.status === "published" ? "success" : "neutral"}
-        />
-      }
-    >
+    <Screen title={agency.name} back headerRight={<Badge label={agency.status === "suspended" ? "Suspendue" : visible ? "Visible" : "Adresse à positionner"} tone={agency.status === "suspended" ? "accent" : visible ? "success" : "warning"} />}>
       <AgencyForm
         initial={agency}
         submitting={update.isPending}
@@ -56,23 +32,9 @@ export default function EditAgencyScreen() {
           router.back();
         }}
       />
-      <View style={styles.publish}>
-        <Text variant="small" tone="dim">
-          {agency.status === "published"
-            ? "Visible des clients. Dépublier la retire de la carte sans rien supprimer."
-            : "Publication possible une fois l'organisation vérifiée et l'adresse positionnée."}
-        </Text>
-        <Button
-          label={agency.status === "published" ? "Dépublier l'agence" : "Publier l'agence"}
-          variant="ghost"
-          loading={publish.isPending}
-          onPress={toggle}
-        />
-      </View>
+      <Text variant="small" tone="dim">
+        {visible ? "Cette agence apparaît aux clients dès que votre organisation est vérifiée et qu'un véhicule y est publié." : "Choisissez une adresse dans les suggestions pour positionner l'agence : elle deviendra visible automatiquement."}
+      </Text>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  publish: { gap: theme.space["2"], marginTop: theme.space["2"] },
-});

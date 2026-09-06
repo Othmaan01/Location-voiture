@@ -143,7 +143,14 @@ export function createAgenciesService(db: Database): AgenciesService {
       try {
         const [row] = await db
           .update(agencies)
-          .set(toRow(input))
+          .set({
+            ...toRow(input),
+            ...(current.status === "suspended"
+              ? {}
+              : {
+                  status: isAgencyComplete({ ...current, ...toRow(input) }) ? "published" : "draft",
+                }),
+          })
           .where(eq(agencies.id, agencyId))
           .returning();
         await audit(db, {

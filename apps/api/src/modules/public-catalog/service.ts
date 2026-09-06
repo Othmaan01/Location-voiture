@@ -109,7 +109,7 @@ export function createPublicCatalogService(
       orgFilter
         ? sql`exists (select 1 from ${organizations} o where o.id = ${vehicles.organizationId} and o.status = 'verified')`
         : sql`true`,
-      sql`exists (select 1 from ${agencies} a where a.id = ${vehicles.agencyId} and a.status = 'published')`,
+      sql`exists (select 1 from ${agencies} a where a.id = ${vehicles.agencyId} and a.status <> 'suspended' and a.location is not null)`,
     );
 
   return {
@@ -143,10 +143,10 @@ export function createPublicCatalogService(
       }>(sql`
         with orgs as (
           select o.id, o.name, o.slug, o.created_at,
-            (select a.city_name from ${agencies} a where a.organization_id = o.id and a.status = 'published' order by a.created_at limit 1) as city_name,
-            ${origin ? sql`(select min(extensions.st_distance(a.location, ${origin})) / 1000.0 from ${agencies} a where a.organization_id = o.id and a.status = 'published' and a.location is not null)` : sql`null::double precision`} as distance_km,
+            (select a.city_name from ${agencies} a where a.organization_id = o.id and a.status <> 'suspended' and a.location is not null order by a.created_at limit 1) as city_name,
+            ${origin ? sql`(select min(extensions.st_distance(a.location, ${origin})) / 1000.0 from ${agencies} a where a.organization_id = o.id and a.status <> 'suspended' and a.location is not null and a.location is not null)` : sql`null::double precision`} as distance_km,
             (select count(*) from ${vehicles} v join ${agencies} a on a.id = v.agency_id
-              where v.organization_id = o.id and v.status = 'published' and v.suspended_at is null and a.status = 'published' ${categoryFilter}) as vehicle_count,
+              where v.organization_id = o.id and v.status = 'published' and v.suspended_at is null and a.status <> 'suspended' and a.location is not null ${categoryFilter}) as vehicle_count,
             (select min(rp.daily_cents) from ${ratePlans} rp join ${vehicles} v on v.id = rp.vehicle_id
               where v.organization_id = o.id and v.status = 'published' and v.suspended_at is null and rp.is_active ${categoryFilter}) as from_daily_cents
           from ${organizations} o
@@ -207,7 +207,12 @@ export function createPublicCatalogService(
       const agencyRows = await db
         .select()
         .from(agencies)
-        .where(and(eq(agencies.organizationId, organizationId), eq(agencies.status, "published")));
+        .where(
+          and(
+            eq(agencies.organizationId, organizationId),
+            sql`${agencies.status} <> 'suspended' and ${agencies.latitude} is not null`,
+          ),
+        );
       const vehicleRows = await db
         .select()
         .from(vehicles)
@@ -324,7 +329,7 @@ export function createPublicCatalogService(
           count(*) over () as total_count
         from ${vehicles} v
         join ${organizations} o on o.id = v.organization_id and o.status = 'verified'
-        join ${agencies} a on a.id = v.agency_id and a.status = 'published'
+        join ${agencies} a on a.id = v.agency_id and a.status <> 'suspended' and a.location is not null
         join ${ratePlans} rp on rp.vehicle_id = v.id and rp.is_active
         where v.status = 'published' and v.suspended_at is null
           ${originSql ? sql`and a.location is not null and extensions.st_dwithin(a.location, ${originSql}, ${query.radiusKm * 1000})` : sql``}
@@ -433,7 +438,10 @@ export function createPublicCatalogService(
         )
         .innerJoin(
           agencies,
-          and(eq(agencies.id, vehicles.agencyId), eq(agencies.status, "published")),
+          and(
+            eq(agencies.id, vehicles.agencyId),
+            sql`${agencies.status} <> 'suspended' and ${agencies.latitude} is not null`,
+          ),
         )
         .where(
           and(
