@@ -2,7 +2,7 @@
 # Pose les secrets de l'API sur Fly a partir de .env.local (jamais affiches).
 # Usage : scripts/fly-set-secrets.sh <app-fly>
 set -euo pipefail
-APP="${1:?nom de l'app Fly requis}"
+APP="${1:?nom de l app Fly requis}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 set -a; . "$ROOT/.env.local"; set +a
 FLY="${FLYCTL:-$HOME/.fly/bin/flyctl}"
