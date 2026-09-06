@@ -51,7 +51,8 @@ export async function buildServer(opts: BuildServerOptions) {
     genReqId: () => crypto.randomUUID(),
     trustProxy: true,
     bodyLimit: 1024 * 256,
-    logController: { disableRequestLogging: opts.env.NODE_ENV === "test" },
+    // TECH DEBT : option depreciee dans Fastify 5.12 (logController) ; a migrer lors du passage a Fastify 6.
+    disableRequestLogging: opts.env.NODE_ENV === "test",
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
