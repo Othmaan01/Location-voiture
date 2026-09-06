@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Fond anime plein ecran, derriere tout le contenu : nappes rouges qui derivent,
- * champ de particules relie pres du pointeur, halo qui suit la souris, grille en
- * perspective qui avance. Canvas unique, budget < 3 ms par image, pause hors ecran,
- * version fixe si l'utilisateur prefere moins d'animations.
+ * Fond anime plein ecran, derriere tout le contenu : nappes rouges qui derivent, lignes de
+ * relief comme une carte qui ondulent a peine, trainees de phares (blanc) et de feux arriere
+ * (rouge) qui traversent la nuit, halo qui suit le pointeur. Discret, lisible, un seul canvas ;
+ * pause hors ecran ; version fixe si l'utilisateur prefere moins d'animations.
  */
 export function AnimatedBackground() {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -23,12 +23,37 @@ export function AnimatedBackground() {
     let height = 0;
     let dpr = 1;
     const pointer = { x: -9999, y: -9999, tx: -9999, ty: -9999, active: false };
-    type P = { x: number; y: number; vx: number; vy: number; r: number; a: number };
-    let particles: P[] = [];
+    type Trail = {
+      y: number;
+      x: number;
+      speed: number;
+      length: number;
+      thickness: number;
+      alpha: number;
+      dir: 1 | -1;
+      red: boolean;
+    };
+    let trails: Trail[] = [];
     let raf = 0;
     let last = performance.now();
     let t = 0;
     let visible = true;
+
+    const newTrail = (spawnInside = false): Trail => {
+      const red = Math.random() < 0.45;
+      const dir: 1 | -1 = red ? -1 : 1;
+      const length = 140 + Math.random() * 320;
+      return {
+        y: height * (0.12 + Math.random() * 0.82),
+        x: spawnInside ? Math.random() * width : dir === 1 ? -length : width + length,
+        speed: (0.18 + Math.random() * 0.35) * (coarse ? 0.7 : 1),
+        length,
+        thickness: 1 + Math.random() * 1.6,
+        alpha: 0.14 + Math.random() * 0.26,
+        dir,
+        red,
+      };
+    };
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -39,35 +64,11 @@ export function AnimatedBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const count = coarse ? 45 : Math.min(140, Math.round((width * height) / 14000));
-      particles = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.12,
-        vy: -0.08 - Math.random() * 0.18,
-        r: 0.6 + Math.random() * 1.6,
-        a: 0.25 + Math.random() * 0.5,
-      }));
+      const count = coarse ? 5 : Math.min(11, Math.max(7, Math.round(width / 150)));
+      trails = Array.from({ length: count }, () => newTrail(true));
     };
 
-    const drawStatic = () => {
-      ctx.clearRect(0, 0, width, height);
-      const g = ctx.createRadialGradient(width * 0.2, -100, 0, width * 0.2, -100, width * 0.7);
-      g.addColorStop(0, "rgba(227,36,59,0.22)");
-      g.addColorStop(1, "rgba(227,36,59,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, width, height);
-    };
-
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
-      if (!visible) return;
-      const dt = Math.min(48, now - last);
-      last = now;
-      t += dt;
-      ctx.clearRect(0, 0, width, height);
-
-      // Nappes lumineuses qui derivent lentement.
+    const drawBlobs = () => {
       const blobs = [
         {
           x: 0.18 + Math.sin(t / 9000) * 0.08,
@@ -83,7 +84,7 @@ export function AnimatedBackground() {
           c: "255,92,109",
           a: 0.09,
         },
-        { x: 0.55 + Math.sin(t / 15000) * 0.1, y: 0.9, r: 0.6, c: "120,20,40", a: 0.14 },
+        { x: 0.55 + Math.sin(t / 15000) * 0.1, y: 0.95, r: 0.6, c: "120,20,40", a: 0.14 },
       ];
       for (const b of blobs) {
         const g = ctx.createRadialGradient(
@@ -99,99 +100,93 @@ export function AnimatedBackground() {
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, width, height);
       }
+    };
 
-      // Grille en perspective, bas de page, qui avance vers le lecteur.
-      const horizon = height * 0.62;
-      const speed = (t / 40) % 60;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, horizon, width, height - horizon);
-      ctx.clip();
+    /** Lignes de relief : quelques courbes douces, comme les isolignes d'une carte, qui respirent. */
+    const drawContours = () => {
+      const lines = coarse ? 5 : 8;
+      const step = 14;
       ctx.lineWidth = 1;
-      for (let i = 0; i < 18; i += 1) {
-        const p = ((i * 60 + speed) % 1080) / 1080;
-        const y = horizon + Math.pow(p, 2.2) * (height - horizon);
-        const alpha = 0.02 + p * 0.09;
-        ctx.strokeStyle = `rgba(255,92,109,${alpha})`;
+      for (let i = 0; i < lines; i += 1) {
+        const base = height * (0.08 + (i / (lines - 1)) * 0.84);
+        const phase = i * 1.7;
+        ctx.strokeStyle = `rgba(244,242,238,${0.028 + (i % 3) * 0.008})`;
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
+        for (let x = -step; x <= width + step; x += step) {
+          const y =
+            base +
+            Math.sin(x / 260 + phase + t / 7000) * 18 +
+            Math.sin(x / 90 - phase + t / 11000) * 6 +
+            Math.cos(x / 520 + t / 9000) * 12;
+          if (x === -step) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
         ctx.stroke();
       }
-      const vanish = { x: width / 2, y: horizon - 40 };
-      for (let i = -12; i <= 12; i += 1) {
-        const xBottom = width / 2 + i * (width / 9);
-        ctx.strokeStyle = `rgba(255,92,109,${0.035 + (1 - Math.abs(i) / 12) * 0.04})`;
-        ctx.beginPath();
-        ctx.moveTo(vanish.x, vanish.y);
-        ctx.lineTo(xBottom, height);
-        ctx.stroke();
-      }
-      ctx.restore();
-      // Fondu au-dessus de l'horizon pour que la grille naisse en douceur.
-      const fade = ctx.createLinearGradient(0, horizon, 0, horizon + 160);
-      fade.addColorStop(0, "rgba(14,14,17,1)");
-      fade.addColorStop(1, "rgba(14,14,17,0)");
-      ctx.fillStyle = fade;
-      ctx.fillRect(0, horizon, width, 160);
+    };
 
-      // Pointeur : suivi amorti, halo, attraction douce des particules.
+    /** Trainees lumineuses : phares en blanc chaud d'un cote, feux arriere en rouge de l'autre. */
+    const drawTrails = (dt: number) => {
+      for (let i = 0; i < trails.length; i += 1) {
+        const tr = trails[i]!;
+        tr.x += tr.dir * tr.speed * dt;
+        const head = tr.x;
+        const tail = tr.x - tr.dir * tr.length;
+        const off = tr.dir === 1 ? head > width + tr.length : head < -tr.length;
+        if (off) {
+          trails[i] = newTrail(false);
+          continue;
+        }
+        const color = tr.red ? "255,92,109" : "244,242,238";
+        const g = ctx.createLinearGradient(tail, tr.y, head, tr.y);
+        g.addColorStop(0, `rgba(${color},0)`);
+        g.addColorStop(0.75, `rgba(${color},${tr.alpha * 0.55})`);
+        g.addColorStop(1, `rgba(${color},${tr.alpha})`);
+        ctx.strokeStyle = g;
+        ctx.lineWidth = tr.thickness;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(tail, tr.y);
+        ctx.lineTo(head, tr.y);
+        ctx.stroke();
+        // Point lumineux en tete, avec un leger halo.
+        const glow = ctx.createRadialGradient(head, tr.y, 0, head, tr.y, 14);
+        glow.addColorStop(0, `rgba(${color},${tr.alpha * 0.9})`);
+        glow.addColorStop(1, `rgba(${color},0)`);
+        ctx.fillStyle = glow;
+        ctx.fillRect(head - 14, tr.y - 14, 28, 28);
+      }
+    };
+
+    const drawPointer = () => {
       pointer.x += (pointer.tx - pointer.x) * 0.08;
       pointer.y += (pointer.ty - pointer.y) * 0.08;
-      if (pointer.active) {
-        const g = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 260);
-        g.addColorStop(0, "rgba(227,36,59,0.16)");
-        g.addColorStop(0.5, "rgba(227,36,59,0.05)");
-        g.addColorStop(1, "rgba(227,36,59,0)");
-        ctx.fillStyle = g;
-        ctx.fillRect(pointer.x - 260, pointer.y - 260, 520, 520);
-      }
+      if (!pointer.active) return;
+      const g = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 280);
+      g.addColorStop(0, "rgba(227,36,59,0.16)");
+      g.addColorStop(0.5, "rgba(227,36,59,0.05)");
+      g.addColorStop(1, "rgba(227,36,59,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(pointer.x - 280, pointer.y - 280, 560, 560);
+    };
 
-      // Particules : derive ascendante, rebouclage, liens de proximite pres du pointeur.
-      const linkRadius = 120;
-      for (const p of particles) {
-        p.x += p.vx * dt * 0.06;
-        p.y += p.vy * dt * 0.06;
-        if (pointer.active) {
-          const dx = pointer.x - p.x;
-          const dy = pointer.y - p.y;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < 220 * 220 && d2 > 1) {
-            const f = (1 - Math.sqrt(d2) / 220) * 0.004 * dt;
-            p.x += dx * f;
-            p.y += dy * f;
-          }
-        }
-        if (p.y < -10) {
-          p.y = height + 10;
-          p.x = Math.random() * width;
-        }
-        if (p.x < -10) p.x = width + 10;
-        if (p.x > width + 10) p.x = -10;
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(244,242,238,${p.a})`;
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (pointer.active) {
-        ctx.lineWidth = 0.8;
-        for (let i = 0; i < particles.length; i += 1) {
-          const a = particles[i]!;
-          const da = Math.hypot(a.x - pointer.x, a.y - pointer.y);
-          if (da > 200) continue;
-          for (let j = i + 1; j < particles.length; j += 1) {
-            const b = particles[j]!;
-            const d = Math.hypot(a.x - b.x, a.y - b.y);
-            if (d < linkRadius) {
-              ctx.strokeStyle = `rgba(255,92,109,${(1 - d / linkRadius) * 0.35 * (1 - da / 200)})`;
-              ctx.beginPath();
-              ctx.moveTo(a.x, a.y);
-              ctx.lineTo(b.x, b.y);
-              ctx.stroke();
-            }
-          }
-        }
-      }
+    const drawStatic = () => {
+      ctx.clearRect(0, 0, width, height);
+      drawBlobs();
+      drawContours();
+    };
+
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      if (!visible) return;
+      const dt = Math.min(48, now - last);
+      last = now;
+      t += dt;
+      ctx.clearRect(0, 0, width, height);
+      drawBlobs();
+      drawContours();
+      drawPointer();
+      drawTrails(dt);
     };
 
     const onMove = (e: PointerEvent) => {
