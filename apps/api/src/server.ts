@@ -17,15 +17,19 @@ import type { Database } from "./db/client.js";
 import type { Env } from "./env.js";
 import { adminRoutes } from "./modules/admin/routes.js";
 import { agenciesRoutes } from "./modules/agencies/routes.js";
+import { availabilityRoutes } from "./modules/availability/routes.js";
+import { bookingsRoutes } from "./modules/bookings/routes.js";
 import { devicesRoutes } from "./modules/devices/routes.js";
 import { documentsRoutes } from "./modules/documents/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { identityRoutes } from "./modules/identity/routes.js";
+import type { NotificationsService } from "./modules/notifications/service.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
 import { publicCatalogRoutes } from "./modules/public-catalog/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
 import { DomainError } from "./shared/errors.js";
+import { idempotencyPlugin } from "./shared/idempotency.js";
 import { authPlugin } from "./shared/plugins.js";
 import type { StorageClient } from "./shared/storage.js";
 import type { SupabaseAdmin } from "./shared/supabase-admin.js";
@@ -36,6 +40,7 @@ export interface BuildServerOptions {
   verifyToken: TokenVerifier;
   supabaseAdmin: SupabaseAdmin;
   storage: StorageClient;
+  notifications: NotificationsService;
   logger: Logger;
 }
 
@@ -87,7 +92,9 @@ export async function buildServer(opts: BuildServerOptions) {
     verifyToken: opts.verifyToken,
     supabaseAdmin: opts.supabaseAdmin,
     storage: opts.storage,
+    notifications: opts.notifications,
   });
+  await app.register(idempotencyPlugin, { db: opts.db });
 
   app.setErrorHandler((rawError: unknown, request, reply) => {
     const error = rawError as FastifyError;
@@ -149,6 +156,8 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(vehiclesRoutes);
   await app.register(documentsRoutes);
   await app.register(publicCatalogRoutes);
+  await app.register(availabilityRoutes);
+  await app.register(bookingsRoutes);
   await app.register(adminRoutes, { requireMfa: opts.env.NODE_ENV === "production" });
 
   app.get("/openapi.json", { config: { rateLimit: false } }, async () => app.swagger());

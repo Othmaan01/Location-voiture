@@ -53,6 +53,7 @@ export async function createTestServer(db: Database, verifyToken: TokenVerifier)
     },
     supabaseAdmin: { deleteUser: async () => undefined },
     storage: fakeStorage(),
+    notifications: { notifyUser: async () => undefined, notifyOrganization: async () => undefined },
     db,
     verifyToken,
     logger: pino({ level: process.env["TEST_LOG_LEVEL"] ?? "silent" }),

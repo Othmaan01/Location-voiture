@@ -8,3 +8,4 @@ export * from "./api/organizations.js";
 export * from "./api/catalog.js";
 export * from "./api/documents.js";
 export * from "./api/public-catalog.js";
+export * from "./api/bookings.js";

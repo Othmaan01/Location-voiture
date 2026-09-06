@@ -330,3 +330,120 @@ export const cities = pgTable("cities", {
   population: integer("population"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "requested",
+  "confirmed",
+  "active",
+  "completed",
+  "declined",
+  "expired",
+  "cancelled",
+  "no_show",
+  "disputed",
+  "resolved",
+]);
+export const blockReasonEnum = pgEnum("block_reason", ["maintenance", "external_rental", "other"]);
+
+export const quotes = pgTable("quotes", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  userId: uuid("user_id"),
+  vehicleId: uuid("vehicle_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  ratePlanId: uuid("rate_plan_id").notNull(),
+  pickupAgencyId: uuid("pickup_agency_id").notNull(),
+  period: text("period").notNull(),
+  lines: jsonb("lines").notNull(),
+  subtotalCents: integer("subtotal_cents").notNull(),
+  feesCents: integer("fees_cents").notNull().default(0),
+  totalCents: integer("total_cents").notNull(),
+  depositCents: integer("deposit_cents").notNull().default(0),
+  currency: char("currency", { length: 3 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const bookings = pgTable("bookings", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  reference: text("reference")
+    .notNull()
+    .default(sql`public.generate_booking_reference()`),
+  organizationId: uuid("organization_id").notNull(),
+  agencyId: uuid("agency_id").notNull(),
+  vehicleId: uuid("vehicle_id").notNull(),
+  customerId: uuid("customer_id").notNull(),
+  quoteId: uuid("quote_id").notNull(),
+  period: text("period").notNull(),
+  status: bookingStatusEnum("status").notNull().default("requested"),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
+  customerMessage: text("customer_message"),
+  declineReason: text("decline_reason"),
+  cancellationReason: text("cancellation_reason"),
+  cancelledBy: actorTypeEnum("cancelled_by"),
+  totalCents: integer("total_cents").notNull(),
+  depositCents: integer("deposit_cents").notNull().default(0),
+  currency: char("currency", { length: 3 }).notNull(),
+  priceSnapshot: jsonb("price_snapshot").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const bookingEvents = pgTable("booking_events", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  bookingId: uuid("booking_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  fromStatus: bookingStatusEnum("from_status"),
+  toStatus: bookingStatusEnum("to_status").notNull(),
+  actorId: uuid("actor_id"),
+  actorType: actorTypeEnum("actor_type").notNull(),
+  reason: text("reason"),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const availabilityBlocks = pgTable("availability_blocks", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  vehicleId: uuid("vehicle_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  period: text("period").notNull(),
+  reason: blockReasonEnum("reason").notNull().default("other"),
+  note: text("note"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  userId: uuid("user_id").notNull(),
+  kind: text("kind").notNull(),
+  payload: jsonb("payload").notNull().default({}),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  sentPushAt: timestamp("sent_push_at", { withTimezone: true }),
+  sentEmailAt: timestamp("sent_email_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const idempotencyKeys = pgTable(
+  "idempotency_keys",
+  {
+    key: text("key").notNull(),
+    userId: uuid("user_id").notNull(),
+    route: text("route").notNull(),
+    requestHash: text("request_hash").notNull(),
+    responseStatus: integer("response_status"),
+    responseBody: jsonb("response_body"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.key] })],
+);

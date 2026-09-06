@@ -75,3 +75,19 @@ Les routes `/v1/admin/*` exigent un rôle plateforme et, en production, une sess
 | GET / PUT / DELETE | `/v1/me/favorites[/:vehicleId]`                                                                                       | connecté | favoris (uniquement des véhicules publiés)                                                                                          |
 
 Règle absolue du catalogue public : organisation vérifiée, agence publiée, véhicule publié et non suspendu. Jamais de plaque, jamais de document.
+
+## Routes Phase 4 — réservation, disponibilités
+
+| Méthode  | Route                                                  | Qui                                     | Description                                                                                                                                        |
+| -------- | ------------------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST     | `/v1/quotes`                                           | public                                  | devis figé 15 min pour un véhicule et des dates (retrait ≥ 2 h), disponibilité vérifiée, prix calculé par le moteur                                |
+| POST     | `/v1/bookings`                                         | connecté, `Idempotency-Key` requis      | demande à partir d'un devis du demandeur ; verrou par véhicule, re-vérification, statut `requested`, délai de réponse 24 h, notification du loueur |
+| GET      | `/v1/me/bookings?scope=upcoming\|past\|all`            | connecté                                | mes réservations (contact de l'agence révélé une fois confirmée)                                                                                   |
+| GET      | `/v1/organizations/:id/bookings?scope&status`          | membre                                  | boîte de réception du loueur (téléphone du client révélé une fois confirmée)                                                                       |
+| GET      | `/v1/bookings/:id`                                     | client ou membre                        | détail avec frise d'événements                                                                                                                     |
+| POST     | `/v1/bookings/:id/confirm` · `/decline` (motif requis) | agent+                                  | décision ; la confirmation re-vérifie la disponibilité sous verrou                                                                                 |
+| POST     | `/v1/bookings/:id/cancel`                              | client (libre) ou agent+ (motif requis) | annulation d'une demande ou d'une réservation confirmée                                                                                            |
+| POST     | `/v1/bookings/:id/start` · `/complete` · `/no-show`    | agent+                                  | départ, retour, absence du client                                                                                                                  |
+| GET/POST | `/v1/vehicles/:id/blocks` · DELETE `/v1/blocks/:id`    | agent+                                  | blocages manuels (refusés s'ils chevauchent une réservation ferme)                                                                                 |
+
+Machine à états : `requested → confirmed | declined | expired | cancelled` ; `confirmed → active | cancelled | no_show` ; `active → completed | disputed` ; `disputed → resolved`. Toute autre transition est refusée (`409`). Les demandes sans réponse expirent automatiquement (tâche toutes les 5 minutes).

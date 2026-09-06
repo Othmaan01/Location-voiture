@@ -1,4 +1,10 @@
 import { createDatabase } from "./db/client.js";
+import { startExpireBookingsJob } from "./jobs/expire-bookings.js";
+import { createBookingsService } from "./modules/bookings/service.js";
+import {
+  createExpoPushSender,
+  createNotificationsService,
+} from "./modules/notifications/service.js";
 import { loadEnv } from "./env.js";
 import { buildServer } from "./server.js";
 import { createTokenVerifier } from "./shared/auth.js";
@@ -9,17 +15,26 @@ import { createSupabaseAdmin } from "./shared/supabase-admin.js";
 const env = loadEnv();
 const logger = createLogger(env.API_LOG_LEVEL, env.NODE_ENV === "development");
 const database = createDatabase(env.DATABASE_URL);
+const storage = createStorageClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const notifications = createNotificationsService(database.db, createExpoPushSender(logger));
 
 const app = await buildServer({
   env,
   db: database.db,
   verifyToken: createTokenVerifier(env),
   supabaseAdmin: createSupabaseAdmin(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
-  storage: createStorageClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
+  storage,
+  notifications,
   logger,
 });
 
+const stopJobs = startExpireBookingsJob(
+  createBookingsService(database.db, storage, notifications),
+  logger,
+);
+
 const shutdown = async (signal: string) => {
+  stopJobs();
   logger.info({ signal }, "arret en cours");
   await app.close();
   await database.close();
