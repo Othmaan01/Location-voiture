@@ -1,11 +1,22 @@
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-import * as DocumentPicker from "expo-document-picker";
+
+export class UploadError extends Error {
+  constructor(
+    public readonly status: number,
+    body: string,
+  ) {
+    super(body || `Televersement refuse (${status})`);
+    this.name = "UploadError";
+  }
+}
 
 /**
- * Televersement vers une URL signee Supabase Storage.
- * Le serveur a emis l'URL pour un chemin precis ; on envoie le fichier en PUT,
- * puis on confirme aupres de l'API, qui verifie que le fichier existe bien.
+ * Televersement vers une URL signee Supabase Storage, en natif (expo-file-system) :
+ * le fichier part tel quel en corps binaire, avec le bon Content-Type. Le serveur
+ * a emis l'URL pour un chemin precis ; l'API verifie ensuite que le fichier existe.
  */
 export async function uploadToSignedUrl(
   uploadUrl: string,
@@ -13,13 +24,24 @@ export async function uploadToSignedUrl(
   fileUri: string,
   mimeType: string,
 ): Promise<void> {
-  const blob = await (await fetch(fileUri)).blob();
-  const response = await fetch(`${uploadUrl}?token=${encodeURIComponent(token)}`, {
-    method: "PUT",
-    headers: { "Content-Type": mimeType, "x-upsert": "false" },
-    body: blob,
-  });
-  if (!response.ok) throw new Error(`Televersement refuse (${response.status})`);
+  const result = await FileSystem.uploadAsync(
+    `${uploadUrl}?token=${encodeURIComponent(token)}`,
+    fileUri,
+    {
+      httpMethod: "PUT",
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: { "Content-Type": mimeType },
+    },
+  );
+  if (result.status < 200 || result.status >= 300) {
+    let message = "";
+    try {
+      message = (JSON.parse(result.body) as { message?: string }).message ?? "";
+    } catch {
+      message = result.body.slice(0, 200);
+    }
+    throw new UploadError(result.status, message);
+  }
 }
 
 export interface PickedImage {

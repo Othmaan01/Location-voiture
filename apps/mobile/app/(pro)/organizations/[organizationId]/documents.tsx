@@ -16,7 +16,7 @@ import {
   useSubmitVerification,
   useVerification,
 } from "@/lib/queries-catalog";
-import { pickDocument, uploadToSignedUrl } from "@/lib/upload";
+import { UploadError, pickDocument, uploadToSignedUrl } from "@/lib/upload";
 import { theme } from "@/theme";
 
 type Kind = "kbis" | "insurance" | "id_card" | "other";

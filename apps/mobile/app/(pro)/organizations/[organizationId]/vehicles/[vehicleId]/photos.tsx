@@ -13,7 +13,7 @@ import {
   useReorderPhotos,
   useVehicle,
 } from "@/lib/queries-catalog";
-import { pickAndPrepareImage, uploadToSignedUrl } from "@/lib/upload";
+import { UploadError, pickAndPrepareImage, uploadToSignedUrl } from "@/lib/upload";
 import { theme } from "@/theme";
 
 /** Photos du vehicule : ajout (galerie, redimensionnee), ordre, suppression. La premiere est la vignette. */
