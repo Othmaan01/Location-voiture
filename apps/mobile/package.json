@@ -38,7 +38,12 @@
     "expo-blur": "~57.0.2",
     "expo-haptics": "~57.0.2",
     "react-hook-form": "^7.87.0",
-    "@hookform/resolvers": "^5.9.1"
+    "@hookform/resolvers": "^5.9.1",
+    "expo-image-picker": "~57.0.16",
+    "expo-image-manipulator": "~57.0.16",
+    "expo-document-picker": "~57.0.1",
+    "expo-image": "~57.0.4",
+    "expo-file-system": "~57.0.6"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",

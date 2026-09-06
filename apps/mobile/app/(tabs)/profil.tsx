@@ -6,6 +6,7 @@ import {
   Info,
   LogOut,
   ScrollText,
+  ShieldAlert,
   ShieldCheck,
   Trash2,
   UserRound,
@@ -129,6 +130,18 @@ export default function ProfileScreen() {
           </View>
         )}
       </Card>
+
+      {me.data?.platformRole ? (
+        <Card padded={false}>
+          <ListItem
+            icon={<ShieldAlert size={22} color={theme.colors.accentTint} />}
+            title="Administration"
+            subtitle="Vérification des loueurs"
+            onPress={() => router.push("/(admin)/verifications")}
+            last
+          />
+        </Card>
+      ) : null}
 
       <Card padded={false}>
         <ListItem icon={<Info size={22} color={theme.colors.text} />} title="Aide et contact" />

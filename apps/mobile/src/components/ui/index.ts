@@ -7,5 +7,6 @@ export { EmptyState } from "./EmptyState";
 export { Input } from "./Input";
 export { ListItem } from "./ListItem";
 export { Screen } from "./Screen";
+export { Select } from "./Select";
 export { Sheet } from "./Sheet";
 export { Text } from "./Text";

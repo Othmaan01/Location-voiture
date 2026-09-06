@@ -1,28 +1,21 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { Building2, Users } from "lucide-react-native";
+import { Building2, Car, FileCheck2, MapPin, Users } from "lucide-react-native";
 
 import { Avatar, Badge, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { useMembers, useOrganization } from "@/lib/queries";
+import { useAgencies, useVehicles, useVerification } from "@/lib/queries-catalog";
+import { ORG_STATUS } from "@/features/pro/labels";
 import { theme } from "@/theme";
-
-const STATUS: Record<
-  string,
-  { label: string; tone: "accent" | "success" | "warning" | "neutral" }
-> = {
-  draft: { label: "Brouillon", tone: "neutral" },
-  submitted: { label: "Vérification demandée", tone: "warning" },
-  under_review: { label: "En cours de vérification", tone: "warning" },
-  verified: { label: "Vérifié", tone: "success" },
-  rejected: { label: "Refusé", tone: "accent" },
-  suspended: { label: "Suspendu", tone: "accent" },
-};
 
 export default function OrganizationScreen() {
   const { organizationId } = useLocalSearchParams<{ organizationId: string }>();
   const router = useRouter();
   const org = useOrganization(organizationId);
   const members = useMembers(organizationId);
+  const agencies = useAgencies(organizationId);
+  const vehicles = useVehicles(organizationId);
+  const verification = useVerification(organizationId);
 
   if (org.isPending) {
     return (
@@ -41,7 +34,9 @@ export default function OrganizationScreen() {
       </Screen>
     );
   }
-  const status = STATUS[org.data.status] ?? STATUS["draft"]!;
+  const status = ORG_STATUS[org.data.status] ?? ORG_STATUS["draft"]!;
+  const missing = verification.data?.missing.length ?? 0;
+  const published = vehicles.data?.vehicles.filter((v) => v.status === "published").length ?? 0;
 
   return (
     <Screen eyebrow="Espace professionnel" back>
@@ -52,11 +47,50 @@ export default function OrganizationScreen() {
           <Badge label={status.label} tone={status.tone} />
         </View>
       </View>
+
+      {org.data.status === "draft" || org.data.status === "rejected" ? (
+        <Card style={styles.callout}>
+          <Text variant="bodyStrong">
+            {org.data.status === "rejected" ? "Dossier refusé" : "Faites vérifier votre entreprise"}
+          </Text>
+          <Text variant="sm" tone="muted">
+            {org.data.status === "rejected"
+              ? "Corrigez les points signalés puis soumettez de nouveau."
+              : "Kbis, assurance, une agence avec adresse et votre SIRET. Vous pouvez préparer vos véhicules en attendant, la publication s'ouvre après vérification."}
+          </Text>
+        </Card>
+      ) : null}
+
       <Card padded={false}>
         <ListItem
-          icon={<Building2 size={22} color={theme.colors.text} />}
-          title="Informations"
-          subtitle={org.data.siret ? `SIRET ${org.data.siret}` : "SIRET à renseigner"}
+          icon={<FileCheck2 size={22} color={theme.colors.text} />}
+          title="Vérification et documents"
+          subtitle={
+            missing > 0
+              ? `${missing} élément${missing > 1 ? "s" : ""} manquant${missing > 1 ? "s" : ""}`
+              : status.label
+          }
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/documents`)}
+        />
+        <ListItem
+          icon={<MapPin size={22} color={theme.colors.text} />}
+          title="Agences"
+          subtitle={
+            agencies.data
+              ? `${agencies.data.agencies.length} agence${agencies.data.agencies.length > 1 ? "s" : ""}`
+              : undefined
+          }
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/agencies`)}
+        />
+        <ListItem
+          icon={<Car size={22} color={theme.colors.text} />}
+          title="Véhicules"
+          subtitle={
+            vehicles.data
+              ? `${vehicles.data.vehicles.length} au total · ${published} publié${published > 1 ? "s" : ""}`
+              : undefined
+          }
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/vehicles`)}
         />
         <ListItem
           icon={<Users size={22} color={theme.colors.text} />}
@@ -67,15 +101,13 @@ export default function OrganizationScreen() {
               : undefined
           }
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/members`)}
+        />
+        <ListItem
+          icon={<Building2 size={22} color={theme.colors.text} />}
+          title="Informations"
+          subtitle={org.data.siret ? `SIRET ${org.data.siret}` : "SIRET à renseigner"}
           last
         />
-      </Card>
-      <Card raised>
-        <Text variant="bodyStrong">Prochaines étapes</Text>
-        <Text variant="sm" tone="muted" style={styles.next}>
-          Agences, véhicules, tarifs et documents de vérification arrivent dans la prochaine version
-          de l'espace pro.
-        </Text>
       </Card>
     </Screen>
   );
@@ -84,5 +116,5 @@ export default function OrganizationScreen() {
 const styles = StyleSheet.create({
   identity: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
   identityTexts: { flex: 1, gap: theme.space["2"] },
-  next: { marginTop: theme.space["1"] },
+  callout: { borderColor: theme.colors.accentDark, gap: theme.space["2"] },
 });
