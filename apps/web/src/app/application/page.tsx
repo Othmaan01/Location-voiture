@@ -52,7 +52,7 @@ export default function AppPage() {
   return (
     <>
       <section className="border-b border-ink-200/60">
-        <div className="container-page grid gap-12 py-16 md:grid-cols-[1fr_0.8fr] md:items-center md:py-24">
+        <div className="container-page grid gap-12 py-16 [&>*]:min-w-0 md:grid-cols-[1fr_0.8fr] md:items-center md:py-24">
           <Reveal className="space-y-6">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-tint">
               iPhone et Android

@@ -106,7 +106,7 @@ export default function ProPage() {
   return (
     <>
       <section className="border-b border-ink-200/60">
-        <div className="container-page grid gap-10 py-16 md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-24">
+        <div className="container-page grid gap-10 py-16 [&>*]:min-w-0 md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-24">
           <Reveal className="space-y-6">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-tint">
               Loueurs professionnels

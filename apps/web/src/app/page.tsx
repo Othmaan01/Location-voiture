@@ -130,11 +130,11 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationSchema())} />
 
       <section className="border-b border-ink-200/60">
-        <div className="container-page grid gap-12 py-16 md:grid-cols-[1.15fr_0.85fr] md:items-center md:py-24">
+        <div className="container-page grid gap-12 py-16 [&>*]:min-w-0 md:grid-cols-[1.15fr_0.85fr] md:items-center md:py-24">
           <Reveal className="space-y-7">
-            <p className="inline-flex items-center gap-2 rounded-full border border-brand/40 bg-brand-soft/60 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-tint">
-              <span className="ring-pulse size-1.5 rounded-full bg-brand" /> Location de voiture
-              entre pros et particuliers
+            <p className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-brand/40 bg-brand-soft/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-tint sm:text-xs">
+              <span className="ring-pulse size-1.5 rounded-full bg-brand" /> Location entre pros et
+              particuliers
             </p>
             <h1 className="text-4xl font-extrabold leading-[1.05] md:text-6xl">
               <span className="glow-text">Louez chez un pro vérifié,</span>

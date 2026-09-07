@@ -13,7 +13,7 @@ export function MobileShowcase() {
     l.cars.map((c) => ({ ...c, loueur: l.name, city: l.city, rating: l.rating })),
   );
   return (
-    <div className="md:hidden">
+    <div className="min-w-0 md:hidden">
       <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-tint">
         Aperçu de l&apos;application
       </p>
