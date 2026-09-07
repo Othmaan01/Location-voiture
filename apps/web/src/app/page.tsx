@@ -18,6 +18,7 @@ import { Reveal } from "@/components/fx/reveal";
 import { Tilt } from "@/components/fx/tilt";
 import { LoueurCard } from "@/components/loueurs/loueur-card";
 import { Faq } from "@/components/marketing/faq";
+import { MobileShowcase } from "@/components/marketing/mobile-showcase";
 import { PhoneMockup } from "@/components/marketing/phone-mockup";
 import { SectionTitle } from "@/components/marketing/section";
 import { StoreBadges } from "@/components/marketing/store-badges";
@@ -164,6 +165,9 @@ export default async function HomePage() {
           </Reveal>
           <Reveal delay={150} className="hidden md:block">
             <PhoneMockup />
+          </Reveal>
+          <Reveal delay={150}>
+            <MobileShowcase />
           </Reveal>
         </div>
         <div className="container-page pb-10">

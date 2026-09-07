@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/layout/legal-page";
+import { PHOTO_CREDITS } from "@/lib/showcase";
 
 export const metadata: Metadata = {
   title: "Mentions legales",
@@ -13,6 +14,10 @@ export default function LegalNoticePage() {
       title="Mentions legales"
       intro="Modele a completer avec vos informations reelles avant la mise en production."
       sections={[
+        {
+          heading: "Crédits photos",
+          body: `Photos de véhicules utilisées à titre d'illustration, issues de Wikimedia Commons sous licence libre avec attribution :\n${PHOTO_CREDITS.map((c) => `${c.title} — ${c.artist} — ${c.license} — ${c.page}`).join("\n")}`,
+        },
         {
           heading: "Editeur du site",
           body: "[Denomination sociale] — [forme juridique] au capital de [montant] €\nSiege social : [adresse]\nRCS [ville] [numero] — SIRET [numero]\nTVA intracommunautaire : [numero]\nDirecteur de la publication : [nom]\nContact : [e-mail]",
