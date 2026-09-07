@@ -12,8 +12,9 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/recherche", label: "Rechercher" },
   { href: "/villes", label: "Villes" },
-  { href: "/tarifs", label: "Tarifs" },
   { href: "/pro", label: "Loueurs" },
+  { href: "/tarifs", label: "Tarifs" },
+  { href: "/application", label: "L'application" },
 ];
 
 export function SiteHeader() {
@@ -43,7 +44,7 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="hidden items-center gap-2 md:flex">
-          <ButtonLink href="/pro" variant="primary" size="sm" className="btn-glow">
+          <ButtonLink href="/application" variant="primary" size="sm" className="btn-glow">
             Télécharger l&apos;application
           </ButtonLink>
         </div>
@@ -71,7 +72,7 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
-            <ButtonLink href="/pro" className="mt-2" onClick={() => setOpen(false)}>
+            <ButtonLink href="/application" className="mt-2" onClick={() => setOpen(false)}>
               Télécharger l&apos;application
             </ButtonLink>
           </nav>

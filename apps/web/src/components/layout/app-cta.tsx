@@ -1,6 +1,4 @@
-import { Smartphone } from "lucide-react";
-
-import { ButtonLink } from "@/components/ui/button";
+import { StoreBadges } from "@/components/marketing/store-badges";
 
 /** Rappel commun : la reservation et les messages se font dans l'application. */
 export function AppCta({ title = "Réservez dans l'application" }: { title?: string }) {
@@ -14,9 +12,7 @@ export function AppCta({ title = "Réservez dans l'application" }: { title?: str
             passe dans l&apos;application, gratuite pour les clients.
           </p>
         </div>
-        <ButtonLink href="/pro#application" size="lg" className="btn-glow">
-          <Smartphone /> Obtenir l&apos;application
-        </ButtonLink>
+        <StoreBadges />
       </div>
     </section>
   );

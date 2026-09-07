@@ -17,7 +17,7 @@ export function SearchResults({ items }: { items: SearchResult[] }) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((v) => (
         <div key={v.id} className="space-y-2">
-          <VehicleCard vehicle={v} appHref="/pro#application" />
+          <VehicleCard vehicle={v} appHref="/application" />
           <Link
             href={`/loueurs/${v.loueurId}`}
             className="block px-1 text-xs font-semibold text-muted-foreground hover:text-ink-900"

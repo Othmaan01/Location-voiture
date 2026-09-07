@@ -35,7 +35,7 @@ export default async function LoueurPage({ params }: Params) {
   const [l, reviews] = await Promise.all([api.loueur(id), api.reviews(id)]);
   if (!l) notFound();
   const main = l.agencies[0];
-  const appHref = "/pro#application";
+  const appHref = "/application";
   return (
     <div className="container-page py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(loueurSchema(l))} />

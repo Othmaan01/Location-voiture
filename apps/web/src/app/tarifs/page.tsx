@@ -63,7 +63,7 @@ export default async function PricingPage() {
               ))}
             </ul>
             <ButtonLink
-              href={p.isQuote ? "/contact" : "/pro#application"}
+              href={p.isQuote ? "/contact" : "/application"}
               className="mt-6"
               variant={p.code === "pro" ? "primary" : "outline"}
             >

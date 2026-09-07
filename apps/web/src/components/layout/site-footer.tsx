@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
+import { StoreBadges } from "@/components/marketing/store-badges";
 import { publicEnv } from "@/lib/env";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
@@ -17,6 +18,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/pro", label: "Publier ma flotte" },
       { href: "/tarifs", label: "Abonnement et paliers" },
+      { href: "/application", label: "L'application" },
     ],
   },
   {
@@ -40,6 +42,7 @@ export function SiteFooter() {
             La mise en relation directe avec des loueurs de voitures professionnels vérifiés. Aucune
             commission : vous réglez le loueur, jamais la plateforme.
           </p>
+          <StoreBadges />
         </div>
         {COLUMNS.map((column) => (
           <div key={column.title} className="space-y-3">
