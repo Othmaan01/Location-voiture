@@ -1,10 +1,11 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Car, ChevronRight, ShieldCheck, Star } from "lucide-react-native";
+import { Car, ChevronRight, ShieldCheck, Star, Tag } from "lucide-react-native";
 import type { LoueurSummary } from "@lv/contracts";
 
 import { Avatar, Badge, Text } from "@/components/ui";
 import { formatEuros } from "@/features/pro/labels";
+import { formatOffer } from "@/lib/queries-offers";
 import { theme } from "@/theme";
 
 /** Carte du feed (ADR-0009) : identite du loueur, 3 vignettes, "dès X €/j", lien vers le profil. */
@@ -34,6 +35,13 @@ export function LoueurCard({ loueur, onPress }: { loueur: LoueurSummary; onPress
                 label="Vérifié"
                 tone="accent"
                 icon={<ShieldCheck size={12} color={theme.colors.accentTint} strokeWidth={2.5} />}
+              />
+            ) : null}
+            {loueur.offer ? (
+              <Badge
+                label={formatOffer(loueur.offer)}
+                tone="success"
+                icon={<Tag size={12} color={theme.colors.success} strokeWidth={2.5} />}
               />
             ) : null}
           </View>

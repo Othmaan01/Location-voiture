@@ -3,12 +3,13 @@ import { z } from "zod";
 import { FuelSchema, TransmissionSchema, VehicleCategorySchema } from "../enums.js";
 import { CurrencySchema } from "../money.js";
 import { IsoDateTimeSchema, UuidSchema } from "./common.js";
+import { PublicOfferSchema } from "./offers.js";
 import { AccentSchema } from "./organizations.js";
 
 // ---------------------------------------------------------------------
 // Feed des loueurs (accueil)
 // ---------------------------------------------------------------------
-export const FeedTabSchema = z.enum(["all", "nearby", "premium", "utility", "new"]);
+export const FeedTabSchema = z.enum(["all", "nearby", "premium", "utility", "new", "offers"]);
 export type FeedTab = z.infer<typeof FeedTabSchema>;
 
 export const FeedQuerySchema = z
@@ -49,6 +50,8 @@ export const LoueurSummarySchema = z
     verified: z.boolean(),
     ratingAverage: z.number().nullable(),
     ratingCount: z.number().int(),
+    /** Meilleure offre en cours du loueur, s'il y en a une. */
+    offer: PublicOfferSchema.nullable(),
     /** Jusqu'a 3 vignettes pour la carte du feed. */
     thumbnails: z.array(VehicleThumbSchema).max(3),
     createdAt: IsoDateTimeSchema,
@@ -91,6 +94,9 @@ export const PublicVehicleCardSchema = z
     seats: z.number().int(),
     photoUrl: z.string().nullable(),
     dailyCents: z.number().int().nullable(),
+    /** Prix journalier apres offre, si une offre s'applique (affichage barre). */
+    discountedDailyCents: z.number().int().nullable(),
+    offer: PublicOfferSchema.nullable(),
     depositCents: z.number().int().nullable(),
     currency: CurrencySchema,
     agencyId: UuidSchema,

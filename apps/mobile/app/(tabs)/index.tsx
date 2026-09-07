@@ -22,6 +22,7 @@ import { theme } from "@/theme";
 const HIDDEN_TABS: ReadonlySet<FeedTab> = new Set<FeedTab>(["utility"]);
 const TABS: { key: FeedTab; label: string }[] = [
   { key: "all", label: "Tous" },
+  { key: "offers", label: "Offres" },
   { key: "nearby", label: "Près de moi" },
   { key: "premium", label: "Premium" },
   { key: "utility", label: "Utilitaires" },
@@ -136,7 +137,9 @@ export default function HomeScreen() {
             description={
               tab === "all"
                 ? "Les premiers loueurs vérifiés apparaîtront ici."
-                : "Essayez un autre onglet."
+                : tab === "offers"
+                  ? "Aucune offre en cours pour le moment. Revenez bientôt."
+                  : "Essayez un autre onglet."
             }
           />
         ) : null}

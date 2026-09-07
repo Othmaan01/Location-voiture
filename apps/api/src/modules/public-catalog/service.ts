@@ -22,6 +22,12 @@ import {
 import { assertCan, type Actor } from "../../shared/authz.js";
 import { notFound } from "../../shared/errors.js";
 import type { StorageClient } from "../../shared/storage.js";
+import {
+  discountedDaily,
+  liveOffersByOrganization,
+  liveOffersFor,
+  publicOffer,
+} from "../offers/service.js";
 import { ratingsFor } from "../reviews/service.js";
 import { PHOTOS_BUCKET } from "../vehicles/service.js";
 
@@ -70,9 +76,10 @@ export function createPublicCatalogService(
       return {
         photos: new Map<string, string>(),
         plans: new Map<string, typeof ratePlans.$inferSelect>(),
+        offers: new Map<string, ReturnType<typeof publicOffer>>(),
       };
     const ids = rows.map((r) => r.id);
-    const [photoRows, planRows] = await Promise.all([
+    const [photoRows, planRows, offerRows] = await Promise.all([
       db
         .select({ vehicleId: vehiclePhotos.vehicleId, path: vehiclePhotos.storagePath })
         .from(vehiclePhotos)
@@ -81,10 +88,12 @@ export function createPublicCatalogService(
         .select()
         .from(ratePlans)
         .where(and(inArray(ratePlans.vehicleId, ids), eq(ratePlans.isActive, true))),
+      liveOffersFor(db, rows),
     ]);
     return {
       photos: new Map(photoRows.map((p) => [p.vehicleId, p.path])),
       plans: new Map(planRows.map((p) => [p.vehicleId, p])),
+      offers: new Map([...offerRows].map(([vehicleId, o]) => [vehicleId, publicOffer(o)])),
     };
   }
 
@@ -129,7 +138,9 @@ export function createPublicCatalogService(
       const newFilter =
         query.tab === "new"
           ? sql`and o.created_at > now() - interval '${sql.raw(String(NEW_DAYS))} days'`
-          : sql``;
+          : query.tab === "offers"
+            ? sql`and exists (select 1 from public.offers of where of.organization_id = o.id and of.status = 'active' and now() between of.starts_at and of.ends_at)`
+            : sql``;
 
       // Une ligne par organisation verifiee ayant au moins un vehicule publie (dans l'onglet demande).
       const rows = await db.execute<{
@@ -176,6 +187,7 @@ export function createPublicCatalogService(
               .orderBy(vehicles.createdAt)
           : [];
       const { photos, plans } = await decorate(thumbRows);
+      const orgOffers = await liveOffersByOrganization(db, orgIds);
       const items: LoueurSummary[] = page.map((r) => ({
         id: r.id,
         name: r.name,
@@ -190,6 +202,7 @@ export function createPublicCatalogService(
         verified: true,
         ratingAverage: r.rating_avg === null ? null : Number(r.rating_avg),
         ratingCount: Number(r.rating_count ?? 0),
+        offer: orgOffers.has(r.id) ? publicOffer(orgOffers.get(r.id)!) : null,
         thumbnails: thumbRows
           .filter((v) => v.organizationId === r.id)
           .slice(0, 3)
@@ -227,7 +240,7 @@ export function createPublicCatalogService(
         .from(vehicles)
         .where(and(eq(vehicles.organizationId, organizationId), publishedVehicleFilter(false)))
         .orderBy(vehicles.createdAt);
-      const { photos, plans } = await decorate(vehicleRows);
+      const { photos, plans, offers: vehicleOffers } = await decorate(vehicleRows);
       const rating = (await ratingsFor(db, [organizationId])).get(organizationId) ?? {
         average: null,
         count: 0,
@@ -250,6 +263,11 @@ export function createPublicCatalogService(
         seats: v.seats,
         photoUrl: publicUrl(photos.get(v.id)),
         dailyCents: plans.get(v.id)?.dailyCents ?? null,
+        discountedDailyCents:
+          vehicleOffers.has(v.id) && plans.get(v.id)
+            ? discountedDaily(plans.get(v.id)!.dailyCents, vehicleOffers.get(v.id)!)
+            : null,
+        offer: vehicleOffers.get(v.id) ?? null,
         depositCents: plans.get(v.id)?.depositCents ?? null,
         currency: "EUR",
         agencyId: v.agencyId,
@@ -379,6 +397,10 @@ export function createPublicCatalogService(
                 ),
               )
           : [];
+      const searchOffers = await liveOffersFor(
+        db,
+        rows.map((r) => ({ id: r.id, organizationId: r.organization_id })),
+      );
       const planByVehicle = new Map(planRows.map((p) => [p.vehicleId, p]));
       const items: SearchResult[] = rows.map((r) => {
         let totalCents: number | null = null;
@@ -408,6 +430,10 @@ export function createPublicCatalogService(
           seats: Number(r.seats),
           photoUrl: publicUrl(r.photo_path),
           dailyCents: Number(r.daily_cents),
+          discountedDailyCents: searchOffers.has(r.id)
+            ? discountedDaily(Number(r.daily_cents), publicOffer(searchOffers.get(r.id)!))
+            : null,
+          offer: searchOffers.has(r.id) ? publicOffer(searchOffers.get(r.id)!) : null,
           depositCents: Number(r.deposit_cents),
           currency: "EUR",
           agencyId: r.agency_id,
@@ -470,7 +496,7 @@ export function createPublicCatalogService(
             sql`${vehicles.suspendedAt} is null`,
           ),
         );
-      const { photos, plans } = await decorate(rows.map((r) => r.v));
+      const { photos, plans, offers: favOffers } = await decorate(rows.map((r) => r.v));
       const byId = new Map(rows.map((r) => [r.v.id, r]));
       return ids
         .map((id) => byId.get(id))
@@ -486,6 +512,11 @@ export function createPublicCatalogService(
           seats: v.seats,
           photoUrl: publicUrl(photos.get(v.id)),
           dailyCents: plans.get(v.id)?.dailyCents ?? null,
+          discountedDailyCents:
+            favOffers.has(v.id) && plans.get(v.id)
+              ? discountedDaily(plans.get(v.id)!.dailyCents, favOffers.get(v.id)!)
+              : null,
+          offer: favOffers.get(v.id) ?? null,
           depositCents: plans.get(v.id)?.depositCents ?? null,
           currency: "EUR",
           agencyId: v.agencyId,

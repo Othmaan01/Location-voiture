@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BookingStatusSchema } from "../enums.js";
 import { CurrencySchema, MoneySchema } from "../money.js";
 import { IsoDateTimeSchema, UuidSchema } from "./common.js";
+import { PublicOfferSchema } from "./offers.js";
 import { PublicVehicleCardSchema } from "./public-catalog.js";
 
 // ---------------------------------------------------------------------
@@ -19,7 +20,7 @@ export type QuoteRequest = z.infer<typeof QuoteRequestSchema>;
 
 export const QuoteLineSchema = z
   .object({
-    kind: z.enum(["daily", "weekend", "weekly", "monthly"]),
+    kind: z.enum(["daily", "weekend", "weekly", "monthly", "discount"]),
     label: z.string(),
     quantity: z.number().int(),
     unit: MoneySchema,
@@ -42,6 +43,8 @@ export const QuoteSchema = z
     deposit: MoneySchema,
     kmIncludedPerDay: z.number().int().nullable(),
     extraKmCents: z.number().int().nullable(),
+    /** Offre appliquee par le moteur, le cas echeant. */
+    offer: PublicOfferSchema.nullable(),
     expiresAt: IsoDateTimeSchema,
   })
   .strict();

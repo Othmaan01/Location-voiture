@@ -407,7 +407,25 @@ export const quotes = pgTable("quotes", {
   depositCents: integer("deposit_cents").notNull().default(0),
   currency: char("currency", { length: 3 }).notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  offerId: uuid("offer_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const offers = pgTable("offers", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  vehicleId: uuid("vehicle_id"),
+  title: text("title").notNull(),
+  discountType: text("discount_type").notNull(),
+  discountValue: integer("discount_value").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull().defaultNow(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  status: text("status").notNull().default("active"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const bookings = pgTable("bookings", {

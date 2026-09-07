@@ -22,6 +22,7 @@ import { DomainError, notFound } from "../../shared/errors.js";
 import type { StorageClient } from "../../shared/storage.js";
 import { parseRange, toRange } from "../availability/service.js";
 import type { NotificationsService } from "../notifications/service.js";
+import { liveOffersFor, publicOffer } from "../offers/service.js";
 import { canReviewBooking } from "../reviews/service.js";
 import { PHOTOS_BUCKET } from "../vehicles/service.js";
 import { canTransition, type ActorKind } from "./state-machine.js";
@@ -227,6 +228,8 @@ export function createBookingsService(
             ? storage.publicUrl(PHOTOS_BUCKET, photoMap.get(v.id)!)
             : null,
           dailyCents: planMap.get(v.id)?.dailyCents ?? null,
+          discountedDailyCents: null,
+          offer: null,
           depositCents: r.depositCents,
           currency: "EUR",
           agencyId: v.agencyId,
@@ -353,12 +356,24 @@ export function createBookingsService(
           "Le retrait doit etre au moins 2 heures apres maintenant.",
           { field: "from" },
         );
+      // Offre du loueur en cours au moment de la demande (pas au moment du retrait).
+      const offerRow = (
+        await liveOffersFor(db, [{ id: target.v.id, organizationId: target.v.organizationId }])
+      ).get(target.v.id);
+      const offer = offerRow ? publicOffer(offerRow) : null;
       let priced;
       try {
         priced = computeQuote({
           ratePlan: toPricing(target.plan),
           period: { start: input.from, end: input.to },
           agencyTimeZone: target.agency.timezone,
+          discount: offer
+            ? {
+                label: `Offre : ${offer.title}`,
+                type: offer.discountType,
+                value: offer.discountValue,
+              }
+            : null,
         });
       } catch (error) {
         throw new DomainError(
@@ -389,6 +404,7 @@ export function createBookingsService(
           depositCents: priced.deposit.cents,
           currency: "EUR",
           expiresAt,
+          offerId: offer?.id ?? null,
         })
         .returning({ id: quotes.id });
       return {
@@ -405,6 +421,7 @@ export function createBookingsService(
         deposit: priced.deposit,
         kmIncludedPerDay: target.plan.kmIncludedPerDay,
         extraKmCents: target.plan.extraKmCents,
+        offer,
         expiresAt: expiresAt.toISOString(),
       };
     },

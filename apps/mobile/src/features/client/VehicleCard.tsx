@@ -1,10 +1,11 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Car, Heart, Plus } from "lucide-react-native";
+import { Car, Heart, Plus, Tag } from "lucide-react-native";
 import type { PublicVehicleCard } from "@lv/contracts";
 
 import { Text } from "@/components/ui";
 import { CATEGORY_LABEL, TRANSMISSION_LABEL, formatEuros } from "@/features/pro/labels";
+import { formatOffer } from "@/lib/queries-offers";
 import { theme } from "@/theme";
 
 interface Props {
@@ -36,8 +37,16 @@ export function VehicleCard({ vehicle, onPress, onAction, favorite, onToggleFavo
           <Car size={30} color={theme.colors.textDim} strokeWidth={1.5} />
         </View>
       )}
+      {vehicle.offer ? (
+        <View style={styles.offerBadge}>
+          <Tag size={11} color="#ffffff" strokeWidth={2.5} />
+          <Text variant="small" style={styles.offerText}>
+            {formatOffer(vehicle.offer)}
+          </Text>
+        </View>
+      ) : null}
       {vehicle.available === false ? (
-        <View style={styles.unavailable}>
+        <View style={[styles.unavailable, vehicle.offer ? styles.unavailableBelow : null]}>
           <Text variant="small" style={styles.unavailableText}>
             Indisponible à ces dates
           </Text>
@@ -77,6 +86,16 @@ export function VehicleCard({ vehicle, onPress, onAction, favorite, onToggleFavo
               {formatEuros(vehicle.totalCents)}{" "}
               <Text variant="small" tone="muted">
                 · {vehicle.days} j
+              </Text>
+            </Text>
+          ) : vehicle.dailyCents != null && vehicle.discountedDailyCents != null ? (
+            <Text variant="bodyStrong">
+              <Text variant="small" tone="dim" style={styles.struck}>
+                {formatEuros(vehicle.dailyCents)}
+              </Text>{" "}
+              {formatEuros(vehicle.discountedDailyCents)}{" "}
+              <Text variant="small" tone="muted">
+                / jour
               </Text>
             </Text>
           ) : vehicle.dailyCents != null ? (
@@ -130,6 +149,21 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   unavailableText: { color: theme.colors.text },
+  unavailableBelow: { top: 36 },
+  offerBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  offerText: { color: "#ffffff", fontWeight: "700" },
+  struck: { textDecorationLine: "line-through" },
   heart: {
     position: "absolute",
     top: 8,

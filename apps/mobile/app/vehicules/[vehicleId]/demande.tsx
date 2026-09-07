@@ -95,10 +95,16 @@ export default function BookingRequestScreen() {
         <Card style={styles.quote}>
           {quote.lines.map((l, i) => (
             <View key={i} style={styles.line}>
-              <Text variant="sm" tone="muted">
-                {l.quantity} × {l.label.toLowerCase()} à {formatEuros(l.unit.cents)}
+              <Text variant="sm" tone={l.kind === "discount" ? "success" : "muted"}>
+                {l.kind === "discount"
+                  ? l.label
+                  : `${l.quantity} × ${l.label.toLowerCase()} à ${formatEuros(l.unit.cents)}`}
               </Text>
-              <Text variant="smStrong">{formatEuros(l.amount.cents)}</Text>
+              <Text variant="smStrong" tone={l.kind === "discount" ? "success" : "default"}>
+                {l.kind === "discount"
+                  ? `− ${formatEuros(l.amount.cents)}`
+                  : formatEuros(l.amount.cents)}
+              </Text>
             </View>
           ))}
           <View style={styles.divider} />

@@ -9,6 +9,7 @@ import {
   Inbox,
   MapPin,
   Palette,
+  Tag,
   Users,
 } from "lucide-react-native";
 
@@ -134,6 +135,12 @@ export default function OrganizationScreen() {
               : undefined
           }
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/members`)}
+        />
+        <ListItem
+          icon={<Tag size={22} color={theme.colors.accentTint} />}
+          title="Offres"
+          subtitle="Remises temporaires"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/offers`)}
         />
         <ListItem
           icon={<Palette size={22} color={theme.colors.text} />}

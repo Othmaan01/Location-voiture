@@ -53,7 +53,16 @@ export function VehicleActionSheet({
               </Text>
               {vehicle.dailyCents != null ? (
                 <Text variant="bodyStrong">
-                  {formatEuros(vehicle.dailyCents)}{" "}
+                  {vehicle.discountedDailyCents != null ? (
+                    <>
+                      <Text variant="small" tone="dim" style={styles.struck}>
+                        {formatEuros(vehicle.dailyCents)}
+                      </Text>{" "}
+                      {formatEuros(vehicle.discountedDailyCents)}
+                    </>
+                  ) : (
+                    formatEuros(vehicle.dailyCents)
+                  )}{" "}
                   <Text variant="small" tone="muted">
                     / jour
                     {vehicle.depositCents ? ` · caution ${formatEuros(vehicle.depositCents)}` : ""}
@@ -102,6 +111,7 @@ const styles = StyleSheet.create({
   photo: { width: 84, height: 64, borderRadius: 12, backgroundColor: theme.colors.surfaceRaised },
   photoEmpty: { alignItems: "center", justifyContent: "center" },
   texts: { flex: 1, gap: 2 },
+  struck: { textDecorationLine: "line-through" },
   actions: { gap: theme.space["2"] },
   note: { flexDirection: "row", gap: theme.space["2"], alignItems: "flex-start" },
   noteText: { flex: 1 },

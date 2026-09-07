@@ -137,19 +137,19 @@ Vérifications avant chaque commit : `corepack pnpm --filter <paquet> typecheck`
 
 ## 9. Dette technique et points d'attention (à traiter avant la production)
 
-| Sujet | Pourquoi ça compte | Ce qu'il faut faire |
-| --- | --- | --- |
-| Base de production séparée | Le staging sert aussi aux tests, qui créent et suppriment des données | Créer un second projet Supabase, rejouer les migrations avec le CLI, poser les secrets |
-| Historique des migrations CLI | Les migrations ont été appliquées à la main sur le staging | `supabase migration repair` puis n'utiliser que le CLI |
-| Image Docker de l'API | Exécute les sources TypeScript via `tsx` (image de 350 Mo, démarrage lent) | Bundle unique (tsup) et image plus petite |
-| Job d'expiration en mémoire | Ne survit pas à plusieurs instances | Passer à une file (pg-boss) |
-| Messagerie sans temps réel | Rafraîchissement toutes les 5 s | Supabase Realtime ou WebSocket quand le volume le justifie |
-| Fin d'essai non appliquée | Un loueur peut rester sur Starter sans payer après 14 jours | À activer avec Stripe (décision commerciale) |
-| MFA admin désactivée sur le staging | Confort de test | Repasser `API_ADMIN_REQUIRE_MFA=true` après validation sur téléphone |
-| Pas de tests de composants mobiles | Les écrans ne sont vérifiés que par les types et à la main | jest-expo sur les écrans critiques (demande, décision, messagerie) |
-| Option Fastify dépréciée (`disableRequestLogging`) | Retirée dans Fastify 6 | Migrer vers `logController` |
-| Site : loueurs fictifs dans la maquette | Illustratif | Remplacer par de vraies captures dès la première flotte publiée |
-| Nom de marque, domaine, e-mails | Adresses provisoires `.fly.dev`, e-mails limités à l'adresse du fondateur | Choisir le nom, acheter le domaine, brancher Resend et Fly dessus |
+| Sujet                                              | Pourquoi ça compte                                                         | Ce qu'il faut faire                                                                    |
+| -------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Base de production séparée                         | Le staging sert aussi aux tests, qui créent et suppriment des données      | Créer un second projet Supabase, rejouer les migrations avec le CLI, poser les secrets |
+| Historique des migrations CLI                      | Les migrations ont été appliquées à la main sur le staging                 | `supabase migration repair` puis n'utiliser que le CLI                                 |
+| Image Docker de l'API                              | Exécute les sources TypeScript via `tsx` (image de 350 Mo, démarrage lent) | Bundle unique (tsup) et image plus petite                                              |
+| Job d'expiration en mémoire                        | Ne survit pas à plusieurs instances                                        | Passer à une file (pg-boss)                                                            |
+| Messagerie sans temps réel                         | Rafraîchissement toutes les 5 s                                            | Supabase Realtime ou WebSocket quand le volume le justifie                             |
+| Fin d'essai non appliquée                          | Un loueur peut rester sur Starter sans payer après 14 jours                | À activer avec Stripe (décision commerciale)                                           |
+| MFA admin désactivée sur le staging                | Confort de test                                                            | Repasser `API_ADMIN_REQUIRE_MFA=true` après validation sur téléphone                   |
+| Pas de tests de composants mobiles                 | Les écrans ne sont vérifiés que par les types et à la main                 | jest-expo sur les écrans critiques (demande, décision, messagerie)                     |
+| Option Fastify dépréciée (`disableRequestLogging`) | Retirée dans Fastify 6                                                     | Migrer vers `logController`                                                            |
+| Site : loueurs fictifs dans la maquette            | Illustratif                                                                | Remplacer par de vraies captures dès la première flotte publiée                        |
+| Nom de marque, domaine, e-mails                    | Adresses provisoires `.fly.dev`, e-mails limités à l'adresse du fondateur  | Choisir le nom, acheter le domaine, brancher Resend et Fly dessus                      |
 
 ---
 

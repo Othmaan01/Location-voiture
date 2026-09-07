@@ -1,7 +1,7 @@
 import type { Currency, Money } from "@lv/contracts";
 
 import { billableDays, weekendFlags, type RentalPeriod } from "./days.js";
-import { add, money, times } from "./money.js";
+import { add, money, percentBps, subtract, times } from "./money.js";
 
 /**
  * Grille tarifaire d'un vehicule, telle que stockee (centimes).
@@ -20,14 +20,23 @@ export interface RatePlan {
   maxDays: number | null;
 }
 
+export interface Discount {
+  label: string;
+  type: "percent" | "fixed";
+  /** Pourcent entier, ou centimes. */
+  value: number;
+}
+
 export interface QuoteInput {
   ratePlan: RatePlan;
   period: RentalPeriod;
   /** Fuseau IANA de l'agence de retrait, ex. "Europe/Paris". */
   agencyTimeZone: string;
+  /** Offre du loueur a appliquer sur le sous-total (jamais sur la caution). */
+  discount?: Discount | null;
 }
 
-export type QuoteLineKind = "daily" | "weekend" | "weekly" | "monthly";
+export type QuoteLineKind = "daily" | "weekend" | "weekly" | "monthly" | "discount";
 
 export interface QuoteLine {
   kind: QuoteLineKind;
@@ -148,13 +157,38 @@ export function quote(input: QuoteInput): Quote {
     }
   }
 
+  // Offre du loueur : une ligne "discount" a montant positif, soustraite du sous-total,
+  // plafonnee pour ne jamais rendre la location gratuite (1 euro minimum).
+  let lines = best.lines;
+  let subtotal = best.total;
+  if (input.discount && input.discount.value > 0 && best.total.cents > 100) {
+    const raw =
+      input.discount.type === "percent"
+        ? percentBps(best.total, input.discount.value * 100)
+        : money(input.discount.value, currency);
+    const capped = money(Math.min(raw.cents, best.total.cents - 100), currency);
+    if (capped.cents > 0) {
+      lines = [
+        ...best.lines,
+        {
+          kind: "discount",
+          label: input.discount.label,
+          quantity: 1,
+          unit: capped,
+          amount: capped,
+        },
+      ];
+      subtotal = subtract(best.total, capped);
+    }
+  }
+
   const fees = money(0, currency); // Aucun frais plateforme cote client (ADR-0008).
   return {
     days,
-    lines: best.lines,
-    subtotal: best.total,
+    lines,
+    subtotal,
     fees,
-    total: add(best.total, fees),
+    total: add(subtotal, fees),
     deposit: money(ratePlan.depositCents, currency),
   };
 }

@@ -88,6 +88,16 @@ Les routes `/v1/admin/*` exigent un rôle plateforme et, en production, une sess
 
 Règle absolue du catalogue public : organisation vérifiée, agence publiée, véhicule publié et non suspendu. Jamais de plaque, jamais de document.
 
+## Routes Offres (ADR-0015)
+
+| Méthode | Route                          | Qui      | Effet                                                                                                            |
+| ------- | ------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| GET     | `/v1/organizations/:id/offers` | membre   | offres de l'organisation, en cours et terminées                                                                  |
+| POST    | `/v1/organizations/:id/offers` | manager+ | `{ vehicleId?, title, discountType, discountValue, durationDays }` ; remplace l'offre en cours sur la même cible |
+| DELETE  | `/v1/offers/:id`               | manager+ | archive l'offre                                                                                                  |
+
+Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discountedDailyCents` ; le devis applique la remise (ligne `discount`) et renvoie `offer`.
+
 ## Routes Phase 7 — signalements, litiges (ADR-0013)
 
 | Méthode | Route                              | Qui              | Effet                                                                                                                                         |

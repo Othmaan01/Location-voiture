@@ -154,3 +154,32 @@ describe("quote — regle v1", () => {
     expect(q.total).toEqual(q.subtotal);
   });
 });
+
+describe("offres", () => {
+  const period = { start: "2026-10-05T09:00:00.000Z", end: "2026-10-08T09:00:00.000Z" };
+  it("applique une remise en pourcentage sur le sous-total, jamais sur la caution", () => {
+    const q = quote({
+      ratePlan: basePlan,
+      period,
+      agencyTimeZone: PARIS,
+      discount: { label: "Offre rentree", type: "percent", value: 20 },
+    });
+    expect(q.lines.at(-1)).toMatchObject({ kind: "discount", amount: { cents: 3000 } });
+    expect(q.subtotal.cents).toBe(12000);
+    expect(q.total.cents).toBe(12000);
+    expect(q.deposit.cents).toBe(80000);
+  });
+  it("plafonne une remise fixe pour laisser au moins 1 euro", () => {
+    const q = quote({
+      ratePlan: basePlan,
+      period,
+      agencyTimeZone: PARIS,
+      discount: { label: "Cadeau", type: "fixed", value: 99_000 },
+    });
+    expect(q.total.cents).toBe(100);
+  });
+  it("ignore une remise nulle", () => {
+    const q = quote({ ratePlan: basePlan, period, agencyTimeZone: PARIS, discount: null });
+    expect(q.lines.every((l) => l.kind !== "discount")).toBe(true);
+  });
+});

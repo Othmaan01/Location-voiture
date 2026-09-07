@@ -736,4 +736,95 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
     expect(done.statusCode).toBe(200);
     expect(done.json()).toMatchObject({ status: "dismissed" });
   });
+
+  it("offres : le loueur cree une remise, le client la voit sur la carte et le devis l'applique", async () => {
+    const forbidden = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/offers`,
+      headers: auth(customerToken),
+      payload: { title: "Hack", discountType: "percent", discountValue: 20, durationDays: 7 },
+    });
+    expect(forbidden.statusCode).toBe(404);
+    const badPercent = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/offers`,
+      headers: auth(ownerToken),
+      payload: { title: "Trop", discountType: "percent", discountValue: 90, durationDays: 7 },
+    });
+    expect(badPercent.statusCode).toBe(422);
+    const created = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/offers`,
+      headers: auth(ownerToken),
+      payload: {
+        vehicleId,
+        title: "Rentree -20 %",
+        discountType: "percent",
+        discountValue: 20,
+        durationDays: 14,
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({ live: true, vehicleId, discountValue: 20 });
+    const offerId = created.json<{ id: string }>().id;
+
+    const profile = await app.inject({ method: "GET", url: `/v1/loueurs/${orgId}` });
+    const card = profile
+      .json<{
+        vehicles: {
+          id: string;
+          dailyCents: number;
+          discountedDailyCents: number | null;
+          offer: { id: string } | null;
+        }[];
+      }>()
+      .vehicles.find((v) => v.id === vehicleId);
+    expect(card?.offer?.id).toBe(offerId);
+    expect(card?.discountedDailyCents).toBe(Math.round((card!.dailyCents * 80) / 100));
+    const feed = await app.inject({ method: "GET", url: "/v1/feed?tab=offers" });
+    expect(
+      feed
+        .json<{ items: { id: string; offer: { id: string } | null }[] }>()
+        .items.find((i) => i.id === orgId)?.offer?.id,
+    ).toBe(offerId);
+
+    const q = (await makeQuote(customerToken, inDays(80), inDays(82))).json<{
+      lines: { kind: string; amount: { cents: number } }[];
+      subtotal: { cents: number };
+      offer: { id: string } | null;
+    }>();
+    expect(q.offer?.id).toBe(offerId);
+    const discount = q.lines.find((l) => l.kind === "discount");
+    expect(discount).toBeDefined();
+    const gross = q.lines
+      .filter((l) => l.kind !== "discount")
+      .reduce((a, l) => a + l.amount.cents, 0);
+    expect(q.subtotal.cents).toBe(gross - discount!.amount.cents);
+
+    // Archivage : plus d'offre sur la carte, l'ancienne offre reste dans la liste du loueur.
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/v1/offers/${offerId}`,
+          headers: auth(ownerToken),
+        })
+      ).statusCode,
+    ).toBe(204);
+    const after = await app.inject({ method: "GET", url: `/v1/loueurs/${orgId}` });
+    expect(
+      after
+        .json<{ vehicles: { id: string; offer: unknown }[] }>()
+        .vehicles.find((v) => v.id === vehicleId)?.offer,
+    ).toBeNull();
+    const list = await app.inject({
+      method: "GET",
+      url: `/v1/organizations/${orgId}/offers`,
+      headers: auth(ownerToken),
+    });
+    expect(
+      list.json<{ offers: { id: string; status: string }[] }>().offers.find((o) => o.id === offerId)
+        ?.status,
+    ).toBe("archived");
+  });
 });

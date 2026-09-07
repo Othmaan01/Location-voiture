@@ -7,6 +7,7 @@ import {
   FileCheck2,
   MapPin,
   Palette,
+  Tag,
   Users,
 } from "lucide-react-native";
 
@@ -133,6 +134,12 @@ function Dashboard({ organizationId }: { organizationId: string }) {
           title="Vérification et documents"
           subtitle={missing > 0 ? `${missing} manquant${missing > 1 ? "s" : ""}` : status.label}
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/documents`)}
+        />
+        <ListItem
+          icon={<Tag size={22} color={theme.colors.accentTint} />}
+          title="Offres"
+          subtitle="Remises temporaires, onglet Offres du feed"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/offers`)}
         />
         <ListItem
           icon={<Palette size={22} color={theme.colors.text} />}
