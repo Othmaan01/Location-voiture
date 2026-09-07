@@ -29,3 +29,6 @@ android/
 
 # claude code (parametres locaux)
 .claude/settings.local.json
+# cles Apple (App Store Connect)
+*.p8
+AuthKey_*.p8

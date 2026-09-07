@@ -72,13 +72,35 @@ Aucun traceur publicitaire, aucun partage avec des courtiers en données.
 
 **À FAIRE** : créer le compte de démonstration et coller ses identifiants dans App Store Connect.
 
+## Compte Apple et identifiants (fait le 7 septembre 2026)
+
+| Élément                              | Valeur                                                         |
+| ------------------------------------ | -------------------------------------------------------------- |
+| Programme                            | Apple Developer Program, personne physique, jusqu'au 8/09/2027 |
+| Identifiant d'équipe                 | `N7L9C827XP`                                                   |
+| Identifiant Apple du compte          | `bbelhamid@outlook.com`                                        |
+| Clé API App Store Connect            | nom `EAS Build`, rôle Admin, identifiant `5GNSU7B7TG`          |
+| Émetteur de la clé                   | `4b43fcd1-8820-4c8b-952a-f0a2cf09908b`                         |
+| Fichier de la clé (jamais commité)   | `~/.appstoreconnect/private_keys/AuthKey_5GNSU7B7TG.p8`        |
+| Identifiant de l'app chez Apple      | `fr.locationvoiture.app`, enregistré, notifications activées   |
+| Certificat et profil de distribution | créés par EAS, valables jusqu'au 7/09/2027                     |
+
+La clé API évite les codes à six chiffres. Commande de compilation :
+
+```bash
+cd apps/mobile && export EXPO_ASC_API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_5GNSU7B7TG.p8" \
+  EXPO_ASC_KEY_ID=5GNSU7B7TG EXPO_ASC_ISSUER_ID=4b43fcd1-8820-4c8b-952a-f0a2cf09908b \
+  EXPO_NO_CAPABILITY_SYNC=1 && npx eas build --platform ios --profile production
+```
+
+`EXPO_NO_CAPABILITY_SYNC=1` contourne un défaut de l'API Apple sur la synchronisation des capacités ; les capacités se règlent à la main sur la fiche de l'identifiant.
+
 ## Étapes restantes
 
-1. **À FAIRE (Othman)** — Créer l'app dans App Store Connect : nom, identifiant `fr.locationvoiture.app`, langue française.
-2. **À FAIRE (Othman)** — Lancer la compilation : `npx eas build --platform ios --profile production` depuis `apps/mobile`, en se connectant avec l'identifiant Apple du compte développeur.
-3. **À FAIRE** — Envoyer la version : `npx eas submit --platform ios --latest`.
-4. **À FAIRE** — Captures d'écran 6,7 pouces (au moins trois) et 6,5 pouces si demandé.
-5. **À FAIRE** — Remplir la fiche avec les textes ci-dessus, puis soumettre à la revue.
+1. **À FAIRE (Othman)** — Clé de notifications push. La création via la ligne de commande exige une authentification personnelle avec code à six chiffres, qui n'aboutit pas sur ce compte (aucun appareil connecté à l'identifiant `@outlook.com`). Méthode sans code : developer.apple.com, _Certificates, Identifiers & Profiles_, _Keys_, bouton **+**, cocher _Apple Push Notifications service_, télécharger le fichier `.p8`, puis `npx eas credentials` pour le remettre à Expo. Sans cette clé, l'application fonctionne mais n'envoie pas de notifications.
+2. **À FAIRE** — Créer l'app dans App Store Connect (ou laisser `eas submit` la créer), puis envoyer la version : `npx eas submit --platform ios --latest`.
+3. **À FAIRE** — Captures d'écran 6,7 pouces, au moins trois.
+4. **À FAIRE** — Remplir la fiche avec les textes ci-dessus, coller les identifiants du compte de démonstration, puis soumettre à la revue.
 
 ## Point d'attention
 
