@@ -18,7 +18,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
   title: {
-    default: `${publicEnv.siteName} — Location de voiture près de chez vous, en direct avec le loueur`,
+    default: `${publicEnv.siteName} — Location de voiture en 3 minutes, chez un pro près de chez vous`,
     template: `%s | ${publicEnv.siteName}`,
   },
   description:

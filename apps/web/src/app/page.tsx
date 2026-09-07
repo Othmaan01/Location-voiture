@@ -139,13 +139,13 @@ export default async function HomePage() {
             <h1 className="text-4xl font-extrabold leading-[1.05] md:text-6xl">
               <span className="text-ink-900">Louez une voiture</span>
               <br />
-              <span className="text-ink-900">près de chez vous,</span>
+              <span className="text-ink-900">en 3 minutes,</span>
               <br />
-              <span className="glow-text">en direct avec le loueur.</span>
+              <span className="glow-text">chez un pro près de chez vous.</span>
             </h1>
             <p className="max-w-xl text-lg text-ink-600 md:text-xl">
-              Des loueurs professionnels vérifiés, leurs vrais prix, zéro commission. Vous
-              choisissez le véhicule, le loueur confirme, vous récupérez les clés à l&apos;agence.
+              Pas de comparateur, pas de commission, pas de paperasse inutile. Vous choisissez, le
+              loueur vérifié confirme, vous récupérez les clés. Même à la dernière minute.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <StoreBadges size="lg" />
@@ -177,12 +177,40 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="container-page pt-10">
+        <Reveal>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-tint">
+            Pour chaque besoin
+          </p>
+          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              ["citadine", "Citadine", "Pour la ville, dès 39 €/j"],
+              ["compacte", "Compacte", "Le bon compromis"],
+              ["berline", "Berline", "Confort et longs trajets"],
+              ["suv", "SUV", "Famille, montagne, route"],
+              ["cabriolet", "Cabriolet", "Le week-end, la côte"],
+              ["prestige", "Prestige", "Mariage, événement, plaisir"],
+            ].map(([slug, label, hint]) => (
+              <li key={slug}>
+                <Link
+                  href={`/recherche?categories=${slug}`}
+                  className="glass block h-full rounded-2xl px-4 py-4 transition-colors hover:border-ink-400"
+                >
+                  <p className="font-bold text-ink-900">{label}</p>
+                  <p className="mt-0.5 text-xs text-ink-500">{hint}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      </section>
+
       <section className="container-page py-20">
         <Reveal>
           <SectionTitle
-            eyebrow="Simple, vraiment"
-            title="Trois étapes. Zéro intermédiaire."
-            text="Tout ce que vous détestez dans la location, en moins : pas de frais cachés, pas d'attente au comptoir, pas de conditions écrites en petit."
+            eyebrow="Comment ça marche"
+            title="Trois étapes, trois minutes, zéro intermédiaire."
+            text="Tout ce que vous détestez dans la location, en moins : pas de frais cachés, pas de file d'attente au comptoir, pas de conditions écrites en petit."
           />
         </Reveal>
         <ol className="mt-10 grid gap-4 md:grid-cols-3">
