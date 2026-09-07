@@ -14,6 +14,7 @@ import type { FeedTab } from "@lv/contracts";
 
 import { Button, EmptyState, Screen, Text } from "@/components/ui";
 import { LoueurCard } from "@/features/client/LoueurCard";
+import { StoriesRow } from "@/features/client/StoriesRow";
 import { useSearchState } from "@/features/client/search-state";
 import { useFeed } from "@/lib/queries-public";
 import { theme } from "@/theme";
@@ -94,6 +95,7 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
+        <StoriesRow />
       </View>
       <ScrollView
         contentContainerStyle={styles.list}
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tabs: { gap: theme.space["4"], paddingRight: theme.space["4"] },
+  tabs: { gap: theme.space["4"], paddingRight: theme.space["4"], marginBottom: theme.space["3"] },
   tab: {
     paddingBottom: 10,
     borderBottomWidth: 2,

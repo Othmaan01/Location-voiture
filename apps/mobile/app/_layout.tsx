@@ -65,6 +65,10 @@ export default function RootLayout() {
               <Stack.Screen name="(pro)" />
               <Stack.Screen name="(admin)" />
               <Stack.Screen name="loueurs/[loueurId]" />
+              <Stack.Screen
+                name="stories/[organizationId]"
+                options={{ presentation: "fullScreenModal", animation: "fade" }}
+              />
               <Stack.Screen name="reservations/[bookingId]" />
               <Stack.Screen name="conversations/[conversationId]" />
               <Stack.Screen

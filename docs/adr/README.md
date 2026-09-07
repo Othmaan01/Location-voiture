@@ -19,3 +19,4 @@ Une décision structurante par fichier. Format : contexte, options, décision, c
 | [0013](./0013-signalements-litiges-mfa.md)                    | Signalements, litiges (ouverture, résolution par la plateforme) et double authentification TOTP           | accepté                          |
 | [0014](./0014-stripe-billing.md)                              | Abonnement loueur avec Stripe Billing derrière une passerelle, inerte sans clés, webhook source de vérité | accepté                          |
 | [0015](./0015-offres.md)                                      | Offres des loueurs : remise temporaire appliquée par le moteur, onglet Offres du feed                     | accepté                          |
+| [0016](./0016-stories.md)                                     | Stories : bulles du feed composées par le moteur (offres, nouveaux véhicules) + story photo 48 h          | accepté                          |

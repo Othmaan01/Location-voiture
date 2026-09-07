@@ -98,6 +98,16 @@ Règle absolue du catalogue public : organisation vérifiée, agence publiée, v
 
 Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discountedDailyCents` ; le devis applique la remise (ligne `discount`) et renvoie `offer`.
 
+### Stories (ADR-0016)
+
+| Méthode | Route                                      | Accès    | Rôle                                                                                        |
+| ------- | ------------------------------------------ | -------- | ------------------------------------------------------------------------------------------- |
+| GET     | `/v1/stories`                              | public   | bulles du feed : par loueur vérifié, offres en cours, véhicules publiés < 7 j, stories 48 h |
+| GET     | `/v1/organizations/:id/stories`            | membre   | stories manuelles en cours de l'organisation                                                |
+| POST    | `/v1/organizations/:id/stories/upload-url` | manager+ | `{ mimeType, sizeBytes }` → envoi signé vers `branding/<org>/story-…`                       |
+| POST    | `/v1/organizations/:id/stories`            | manager+ | `{ path, caption? }` ; organisation vérifiée uniquement ; expire 48 h après                 |
+| DELETE  | `/v1/stories/:id`                          | manager+ | retire la story et son fichier                                                              |
+
 ## Routes Phase 7 — signalements, litiges (ADR-0013)
 
 | Méthode | Route                              | Qui              | Effet                                                                                                                                         |

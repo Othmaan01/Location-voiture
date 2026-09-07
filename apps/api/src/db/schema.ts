@@ -428,6 +428,18 @@ export const offers = pgTable("offers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const stories = pgTable("stories", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  organizationId: uuid("organization_id").notNull(),
+  photoPath: text("photo_path").notNull(),
+  caption: text("caption"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
 export const bookings = pgTable("bookings", {
   id: uuid("id")
     .primaryKey()

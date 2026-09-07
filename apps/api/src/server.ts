@@ -30,6 +30,7 @@ import type { NotificationsService } from "./modules/notifications/service.js";
 import { organizationsRoutes } from "./modules/organizations/routes.js";
 import { publicCatalogRoutes } from "./modules/public-catalog/routes.js";
 import { reportsRoutes } from "./modules/reports/routes.js";
+import { storiesRoutes } from "./modules/stories/routes.js";
 import { reviewsRoutes } from "./modules/reviews/routes.js";
 import { subscriptionsRoutes } from "./modules/subscriptions/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
@@ -184,6 +185,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(reviewsRoutes);
   await app.register(reportsRoutes);
   await app.register(offersRoutes);
+  await app.register(storiesRoutes);
   await app.register(adminRoutes, {
     requireMfa: opts.env.API_ADMIN_REQUIRE_MFA ?? opts.env.NODE_ENV === "production",
   });

@@ -174,6 +174,75 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
     expect(bad.statusCode).toBe(422);
   });
 
+  it("stories : bulles publiques composees du neuf (vehicule recent) et d'une story manuelle 48 h", async () => {
+    const ownerToken = await keys.sign(owner);
+    const forbidden = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/stories/upload-url`,
+      headers: auth(customerToken),
+      payload: { mimeType: "image/jpeg", sizeBytes: 120_000 },
+    });
+    expect(forbidden.statusCode).toBe(404);
+    const upload = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/stories/upload-url`,
+      headers: auth(ownerToken),
+      payload: { mimeType: "image/jpeg", sizeBytes: 120_000 },
+    });
+    expect(upload.statusCode).toBe(200);
+    const { path } = upload.json<{ path: string }>();
+    expect(path.startsWith(`branding/${orgId}/story-`)).toBe(true);
+    const created = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/stories`,
+      headers: auth(ownerToken),
+      payload: { path, caption: "Promo du week-end" },
+    });
+    expect(created.statusCode).toBe(201);
+    const story = created.json<{ id: string; caption: string; expiresAt: string }>();
+    expect(story.caption).toBe("Promo du week-end");
+    expect(new Date(story.expiresAt).getTime() - Date.now()).toBeGreaterThan(47 * 3600 * 1000);
+
+    const feed = await app.inject({ method: "GET", url: "/v1/stories" });
+    expect(feed.statusCode).toBe(200);
+    const group = feed
+      .json<{
+        groups: {
+          organizationId: string;
+          highlight: string;
+          items: { id: string; kind: string; title: string }[];
+        }[];
+      }>()
+      .groups.find((g) => g.organizationId === orgId);
+    expect(group).toBeDefined();
+    expect(group!.highlight).toBe("story");
+    expect(group!.items.map((i) => i.kind)).toEqual(
+      expect.arrayContaining(["story", "new_vehicle"]),
+    );
+    // Le brouillon n'apparait jamais ; le vehicule publie recent oui.
+    expect(group!.items.find((i) => i.id === `vehicle:${draftVehicleId}`)).toBeUndefined();
+    expect(group!.items.find((i) => i.id === `vehicle:${vehicleId}`)?.title).toBe("Peugeot 208");
+
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/v1/stories/${story.id}`,
+          headers: auth(customerToken),
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/v1/stories/${story.id}`,
+          headers: auth(ownerToken),
+        })
+      ).statusCode,
+    ).toBe(204);
+  });
+
   it("favoris : reserve aux connectes, uniquement des vehicules publies", async () => {
     expect(
       (await app.inject({ method: "PUT", url: `/v1/me/favorites/${vehicleId}` })).statusCode,

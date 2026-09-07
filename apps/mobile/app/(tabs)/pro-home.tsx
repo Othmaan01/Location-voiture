@@ -7,6 +7,7 @@ import {
   FileCheck2,
   MapPin,
   Palette,
+  Sparkles,
   Tag,
   Users,
 } from "lucide-react-native";
@@ -140,6 +141,12 @@ function Dashboard({ organizationId }: { organizationId: string }) {
           title="Offres"
           subtitle="Remises temporaires, onglet Offres du feed"
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/offers`)}
+        />
+        <ListItem
+          icon={<Sparkles size={22} color={theme.colors.text} />}
+          title="Story"
+          subtitle="Photo et légende 48 h, bulles du feed"
+          onPress={() => router.push(`/(pro)/organizations/${organizationId}/story`)}
         />
         <ListItem
           icon={<Palette size={22} color={theme.colors.text} />}
