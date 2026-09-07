@@ -100,13 +100,13 @@ Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discoun
 
 ### Stories (ADR-0016)
 
-| Méthode | Route                                      | Accès    | Rôle                                                                                        |
-| ------- | ------------------------------------------ | -------- | ------------------------------------------------------------------------------------------- |
-| GET     | `/v1/stories`                              | public   | bulles du feed : par loueur vérifié, offres en cours, véhicules publiés < 7 j, stories 48 h |
-| GET     | `/v1/organizations/:id/stories`            | membre   | stories manuelles en cours de l'organisation                                                |
-| POST    | `/v1/organizations/:id/stories/upload-url` | manager+ | `{ mimeType, sizeBytes }` → envoi signé vers `branding/<org>/story-…`                       |
-| POST    | `/v1/organizations/:id/stories`            | manager+ | `{ path, caption? }` ; organisation vérifiée uniquement ; expire 48 h après                 |
-| DELETE  | `/v1/stories/:id`                          | manager+ | retire la story et son fichier                                                              |
+| Méthode | Route                                      | Accès    | Rôle                                                                                                            |
+| ------- | ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------- |
+| GET     | `/v1/stories`                              | public   | bulles du feed : par loueur vérifié, offres en cours, véhicules publiés < 7 j, stories 48 h                     |
+| GET     | `/v1/organizations/:id/stories`            | membre   | stories manuelles en cours de l'organisation                                                                    |
+| POST    | `/v1/organizations/:id/stories/upload-url` | manager+ | `{ mimeType (image ou video/mp4, video/quicktime), sizeBytes ≤ 60 Mo }` → envoi signé vers `story-media`        |
+| POST    | `/v1/organizations/:id/stories`            | manager+ | `{ path, caption?, durationSeconds? }` ; type déduit de l'extension ; organisation vérifiée ; expire 48 h après |
+| DELETE  | `/v1/stories/:id`                          | manager+ | retire la story et son fichier                                                                                  |
 
 ## Routes Phase 7 — signalements, litiges (ADR-0013)
 
