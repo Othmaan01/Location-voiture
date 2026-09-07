@@ -133,19 +133,19 @@ export default async function HomePage() {
         <div className="container-page grid gap-12 py-16 [&>*]:min-w-0 md:grid-cols-[1.15fr_0.85fr] md:items-center md:py-24">
           <Reveal className="space-y-7">
             <p className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-brand/40 bg-brand-soft/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-tint sm:text-xs">
-              <span className="ring-pulse size-1.5 rounded-full bg-brand" /> Location entre pros et
-              particuliers
+              <span className="ring-pulse size-1.5 rounded-full bg-brand" /> Location de voiture ·
+              loueurs pros vérifiés · 0 % commission
             </p>
             <h1 className="text-4xl font-extrabold leading-[1.05] md:text-6xl">
-              <span className="glow-text">Louez chez un pro vérifié,</span>
+              <span className="text-ink-900">Louez une voiture</span>
               <br />
-              <span className="text-ink-900">au prix du loueur.</span>
+              <span className="text-ink-900">près de chez vous,</span>
               <br />
-              <span className="text-ink-900">Sans commission.</span>
+              <span className="glow-text">en direct avec le loueur.</span>
             </h1>
             <p className="max-w-xl text-lg text-ink-600 md:text-xl">
-              Les loueurs professionnels près de chez vous, leurs vrais prix, et un contact direct.
-              Vous demandez, il confirme, vous roulez.
+              Des loueurs professionnels vérifiés, leurs vrais prix, zéro commission. Vous
+              choisissez le véhicule, le loueur confirme, vous récupérez les clés à l&apos;agence.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <StoreBadges size="lg" />
@@ -155,7 +155,7 @@ export default async function HomePage() {
                 href="/recherche"
                 className="inline-flex items-center gap-1 font-semibold text-ink-900 hover:text-brand-tint"
               >
-                Voir les véhicules sans l&apos;application <ArrowRight className="size-4" />
+                Voir les voitures disponibles <ArrowRight className="size-4" />
               </Link>
               <span className="hidden h-4 w-px bg-ink-300 sm:block" />
               <Link href="/pro" className="font-semibold text-ink-900 hover:text-brand-tint">
