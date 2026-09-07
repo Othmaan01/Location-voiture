@@ -11,7 +11,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Abonnement loueur : tarifs",
   description:
-    "Un abonnement mensuel indexé sur le nombre de véhicules publiés, 14 jours d'essai, aucune commission sur vos locations.",
+    "Abonnement loueur : un prix fixe selon vos véhicules publiés, 0 % de commission, encaissement libre, page web et référencement local offerts, 14 jours d'essai.",
 };
 
 export default async function PricingPage() {
@@ -24,9 +24,10 @@ export default async function PricingPage() {
           Un abonnement simple, aucune commission
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Le prix dépend d&apos;une seule chose : le nombre de véhicules que vous publiez. Vos
-          clients vous règlent directement. 14 jours d&apos;essai gratuit, résiliable à tout moment.
-          Prix hors taxes.
+          Le prix dépend d&apos;une seule chose : le nombre de véhicules que vous publiez. Aucune
+          commission, ni sur vous, ni sur vos clients. Vous encaissez directement, carte, virement
+          ou espèces. Page web et référencement local inclus. 14 jours d&apos;essai gratuit,
+          résiliable à tout moment. Prix hors taxes.
         </p>
       </div>
       <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -52,10 +53,12 @@ export default async function PricingPage() {
             </p>
             <ul className="mt-5 space-y-2 text-sm text-ink-700">
               {[
-                "Profil et flotte visibles dans l'application",
-                "Demandes, messages et calendrier",
-                "Avis clients et réponses",
-                "Aucune commission",
+                "0 % de commission, des deux côtés",
+                "Encaissement direct, carte ou espèces",
+                "Page web dédiée + référencement local offerts",
+                "Profil et flotte dans l'application",
+                "Demandes, messages, calendrier, notifications",
+                "Avis clients et réponses publiques",
               ].map((f) => (
                 <li key={f} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-success" /> {f}

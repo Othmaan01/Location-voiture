@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import {
   ArrowRight,
+  Banknote,
   CalendarDays,
   Check,
+  Globe,
   MessageCircle,
   ShieldCheck,
   Star,
@@ -20,42 +22,53 @@ import { ButtonLink } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Loueurs : vos véhicules devant des clients, sans commission",
   description:
-    "Publiez votre flotte, recevez des demandes de réservation et gérez votre planning depuis l'application. Loueurs vérifiés, abonnement fixe, 0 % de commission, 14 jours d'essai.",
+    "Loueurs de voitures : publiez votre flotte, recevez des demandes et encaissez comme vous voulez. 0 % de commission, page web dédiée et référencement local offerts, abonnement fixe dès 29 € HT, 14 jours d'essai.",
 };
 
 const BENEFITS = [
   {
     Icon: Wallet,
-    title: "0 % de commission",
-    text: "Un abonnement fixe, indexé sur vos véhicules publiés. Vos marges restent vos marges.",
+    title: "0 % de commission, des deux côtés",
+    text: "Ni sur vos locations, ni sur vos clients. Un abonnement fixe et connu d'avance, c'est tout.",
+  },
+  {
+    Icon: Banknote,
+    title: "Vous encaissez comme vous voulez",
+    text: "Carte, virement, espèces dans la limite légale : le client vous règle à l'agence, avec votre contrat et vos conditions.",
+  },
+  {
+    Icon: Globe,
+    title: "Page web et référencement local offerts",
+    text: "Chaque agence a sa page sur notre site, optimisée pour « location de voiture à votre ville » sur Google. Un gain de visibilité, sans agence SEO.",
   },
   {
     Icon: ShieldCheck,
     title: "Le label « vérifié »",
-    text: "SIREN, Kbis et assurance contrôlés : les clients savent qu'ils ont affaire à un pro.",
+    text: "SIREN, Kbis et assurance contrôlés : les clients savent qu'ils ont affaire à un professionnel.",
   },
   {
     Icon: MessageCircle,
     title: "Vos clients, votre relation",
-    text: "Demandes, messages et coordonnées dans l'application. Pas d'intermédiaire entre vous et eux.",
+    text: "Demandes, messages et coordonnées dans l'application. Aucun intermédiaire entre vous et eux.",
   },
   {
     Icon: CalendarDays,
-    title: "Planning et flotte",
-    text: "Agences, véhicules, photos, tarifs, blocages : tout se pilote depuis votre téléphone.",
+    title: "Flotte et planning dans la poche",
+    text: "Agences, véhicules, photos, tarifs, blocages, notifications : tout se pilote depuis votre téléphone.",
   },
   {
     Icon: Star,
     title: "Des avis qui vous appartiennent",
-    text: "Seuls vos vrais clients peuvent noter, et vous répondez publiquement.",
+    text: "Seuls vos vrais clients peuvent noter, et vous répondez publiquement. Votre réputation travaille pour vous.",
   },
 ];
 
 const COMPARE = [
   ["Commission sur chaque location", "15 à 30 %", "0 %"],
+  ["Frais facturés au client", "Oui, souvent cachés", "Aucun"],
+  ["Encaissement", "Par la plateforme, reversé plus tard", "Chez vous, immédiat, carte ou espèces"],
   ["Relation avec le client", "Via la plateforme", "Directe, dans l'app"],
-  ["Prix affiché", "Majoré des frais", "Votre prix, sans majoration"],
-  ["Paiement", "Encaissé par la plateforme", "Réglé chez vous"],
+  ["Visibilité web locale", "En option payante", "Page dédiée + référencement, offerts"],
   ["Coût", "Variable, imprévisible", "Abonnement fixe dès 29 € HT"],
 ];
 

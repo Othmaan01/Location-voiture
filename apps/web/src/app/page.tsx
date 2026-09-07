@@ -2,12 +2,16 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
+  Briefcase,
   CalendarCheck,
+  Heart,
   MessageCircle,
+  Plane,
   Search,
   ShieldCheck,
   Star,
   Wallet,
+  Wrench,
 } from "lucide-react";
 
 import { Reveal } from "@/components/fx/reveal";
@@ -66,10 +70,37 @@ const PROMISES = [
   },
 ];
 
+const MOMENTS = [
+  {
+    Icon: Heart,
+    title: "Votre pote se marie samedi",
+    text: "Et vous cherchez encore votre loc'. Une berline propre, réservée en deux minutes, récupérée près de chez vous.",
+  },
+  {
+    Icon: Wrench,
+    title: "La voiture est au garage",
+    text: "Marre de vous retrouver sans voiture à la dernière minute ? Un pro à côté a ce qu'il faut, dès demain matin.",
+  },
+  {
+    Icon: Plane,
+    title: "Un week-end, des vacances",
+    text: "Un SUV pour la montagne, un cabriolet pour la côte. Le prix du loueur, aucune commission, kilomètres clairs.",
+  },
+  {
+    Icon: Briefcase,
+    title: "Un déplacement pro",
+    text: "Un rendez-vous client, un salon, une mission. Une voiture fiable, une facture nette, un interlocuteur joignable.",
+  },
+];
+
 const FAQ = [
   {
     q: "Est-ce que je paie quelque chose à la plateforme ?",
-    a: "Non. L'application est gratuite pour les clients et nous ne prenons aucune commission. Vous payez le loueur, au prix qu'il affiche, directement à l'agence.",
+    a: "Non. L'application est gratuite pour les clients et nous ne prenons aucune commission, ni sur vous, ni sur le loueur. Vous payez le loueur, au prix qu'il affiche, directement à l'agence, par carte, virement ou espèces selon ses conditions.",
+  },
+  {
+    q: "Louer chez un loueur professionnel, c'est plus cher qu'entre particuliers ?",
+    a: "Souvent moins, à prestation égale : pas de commission de plateforme, un véhicule entretenu et assuré par une entreprise, un vrai contrat et une caution encadrée. Et le prix affiché est le prix payé.",
   },
   {
     q: "Comment savez-vous qu'un loueur est sérieux ?",
@@ -205,6 +236,31 @@ export default async function HomePage() {
         )}
       </section>
 
+      <section className="container-page pb-20">
+        <Reveal>
+          <SectionTitle
+            eyebrow="Il y a toujours une bonne raison"
+            title="Une voiture quand vous en avez besoin. Pas quand le comptoir ouvre."
+            text="Louer une voiture ne devrait pas être une corvée. Des loueurs professionnels près de chez vous, disponibles pour un jour, un week-end ou un mois."
+          />
+        </Reveal>
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {MOMENTS.map(({ Icon, title, text }, i) => (
+            <li key={title}>
+              <Reveal delay={i * 90}>
+                <Tilt className="glass h-full rounded-card p-6">
+                  <span className="flex size-11 items-center justify-center rounded-2xl bg-brand-soft text-brand-tint">
+                    <Icon className="size-5" />
+                  </span>
+                  <p className="mt-5 text-lg font-bold text-ink-900">{title}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-600">{text}</p>
+                </Tilt>
+              </Reveal>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section className="border-y border-ink-200/60 bg-surface/40">
         <div className="container-page grid gap-10 py-20 md:grid-cols-[0.9fr_1.1fr] md:items-start">
           <Reveal>
@@ -264,9 +320,9 @@ export default async function HomePage() {
               </div>
               <dl className="grid grid-cols-3 gap-4 md:grid-cols-1">
                 {[
-                  ["0 %", "de commission"],
-                  ["14 j", "d'essai gratuit"],
-                  ["dès 29 €", "par mois HT"],
+                  ["0 %", "de commission, des deux côtés"],
+                  ["Offert", "page web + référencement local"],
+                  ["dès 29 €", "par mois HT, 14 jours d'essai"],
                 ].map(([v, l]) => (
                   <div key={l} className="rounded-2xl border border-ink-200 bg-surface/70 p-4">
                     <dd className="text-2xl font-extrabold text-ink-900 md:text-3xl">{v}</dd>
@@ -299,6 +355,30 @@ export default async function HomePage() {
       ) : null}
 
       <Faq items={FAQ} />
+
+      <section className="container-page pb-16">
+        <Reveal>
+          <div className="max-w-3xl space-y-4 text-sm leading-relaxed text-ink-500">
+            <h2 className="text-lg font-bold text-ink-700">
+              Location de voiture près de chez vous, avec des loueurs professionnels
+            </h2>
+            <p>
+              Louer une voiture pour un mariage, un week-end, des vacances, un déplacement
+              professionnel ou pendant que la vôtre est au garage : notre plateforme réunit des
+              loueurs de voitures professionnels vérifiés dans toute la France. Citadines, berlines,
+              SUV, familiales, cabriolets ou véhicules de prestige, chaque véhicule est proposé au
+              prix du loueur, sans commission de plateforme.
+            </p>
+            <p>
+              Contrairement à un comparateur ou à une location entre particuliers, vous traitez
+              directement avec une agence de location : contrat, assurance, caution et paiement se
+              font chez le loueur, en toute transparence. Recherchez par ville, comparez les tarifs
+              à la journée, envoyez votre demande de réservation depuis l&apos;application et suivez
+              votre location jusqu&apos;au retour du véhicule.
+            </p>
+          </div>
+        </Reveal>
+      </section>
 
       <section className="container-page pb-20">
         <Reveal>
