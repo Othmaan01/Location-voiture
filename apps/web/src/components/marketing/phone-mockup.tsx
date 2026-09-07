@@ -9,25 +9,31 @@ import { cn } from "@/lib/utils";
 export function PhoneMockup({ className }: { className?: string }) {
   const loueurs = [
     {
-      name: "Prestige Cars Lyon",
-      city: "Lyon 3e · 1,2 km",
-      price: "dès 89 €/j",
-      count: 12,
+      name: "Prestige Motors Paris",
+      city: "Paris 8e · 2,1 km",
+      price: "dès 390 €/j",
+      count: 9,
       rating: "4,9",
+      cars: ["Audi RS3", "Lamborghini Urus", "Mercedes G63"],
+      tone: ["#3a1016", "#2a1216", "#1e1e24"],
     },
     {
-      name: "Drive & Go",
-      city: "Villeurbanne · 3,4 km",
+      name: "Citadines Lyon Part-Dieu",
+      city: "Lyon 3e · 1,4 km",
       price: "dès 39 €/j",
-      count: 7,
+      count: 24,
       rating: "4,8",
+      cars: ["Renault Clio V", "Mercedes Classe A", "Renault Captur"],
+      tone: ["#1e1e24", "#26262d", "#1a1a20"],
     },
     {
-      name: "Loc'Auto Part-Dieu",
-      city: "Lyon 6e · 4,1 km",
-      price: "dès 45 €/j",
-      count: 21,
+      name: "Atlantique Loc Bordeaux",
+      city: "Bordeaux · 3,6 km",
+      price: "dès 59 €/j",
+      count: 15,
       rating: "4,7",
+      cars: ["Peugeot 3008", "Tesla Model 3", "Volkswagen Tiguan"],
+      tone: ["#222228", "#2a1216", "#1e1e24"],
     },
   ];
   return (
@@ -37,7 +43,9 @@ export function PhoneMockup({ className }: { className?: string }) {
         <div className="relative overflow-hidden rounded-[36px] bg-[#0e0e11]">
           <div className="absolute left-1/2 top-2 h-6 w-24 -translate-x-1/2 rounded-full bg-black" />
           <div className="px-4 pb-24 pt-12">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-tint">Lyon</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-tint">
+              France
+            </p>
             <p className="text-xl font-extrabold text-ink-900">Loueurs</p>
             <div className="mt-3 flex gap-3 text-[11px] font-semibold">
               <span className="border-b-2 border-brand pb-1 text-ink-900">Tous</span>
@@ -46,7 +54,7 @@ export function PhoneMockup({ className }: { className?: string }) {
               <span className="pb-1 text-ink-500">Nouveaux</span>
             </div>
             <div className="mt-3 space-y-2.5">
-              {loueurs.map((l, i) => (
+              {loueurs.map((l) => (
                 <div key={l.name} className="rounded-2xl border border-ink-200 bg-[#16161a] p-3">
                   <div className="flex items-center gap-2">
                     <div className="flex size-8 items-center justify-center rounded-lg bg-[#1e1e24] text-[10px] font-bold text-ink-900">
@@ -62,14 +70,18 @@ export function PhoneMockup({ className }: { className?: string }) {
                     <span className="text-[11px] font-bold text-ink-900">★ {l.rating}</span>
                   </div>
                   <div className="mt-2 grid grid-cols-3 gap-1.5">
-                    {[0, 1, 2].map((k) => (
+                    {l.cars.map((car, k) => (
                       <div
-                        key={k}
-                        className="h-11 rounded-lg"
+                        key={car}
+                        className="flex h-12 items-end rounded-lg px-1.5 pb-1"
                         style={{
-                          background: `linear-gradient(135deg, ${["#2a1216", "#1e1e24", "#26262d"][(i + k) % 3]}, #16161a)`,
+                          background: `linear-gradient(135deg, ${l.tone[k]}, #16161a)`,
                         }}
-                      />
+                      >
+                        <span className="truncate text-[8px] font-semibold text-ink-700">
+                          {car}
+                        </span>
+                      </div>
                     ))}
                   </div>
                   <div className="mt-2 flex items-center justify-between text-[10px]">
