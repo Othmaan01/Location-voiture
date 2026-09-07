@@ -1,11 +1,11 @@
 import { z } from "zod";
 import {
   OrgStoriesResponseSchema,
-  PhotoUploadRequestSchema,
   SignedUploadSchema,
   StoriesResponseSchema,
   StoryConfirmSchema,
   StorySchema,
+  StoryUploadRequestSchema,
   UuidSchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
@@ -40,7 +40,7 @@ export const storiesRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags,
         params: orgParams,
-        body: PhotoUploadRequestSchema,
+        body: StoryUploadRequestSchema,
         response: { 200: SignedUploadSchema },
       },
       onRequest: [app.requireAuth],
@@ -65,6 +65,7 @@ export const storiesRoutes: FastifyPluginAsyncZod = async (app) => {
             request.params.organizationId,
             request.body.path,
             request.body.caption,
+            request.body.durationSeconds,
             request.id,
           ),
         ),

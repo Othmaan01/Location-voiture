@@ -7,7 +7,7 @@ import { ACCENT_COLOR } from "@/features/client/accent";
 import { seenKey, useSeenStories, useStories } from "@/lib/queries-stories";
 import { theme } from "@/theme";
 
-const SIZE = 62;
+const SIZE = 46;
 
 /** Bulles « du neuf chez les loueurs » sous les onglets du feed (ADR-0016). Invisible s'il n'y a rien. */
 export function StoriesRow() {
@@ -57,31 +57,31 @@ function Bubble({ group }: { group: StoryGroup }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { marginHorizontal: -theme.space["4"] },
-  row: { gap: theme.space["3"], paddingHorizontal: theme.space["4"], paddingVertical: 2 },
-  bubble: { width: SIZE + 18, alignItems: "center", gap: 6 },
+  scroll: { marginHorizontal: -theme.space["4"], flexGrow: 0 },
+  row: { gap: theme.space["2"], paddingHorizontal: theme.space["4"], paddingVertical: 2 },
+  bubble: { width: SIZE + 16, alignItems: "center", gap: 4 },
   pressed: { opacity: 0.85 },
   ring: {
-    padding: 3,
+    padding: 2,
     borderWidth: 2,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.background,
   },
   pill: {
     position: "absolute",
-    top: SIZE - 4,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    top: SIZE - 6,
+    paddingHorizontal: 5,
+    paddingVertical: 0,
     borderRadius: theme.radius.full,
     borderWidth: 2,
     borderColor: theme.colors.background,
   },
   pillText: {
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: 8,
+    lineHeight: 11,
     fontWeight: "800",
     color: "#ffffff",
     letterSpacing: 0.3,
   },
-  name: { maxWidth: SIZE + 18, textAlign: "center", marginTop: 4 },
+  name: { maxWidth: SIZE + 16, textAlign: "center", marginTop: 2, fontSize: 11, lineHeight: 14 },
 });

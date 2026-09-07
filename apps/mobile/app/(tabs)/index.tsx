@@ -95,7 +95,6 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
-        <StoriesRow />
       </View>
       <ScrollView
         contentContainerStyle={styles.list}
@@ -115,6 +114,7 @@ export default function HomeScreen() {
         }}
         scrollEventThrottle={200}
       >
+        <StoriesRow />
         {feed.isPending || locating ? (
           <ActivityIndicator color={theme.colors.accent} style={styles.spinner} />
         ) : null}
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tabs: { gap: theme.space["4"], paddingRight: theme.space["4"], marginBottom: theme.space["3"] },
+  tabs: { gap: theme.space["4"], paddingRight: theme.space["4"] },
   tab: {
     paddingBottom: 10,
     borderBottomWidth: 2,

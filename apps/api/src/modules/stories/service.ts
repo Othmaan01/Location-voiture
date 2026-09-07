@@ -7,7 +7,7 @@ import { offers, organizations, stories, vehiclePhotos, vehicles } from "../../d
 import { audit } from "../../shared/audit.js";
 import { assertCan, assertCanOrHide, type Actor } from "../../shared/authz.js";
 import { DomainError, notFound } from "../../shared/errors.js";
-import { PHOTOS_BUCKET, type StorageClient } from "../../shared/storage.js";
+import { PHOTOS_BUCKET, STORIES_BUCKET, type StorageClient } from "../../shared/storage.js";
 import { publicOffer } from "../offers/service.js";
 
 const NEW_VEHICLE_DAYS = 7;
@@ -19,17 +19,25 @@ const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+};
+const VIDEO_EXT = new Set(["mp4", "mov"]);
+
+type StoryDto = {
+  id: string;
+  mediaType: "photo" | "video";
+  mediaUrl: string;
+  durationSeconds: number | null;
+  caption: string | null;
+  createdAt: string;
+  expiresAt: string;
 };
 
 export interface StoriesService {
   /** Bulles du feed : loueurs verifies avec du neuf, contenu genere + stories manuelles. */
   feed(): Promise<StoryGroup[]>;
-  listForOrganization(
-    actor: Actor,
-    organizationId: string,
-  ): Promise<
-    { id: string; photoUrl: string; caption: string | null; createdAt: string; expiresAt: string }[]
-  >;
+  listForOrganization(actor: Actor, organizationId: string): Promise<StoryDto[]>;
   createUpload(
     actor: Actor,
     organizationId: string,
@@ -40,14 +48,9 @@ export interface StoriesService {
     organizationId: string,
     path: string,
     caption: string | undefined,
+    durationSeconds: number | undefined,
     requestId: string,
-  ): Promise<{
-    id: string;
-    photoUrl: string;
-    caption: string | null;
-    createdAt: string;
-    expiresAt: string;
-  }>;
+  ): Promise<StoryDto>;
   remove(actor: Actor, storyId: string, requestId: string): Promise<void>;
 }
 
@@ -55,10 +58,12 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
   const publicUrl = (path: string | null | undefined) =>
     path ? storage.publicUrl(PHOTOS_BUCKET, path) : null;
 
-  function storyDto(row: typeof stories.$inferSelect) {
+  function storyDto(row: typeof stories.$inferSelect): StoryDto {
     return {
       id: row.id,
-      photoUrl: storage.publicUrl(PHOTOS_BUCKET, row.photoPath),
+      mediaType: row.mediaType,
+      mediaUrl: storage.publicUrl(STORIES_BUCKET, row.mediaPath),
+      durationSeconds: row.durationSeconds,
       caption: row.caption,
       createdAt: row.createdAt.toISOString(),
       expiresAt: row.expiresAt.toISOString(),
@@ -146,7 +151,11 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
           items.push({
             id: `story:${s.id}`,
             kind: "story",
-            imageUrl: publicUrl(s.photoPath),
+            imageUrl:
+              s.mediaType === "photo" ? storage.publicUrl(STORIES_BUCKET, s.mediaPath) : null,
+            videoUrl:
+              s.mediaType === "video" ? storage.publicUrl(STORIES_BUCKET, s.mediaPath) : null,
+            durationSeconds: s.durationSeconds,
             title: s.caption ?? org.name,
             subtitle: null,
             vehicleId: null,
@@ -160,6 +169,8 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
             id: `offer:${o.id}`,
             kind: "offer",
             imageUrl: publicUrl(o.vehicleId ? photoMap.get(o.vehicleId) : org.bannerPath),
+            videoUrl: null,
+            durationSeconds: null,
             title: o.title,
             subtitle: label ? `Sur ${label}` : "Sur toute la flotte",
             vehicleId: o.vehicleId,
@@ -172,6 +183,8 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
             id: `vehicle:${v.id}`,
             kind: "new_vehicle",
             imageUrl: publicUrl(photoMap.get(v.id)),
+            videoUrl: null,
+            durationSeconds: null,
             title: `${v.brand} ${v.model}`,
             subtitle: "Nouveau dans la flotte",
             vehicleId: v.id,
@@ -213,8 +226,10 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
     async createUpload(actor, organizationId, mimeType) {
       assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
       assertCan(actor, "vehicle.write", { organizationId });
-      const path = `branding/${organizationId}/story-${randomUUID()}.${EXT[mimeType] ?? "bin"}`;
-      const signed = await storage.createSignedUploadUrl(PHOTOS_BUCKET, path);
+      const ext = EXT[mimeType];
+      if (!ext) throw new DomainError("validation_failed", "Format non pris en charge.");
+      const path = `${organizationId}/story-${randomUUID()}.${ext}`;
+      const signed = await storage.createSignedUploadUrl(STORIES_BUCKET, path);
       return {
         path,
         uploadUrl: signed.uploadUrl,
@@ -223,11 +238,13 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
       };
     },
 
-    async confirm(actor, organizationId, path, caption, requestId) {
+    async confirm(actor, organizationId, path, caption, durationSeconds, requestId) {
       assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
       assertCan(actor, "vehicle.write", { organizationId });
-      if (!path.startsWith(`branding/${organizationId}/story-`)) throw notFound("Fichier");
-      if (!(await storage.exists(PHOTOS_BUCKET, path))) throw notFound("Fichier");
+      if (!path.startsWith(`${organizationId}/story-`)) throw notFound("Fichier");
+      if (!(await storage.exists(STORIES_BUCKET, path))) throw notFound("Fichier");
+      const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+      const mediaType = VIDEO_EXT.has(ext) ? "video" : "photo";
       const [org] = await db
         .select({ status: organizations.status })
         .from(organizations)
@@ -242,7 +259,9 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
         .insert(stories)
         .values({
           organizationId,
-          photoPath: path,
+          mediaPath: path,
+          mediaType,
+          durationSeconds: mediaType === "video" ? (durationSeconds ?? null) : null,
           caption: caption?.trim() || null,
           createdBy: actor.userId,
           expiresAt: new Date(Date.now() + STORY_TTL_MS),
@@ -266,7 +285,7 @@ export function createStoriesService(db: Database, storage: StorageClient): Stor
       assertCanOrHide(actor, "organization.read", { organizationId: row.organizationId }, "Story");
       assertCan(actor, "vehicle.write", { organizationId: row.organizationId });
       await db.delete(stories).where(eq(stories.id, storyId));
-      await storage.remove(PHOTOS_BUCKET, [row.photoPath]);
+      await storage.remove(STORIES_BUCKET, [row.mediaPath]);
       await audit(db, {
         actorId: actor.userId,
         actorType: "organization_member",

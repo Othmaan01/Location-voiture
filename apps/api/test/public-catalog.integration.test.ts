@@ -191,7 +191,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
     });
     expect(upload.statusCode).toBe(200);
     const { path } = upload.json<{ path: string }>();
-    expect(path.startsWith(`branding/${orgId}/story-`)).toBe(true);
+    expect(path.startsWith(`${orgId}/story-`)).toBe(true);
     const created = await app.inject({
       method: "POST",
       url: `/v1/organizations/${orgId}/stories`,
@@ -199,9 +199,36 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
       payload: { path, caption: "Promo du week-end" },
     });
     expect(created.statusCode).toBe(201);
-    const story = created.json<{ id: string; caption: string; expiresAt: string }>();
+    const story = created.json<{
+      id: string;
+      caption: string;
+      expiresAt: string;
+      mediaType: string;
+    }>();
     expect(story.caption).toBe("Promo du week-end");
     expect(new Date(story.expiresAt).getTime() - Date.now()).toBeGreaterThan(47 * 3600 * 1000);
+    expect(story.mediaType).toBe("photo");
+    // Story video filmee en direct : format video accepte, duree conservee.
+    const videoUpload = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/stories/upload-url`,
+      headers: auth(ownerToken),
+      payload: { mimeType: "video/quicktime", sizeBytes: 12_000_000 },
+    });
+    expect(videoUpload.statusCode).toBe(200);
+    const videoPath = videoUpload.json<{ path: string }>().path;
+    expect(videoPath.endsWith(".mov")).toBe(true);
+    const video = await app.inject({
+      method: "POST",
+      url: `/v1/organizations/${orgId}/stories`,
+      headers: auth(ownerToken),
+      payload: { path: videoPath, durationSeconds: 12 },
+    });
+    expect(video.statusCode).toBe(201);
+    expect(video.json<{ mediaType: string; durationSeconds: number }>()).toMatchObject({
+      mediaType: "video",
+      durationSeconds: 12,
+    });
 
     const feed = await app.inject({ method: "GET", url: "/v1/stories" });
     expect(feed.statusCode).toBe(200);
@@ -210,7 +237,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
         groups: {
           organizationId: string;
           highlight: string;
-          items: { id: string; kind: string; title: string }[];
+          items: { id: string; kind: string; title: string; videoUrl: string | null }[];
         }[];
       }>()
       .groups.find((g) => g.organizationId === orgId);
@@ -222,6 +249,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
     // Le brouillon n'apparait jamais ; le vehicule publie recent oui.
     expect(group!.items.find((i) => i.id === `vehicle:${draftVehicleId}`)).toBeUndefined();
     expect(group!.items.find((i) => i.id === `vehicle:${vehicleId}`)?.title).toBe("Peugeot 208");
+    expect(group!.items.filter((i) => i.kind === "story" && i.videoUrl)).toHaveLength(1);
 
     expect(
       (

@@ -3,6 +3,8 @@ import { DomainError } from "./errors.js";
 /** Buckets Supabase Storage : photos publiques, documents prives (URL signees). */
 export const PHOTOS_BUCKET = "vehicle-photos";
 export const DOCUMENTS_BUCKET = "documents";
+/** Stories (ADR-0016) : public, accepte la video, purge avec la story. */
+export const STORIES_BUCKET = "story-media";
 
 /**
  * Acces minimal a Supabase Storage avec la cle service_role, sans SDK :

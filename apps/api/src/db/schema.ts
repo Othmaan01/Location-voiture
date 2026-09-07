@@ -433,7 +433,9 @@ export const stories = pgTable("stories", {
     .primaryKey()
     .default(sql`public.uuid_generate_v7()`),
   organizationId: uuid("organization_id").notNull(),
-  photoPath: text("photo_path").notNull(),
+  mediaPath: text("media_path").notNull(),
+  mediaType: text("media_type").$type<"photo" | "video">().notNull().default("photo"),
+  durationSeconds: integer("duration_seconds"),
   caption: text("caption"),
   createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

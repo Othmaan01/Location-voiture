@@ -6,6 +6,8 @@ import {
   SignedUploadSchema,
   StoriesResponseSchema,
   StorySchema,
+  type StoryConfirm,
+  type StoryUploadRequest,
 } from "@lv/contracts";
 
 import { apiRequest } from "./api";
@@ -34,10 +36,7 @@ export function useOrgStories(orgId: string) {
 }
 export function useStoryUploadUrl(orgId: string) {
   return useMutation({
-    mutationFn: (body: {
-      mimeType: "image/jpeg" | "image/png" | "image/webp";
-      sizeBytes: number;
-    }) =>
+    mutationFn: (body: StoryUploadRequest) =>
       apiRequest(`/v1/organizations/${orgId}/stories/upload-url`, SignedUploadSchema, {
         method: "POST",
         body,
@@ -47,7 +46,7 @@ export function useStoryUploadUrl(orgId: string) {
 export function useConfirmStory(orgId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (body: { path: string; caption?: string }) =>
+    mutationFn: (body: StoryConfirm) =>
       apiRequest(`/v1/organizations/${orgId}/stories`, StorySchema, { method: "POST", body }),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: storyKeys.org(orgId) });

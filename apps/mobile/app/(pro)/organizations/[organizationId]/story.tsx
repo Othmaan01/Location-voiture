@@ -2,7 +2,8 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Camera, Trash2 } from "lucide-react-native";
+import { Camera, Images, Trash2, Video } from "lucide-react-native";
+import { STORY_VIDEO_MAX_SECONDS } from "@lv/contracts";
 
 import { Button, Card, EmptyState, Input, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
@@ -12,7 +13,13 @@ import {
   useOrgStories,
   useStoryUploadUrl,
 } from "@/lib/queries-stories";
-import { UploadError, pickAndPrepareImage, uploadToSignedUrl } from "@/lib/upload";
+import {
+  UploadError,
+  captureStoryMedia,
+  pickAndPrepareImage,
+  uploadToSignedUrl,
+  type CapturedMedia,
+} from "@/lib/upload";
 import { theme } from "@/theme";
 
 /** Story du loueur (ADR-0016) : une photo et une legende, visibles 48 h dans les bulles du feed. */
@@ -25,17 +32,26 @@ export default function StoryScreen() {
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const publish = async () => {
+  const publish = async (source: "camera" | "gallery") => {
     try {
-      const picked = await pickAndPrepareImage();
-      if (!picked) return;
+      let media: CapturedMedia | null;
+      if (source === "camera") media = await captureStoryMedia(STORY_VIDEO_MAX_SECONDS);
+      else {
+        const picked = await pickAndPrepareImage();
+        media = picked ? { kind: "photo", ...picked } : null;
+      }
+      if (!media) return;
       setBusy(true);
       const signed = await uploadUrl.mutateAsync({
-        mimeType: picked.mimeType,
-        sizeBytes: picked.sizeBytes,
+        mimeType: media.mimeType,
+        sizeBytes: media.sizeBytes,
       });
-      await uploadToSignedUrl(signed.uploadUrl, signed.token, picked.uri, picked.mimeType);
-      await confirm.mutateAsync({ path: signed.path, caption: caption.trim() || undefined });
+      await uploadToSignedUrl(signed.uploadUrl, signed.token, media.uri, media.mimeType);
+      await confirm.mutateAsync({
+        path: signed.path,
+        caption: caption.trim() || undefined,
+        durationSeconds: media.kind === "video" ? media.durationSeconds : undefined,
+      });
       setCaption("");
     } catch (e) {
       Alert.alert(
@@ -67,8 +83,9 @@ export default function StoryScreen() {
   return (
     <Screen title="Story" back>
       <Text variant="sm" tone="muted">
-        Une photo, une phrase, visible 48 h dans les bulles en haut du feed. Vos offres et vos
-        nouveaux véhicules y apparaissent déjà tout seuls.
+        Filmez ou photographiez en direct, ajoutez une phrase : visible 48 h dans les bulles du
+        feed. La vidéo s'arrête toute seule au bout de {STORY_VIDEO_MAX_SECONDS} secondes. Vos
+        offres et vos nouveaux véhicules y apparaissent déjà tout seuls.
       </Text>
       <Card>
         <Input
@@ -79,9 +96,16 @@ export default function StoryScreen() {
           maxLength={120}
         />
         <Button
-          label="Choisir une photo et publier"
+          label="Filmer ou photographier"
           icon={<Camera size={18} color="#ffffff" />}
-          onPress={() => void publish()}
+          onPress={() => void publish("camera")}
+          loading={busy}
+        />
+        <Button
+          label="Photo depuis la galerie"
+          variant="ghost"
+          icon={<Images size={18} color={theme.colors.text} />}
+          onPress={() => void publish("gallery")}
           loading={busy}
         />
       </Card>
@@ -92,7 +116,16 @@ export default function StoryScreen() {
       ) : null}
       {items.map((s) => (
         <Card key={s.id} padded={false}>
-          <Image source={{ uri: s.photoUrl }} style={styles.photo} contentFit="cover" />
+          {s.mediaType === "video" ? (
+            <View style={[styles.photo, styles.videoBox]}>
+              <Video size={28} color={theme.colors.text} />
+              <Text variant="small" tone="muted">
+                Vidéo{s.durationSeconds ? ` · ${s.durationSeconds} s` : ""}
+              </Text>
+            </View>
+          ) : (
+            <Image source={{ uri: s.mediaUrl }} style={styles.photo} contentFit="cover" />
+          )}
           <View style={styles.row}>
             <View style={styles.texts}>
               <Text variant="bodyStrong" numberOfLines={2}>
@@ -125,6 +158,13 @@ function expiresLabel(iso: string): string {
 
 const styles = StyleSheet.create({
   photo: { width: "100%", aspectRatio: 4 / 5, maxHeight: 320 },
+  videoBox: {
+    aspectRatio: 16 / 9,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: theme.colors.surfaceRaised,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",

@@ -2,6 +2,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
+import { VideoView, useVideoPlayer } from "expo-video";
+import { useEvent } from "expo";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronRight, Sparkles, Tag, X } from "lucide-react-native";
 import type { StoryGroup, StoryItem } from "@lv/contracts";
@@ -107,7 +109,10 @@ function Story({
     return () => progress.removeListener(id);
   }, [progress]);
 
+  // Photo : minuteur anime. Video : la progression suit la lecture (voir VideoLayer).
+  const isVideo = !!item.videoUrl;
   useEffect(() => {
+    if (isVideo) return;
     if (paused) {
       progress.stopAnimation();
       return;
@@ -121,7 +126,7 @@ function Story({
       if (finished) onNext();
     });
     return () => anim.stop();
-  }, [paused, progress, onNext]);
+  }, [isVideo, paused, progress, onNext]);
 
   const badge =
     item.kind === "offer" && item.offer ? (
@@ -140,7 +145,9 @@ function Story({
 
   return (
     <View style={styles.root}>
-      {item.imageUrl ? (
+      {item.videoUrl ? (
+        <VideoLayer uri={item.videoUrl} paused={paused} progress={progress} onEnd={onNext} />
+      ) : item.imageUrl ? (
         <Image
           source={{ uri: item.imageUrl }}
           style={StyleSheet.absoluteFill}
@@ -236,6 +243,52 @@ function Story({
         />
       </View>
     </View>
+  );
+}
+
+/** Lecture d'une story video : plein ecran, son actif, fin de lecture = story suivante. */
+function VideoLayer({
+  uri,
+  paused,
+  progress,
+  onEnd,
+}: {
+  uri: string;
+  paused: boolean;
+  progress: Animated.Value;
+  onEnd: () => void;
+}) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false;
+    p.timeUpdateEventInterval = 0.1;
+    p.play();
+  });
+  const { currentTime } = useEvent(player, "timeUpdate", {
+    currentTime: 0,
+    currentLiveTimestamp: null,
+    currentOffsetFromLive: null,
+    bufferedPosition: 0,
+  });
+  const { status } = useEvent(player, "statusChange", { status: player.status });
+  useEffect(() => {
+    if (paused) player.pause();
+    else if (status === "readyToPlay") player.play();
+  }, [paused, player, status]);
+  useEffect(() => {
+    const sub = player.addListener("playToEnd", onEnd);
+    return () => sub.remove();
+  }, [player, onEnd]);
+  useEffect(() => {
+    if (player.duration > 0) progress.setValue(Math.min(1, currentTime / player.duration));
+  }, [currentTime, player, progress]);
+  return (
+    <VideoView
+      player={player}
+      style={StyleSheet.absoluteFill}
+      contentFit="cover"
+      nativeControls={false}
+      allowsPictureInPicture={false}
+    />
   );
 }
 

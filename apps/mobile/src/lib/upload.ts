@@ -66,7 +66,20 @@ export async function pickAndPrepareImage(): Promise<PickedImage | null> {
     exif: false,
   });
   if (result.canceled || !result.assets[0]) return null;
-  const asset = result.assets[0];
+  return prepareImage(result.assets[0]);
+}
+
+export type CapturedMedia =
+  | (PickedImage & { kind: "photo" })
+  | {
+      kind: "video";
+      uri: string;
+      sizeBytes: number;
+      mimeType: "video/mp4" | "video/quicktime";
+      durationSeconds: number;
+    };
+
+async function prepareImage(asset: ImagePicker.ImagePickerAsset): Promise<PickedImage> {
   const targetWidth = Math.min(asset.width ?? 1600, 1600);
   const manipulated = await ImageManipulator.manipulateAsync(
     asset.uri,
@@ -81,6 +94,36 @@ export async function pickAndPrepareImage(): Promise<PickedImage | null> {
     sizeBytes: size,
     mimeType: "image/jpeg",
   };
+}
+
+/**
+ * Story en direct (ADR-0016) : ouvre la camera, photo ou video au choix ; la video s'arrete
+ * toute seule a `maxSeconds`. Rien n'est lu dans la galerie. Retourne null si annule ou refuse.
+ */
+export async function captureStoryMedia(maxSeconds: number): Promise<CapturedMedia | null> {
+  const permission = await ImagePicker.requestCameraPermissionsAsync();
+  if (!permission.granted) return null;
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ["images", "videos"],
+    videoMaxDuration: maxSeconds,
+    videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame1280x720,
+    quality: 0.9,
+    exif: false,
+  });
+  if (result.canceled || !result.assets[0]) return null;
+  const asset = result.assets[0];
+  if (asset.type === "video") {
+    const info = await FileSystem.getInfoAsync(asset.uri);
+    const sizeBytes =
+      info.exists && typeof info.size === "number" ? info.size : (asset.fileSize ?? 0);
+    const mimeType = asset.uri.toLowerCase().endsWith(".mp4") ? "video/mp4" : "video/quicktime";
+    const durationSeconds = Math.min(
+      maxSeconds,
+      Math.max(1, Math.round((asset.duration ?? maxSeconds * 1000) / 1000)),
+    );
+    return { kind: "video", uri: asset.uri, sizeBytes, mimeType, durationSeconds };
+  }
+  return { kind: "photo", ...(await prepareImage(asset)) };
 }
 
 export interface PickedDocument {

@@ -13,7 +13,10 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement a trouver des vehicules autour de vous lorsque vous le demandez.",
         "UIUserInterfaceStyle": "Dark",
-        "NSFaceIDUsageDescription": "Face ID sert uniquement à déverrouiller l'application sur cet appareil."
+        "NSFaceIDUsageDescription": "Face ID sert uniquement à déverrouiller l'application sur cet appareil.",
+        "NSCameraUsageDescription": "La caméra sert à filmer ou photographier une story en direct.",
+        "NSMicrophoneUsageDescription": "Le micro enregistre le son de vos stories vidéo.",
+        "NSPhotoLibraryUsageDescription": "Vos photos servent à illustrer vos véhicules, votre logo et vos stories."
       }
     },
     "android": {
@@ -39,6 +42,7 @@
       ],
       "expo-secure-store",
       "expo-font",
+      "expo-video",
       [
         "expo-notifications",
         {
