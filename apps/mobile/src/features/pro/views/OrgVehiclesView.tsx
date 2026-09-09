@@ -5,8 +5,10 @@ import { Image } from "expo-image";
 import { Car, LayoutGrid, List, Plus, Search, X } from "lucide-react-native";
 import type { Vehicle } from "@lv/contracts";
 
-import { Badge, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
+import { Badge, Button, EmptyState, Screen, Text } from "@/components/ui";
 import { CATEGORY_LABEL, formatEuros } from "@/features/pro/labels";
+import { formatDate } from "@/features/client/booking-labels";
+import { useOrgBookings } from "@/lib/queries-bookings";
 import { useAgencies, useVehicles } from "@/lib/queries-catalog";
 import { fontFamily, theme } from "@/theme";
 
@@ -29,6 +31,17 @@ function matches(v: Vehicle, query: string): boolean {
   return haystack.some((h) => h.includes(q)) || fold(`${v.brand} ${v.model}`).includes(q);
 }
 
+/** Etat du jour : loue (retour a telle date) ou disponible, d'apres les reservations en cours. */
+function rentalOf(
+  vehicleId: string,
+  active: Map<string, string>,
+): { label: string; rented: boolean } {
+  const returnAt = active.get(vehicleId);
+  return returnAt
+    ? { label: `Loué · retour le ${formatDate(returnAt)}`, rented: true }
+    : { label: "Disponible", rented: false };
+}
+
 function statusOf(v: Vehicle): { label: string; tone: "success" | "accent" | "neutral" } {
   if (v.status === "published") return { label: "Publié", tone: "success" };
   if (v.suspendedAt) return { label: "Suspendu", tone: "accent" };
@@ -48,6 +61,20 @@ export function OrgVehiclesView({
   const noAgency = agencies.data && agencies.data.agencies.length === 0;
   const [query, setQuery] = useState("");
   const [layout, setLayout] = useState<Layout>("list");
+  const bookings = useOrgBookings(organizationId, "upcoming");
+  const active = useMemo(() => {
+    const now = Date.now();
+    const map = new Map<string, string>();
+    for (const b of bookings.data?.bookings ?? []) {
+      const inProgress =
+        b.status === "active" ||
+        (b.status === "confirmed" &&
+          new Date(b.from).getTime() <= now &&
+          new Date(b.to).getTime() > now);
+      if (inProgress) map.set(b.vehicle.id, b.to);
+    }
+    return map;
+  }, [bookings.data]);
   const all = vehicles.data?.vehicles ?? [];
   const shown = useMemo(() => all.filter((v) => matches(v, query)), [all, query]);
   const open = (id: string) => router.push(`/(pro)/organizations/${organizationId}/vehicles/${id}`);
@@ -147,22 +174,63 @@ export function OrgVehiclesView({
       ) : null}
 
       {shown.length > 0 && layout === "list" ? (
-        <Card padded={false}>
-          {shown.map((v, i) => {
+        <View style={styles.rows}>
+          {shown.map((v) => {
             const st = statusOf(v);
+            const rental = rentalOf(v.id, active);
             return (
-              <ListItem
+              <Pressable
                 key={v.id}
-                icon={<Thumb vehicle={v} />}
-                title={`${v.brand} ${v.model}`}
-                subtitle={`${CATEGORY_LABEL[v.category] ?? v.category}${v.ratePlan ? ` · ${formatEuros(v.ratePlan.dailyCents)}/jour` : " · tarif à définir"}`}
-                right={<Badge label={st.label} tone={st.tone} />}
+                accessibilityRole="button"
                 onPress={() => open(v.id)}
-                last={i === shown.length - 1}
-              />
+                style={({ pressed }) => [styles.row, pressed ? styles.cardPressed : null]}
+              >
+                <Thumb vehicle={v} />
+                <View style={styles.rowBody}>
+                  <View style={styles.rowHead}>
+                    <Text variant="bodyStrong" numberOfLines={1} style={styles.rowTitle}>
+                      {v.brand} {v.model}
+                    </Text>
+                    <Badge label={st.label} tone={st.tone} />
+                  </View>
+                  <Text variant="small" tone="muted" numberOfLines={1}>
+                    {[v.year, v.licensePlate, CATEGORY_LABEL[v.category] ?? v.category]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                  <View style={styles.rowFoot}>
+                    <Text variant="smStrong">
+                      {v.ratePlan
+                        ? `${formatEuros(v.ratePlan.dailyCents)} / jour`
+                        : "Tarif à définir"}
+                    </Text>
+                    <View
+                      style={[styles.state, rental.rented ? styles.stateRented : styles.stateFree]}
+                    >
+                      <View
+                        style={[
+                          styles.stateDot,
+                          {
+                            backgroundColor: rental.rented
+                              ? theme.colors.warning
+                              : theme.colors.success,
+                          },
+                        ]}
+                      />
+                      <Text
+                        variant="small"
+                        tone={rental.rented ? "warning" : "success"}
+                        numberOfLines={1}
+                      >
+                        {rental.label}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
             );
           })}
-        </Card>
+        </View>
       ) : null}
       {shown.length > 0 && layout === "cards" ? (
         <View style={styles.grid}>
@@ -228,7 +296,7 @@ function Thumb({ vehicle }: { vehicle: Vehicle }) {
     />
   ) : (
     <View style={[styles.thumb, styles.thumbEmpty]}>
-      <Car size={18} color={theme.colors.textDim} />
+      <Car size={22} color={theme.colors.textDim} />
     </View>
   );
 }
@@ -270,13 +338,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   toggleOn: { backgroundColor: theme.colors.accent },
-  thumb: { width: 44, height: 34, borderRadius: 8, backgroundColor: theme.colors.surfaceRaised },
+  thumb: { width: 92, height: 69, borderRadius: 10, backgroundColor: theme.colors.surfaceRaised },
   thumbEmpty: {
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
+  rows: { gap: theme.space["2"] },
+  row: {
+    flexDirection: "row",
+    gap: theme.space["3"],
+    padding: theme.space["3"],
+    borderRadius: theme.radius.card,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  rowBody: { flex: 1, gap: 3, justifyContent: "center" },
+  rowHead: { flexDirection: "row", alignItems: "center", gap: theme.space["2"] },
+  rowTitle: { flex: 1 },
+  rowFoot: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.space["2"],
+  },
+  state: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
+  stateFree: {},
+  stateRented: {},
+  stateDot: { width: 6, height: 6, borderRadius: 3 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: theme.space["3"] },
   card: {
     width: "48%",
