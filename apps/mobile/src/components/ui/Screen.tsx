@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   content: {
     paddingHorizontal: theme.space["4"],
-    paddingTop: theme.space["2"],
+    paddingTop: theme.space["3"],
     gap: theme.space["4"],
   },
   header: {

@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Linking,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -29,6 +31,7 @@ import {
   Star,
   Tag,
   Users,
+  X,
 } from "lucide-react-native";
 import type { PublicVehicleDetail } from "@lv/contracts";
 
@@ -81,6 +84,7 @@ export default function VehicleScreen() {
   const toggle = useToggleFavorite();
   const [index, setIndex] = useState(0);
   const [contact, setContact] = useState(false);
+  const [viewer, setViewer] = useState<number | null>(null);
   const listRef = useRef<FlatList<string>>(null);
   // Disponibilites sur trois mois : la meme source que le calendrier de reservation.
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -141,10 +145,17 @@ export default function VehicleScreen() {
   const accent = ACCENT_COLOR[v.loueur.accent];
   const favorite = !!favorites.data?.vehicles.some((f) => f.id === v.id);
   const photos = v.photos.length > 0 ? v.photos : [];
-  const galleryH = Math.round(width / GALLERY_RATIO);
+  const galleryW = width - 2 * theme.space["4"];
+  const galleryH = Math.round(galleryW / GALLERY_RATIO);
+  // Estimation sur les dates choisies : nombre de jours x prix du jour (le devis exact vient a l'etape suivante).
+  const days =
+    from && to
+      ? Math.max(1, Math.ceil((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000))
+      : null;
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
-    setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+    setIndex(Math.round(e.nativeEvent.contentOffset.x / galleryW));
   const price = v.discountedDailyCents ?? v.dailyCents;
+  const estimate = price !== null && days !== null ? price * days : null;
 
   const specs: { icon: typeof Car; label: string }[] = [
     { icon: Settings2, label: TRANSMISSION_LABEL[v.transmission] ?? v.transmission },
@@ -158,70 +169,93 @@ export default function VehicleScreen() {
   return (
     <View style={styles.root}>
       <Screen scroll contentStyle={styles.content}>
-        <View
-          style={[styles.gallery, { height: galleryH, marginTop: -insets.top - theme.space["2"] }]}
-        >
-          {photos.length > 0 ? (
-            <FlatList
-              ref={listRef}
-              data={photos}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onScroll={onScroll}
-              scrollEventThrottle={32}
-              keyExtractor={(uri, i) => `${i}-${uri}`}
-              renderItem={({ item }) => (
-                <Image
-                  source={{ uri: item }}
-                  style={{ width, height: galleryH }}
-                  contentFit="cover"
-                  transition={200}
-                />
-              )}
-            />
-          ) : (
-            <View style={[styles.empty, { height: galleryH }]}>
-              <Car size={48} color={theme.colors.textDim} />
-            </View>
-          )}
-          <View style={[styles.galleryTop, { top: insets.top + 6 }]} pointerEvents="box-none">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Retour"
-              onPress={() => router.back()}
-              style={styles.roundBtn}
-            >
-              <ChevronLeft size={22} color="#ffffff" />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-              onPress={() =>
-                session
-                  ? toggle.mutate({ vehicleId: v.id, on: !favorite })
-                  : router.push("/(auth)/sign-in")
-              }
-              style={styles.roundBtn}
-            >
-              <Heart
-                size={22}
-                color={favorite ? theme.colors.accent : "#ffffff"}
-                fill={favorite ? theme.colors.accent : "transparent"}
+        <View style={styles.galleryWrap}>
+          <View style={[styles.gallery, { height: galleryH }]}>
+            {photos.length > 0 ? (
+              <FlatList
+                ref={listRef}
+                data={photos}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={onScroll}
+                scrollEventThrottle={32}
+                keyExtractor={(uri, i) => `${i}-${uri}`}
+                renderItem={({ item, index: i }) => (
+                  <Pressable
+                    accessibilityRole="imagebutton"
+                    accessibilityLabel={`Photo ${i + 1} sur ${photos.length}, agrandir`}
+                    onPress={() => setViewer(i)}
+                  >
+                    <Image
+                      source={{ uri: item }}
+                      style={{ width: galleryW, height: galleryH }}
+                      contentFit="contain"
+                      transition={200}
+                    />
+                  </Pressable>
+                )}
               />
-            </Pressable>
-          </View>
-          {photos.length > 1 ? (
-            <View style={styles.dots} pointerEvents="none">
-              {photos.map((_, i) => (
-                <View key={i} style={[styles.dot, i === index ? styles.dotOn : null]} />
-              ))}
-              <View style={styles.counter}>
+            ) : (
+              <View style={[styles.empty, { height: galleryH }]}>
+                <Car size={48} color={theme.colors.textDim} />
+              </View>
+            )}
+            <View style={styles.galleryTop} pointerEvents="box-none">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Retour"
+                onPress={() => router.back()}
+                style={styles.roundBtn}
+              >
+                <ChevronLeft size={22} color="#ffffff" />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                onPress={() =>
+                  session
+                    ? toggle.mutate({ vehicleId: v.id, on: !favorite })
+                    : router.push("/(auth)/sign-in")
+                }
+                style={styles.roundBtn}
+              >
+                <Heart
+                  size={22}
+                  color={favorite ? theme.colors.accent : "#ffffff"}
+                  fill={favorite ? theme.colors.accent : "transparent"}
+                />
+              </Pressable>
+            </View>
+            {photos.length > 1 ? (
+              <View style={styles.counter} pointerEvents="none">
                 <Text style={styles.counterText}>
                   {index + 1} / {photos.length}
                 </Text>
               </View>
-            </View>
+            ) : null}
+          </View>
+          {photos.length > 1 ? (
+            <FlatList
+              data={photos}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(uri, i) => `t${i}-${uri}`}
+              contentContainerStyle={styles.thumbs}
+              renderItem={({ item, index: i }) => (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Voir la photo ${i + 1}`}
+                  onPress={() => {
+                    setIndex(i);
+                    listRef.current?.scrollToOffset({ offset: i * galleryW, animated: true });
+                  }}
+                  style={[styles.thumb, i === index ? styles.thumbOn : null]}
+                >
+                  <Image source={{ uri: item }} style={styles.thumbImage} contentFit="cover" />
+                </Pressable>
+              )}
+            />
           ) : null}
         </View>
 
@@ -247,7 +281,7 @@ export default function VehicleScreen() {
           </View>
           <View style={styles.priceRow}>
             {price !== null ? (
-              <>
+              <View style={styles.priceInline}>
                 <Text variant="h1">{formatEuros(price)}</Text>
                 <Text variant="sm" tone="muted">
                   / jour
@@ -257,7 +291,7 @@ export default function VehicleScreen() {
                     {formatEuros(v.dailyCents)}
                   </Text>
                 ) : null}
-              </>
+              </View>
             ) : (
               <Text variant="sm" tone="muted">
                 Tarif sur demande
@@ -439,13 +473,26 @@ export default function VehicleScreen() {
         >
           <MessageCircle size={22} color={theme.colors.text} />
         </Pressable>
-        <View style={styles.flex}>
-          <Button
-            label={v.available === false ? "Choisir d'autres dates" : "Réserver ce véhicule"}
-            onPress={() => router.push(`/vehicules/${v.id}/demande`)}
-          />
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/vehicules/${v.id}/demande`)}
+          style={({ pressed }) => [styles.cta, pressed ? styles.ctaPressed : null]}
+        >
+          <Text variant="bodyStrong" style={styles.ctaText}>
+            {v.available === false ? "Choisir d'autres dates" : "Réserver ce véhicule"}
+          </Text>
+          {estimate !== null && v.available !== false ? (
+            <>
+              <View style={styles.ctaDivider} />
+              <Text variant="bodyStrong" style={styles.ctaText}>
+                {formatEuros(estimate)}
+              </Text>
+            </>
+          ) : null}
+        </Pressable>
       </View>
+
+      <PhotoViewer photos={photos} index={viewer} onClose={() => setViewer(null)} width={width} />
 
       <ContactSheet
         visible={contact}
@@ -455,6 +502,69 @@ export default function VehicleScreen() {
         vehicleId={v.id}
       />
     </View>
+  );
+}
+
+/** Plein ecran : un balayage par photo, pincement pour zoomer jusqu'a x4, jamais plus petit que l'image. */
+function PhotoViewer({
+  photos,
+  index,
+  onClose,
+  width,
+}: {
+  photos: string[];
+  index: number | null;
+  onClose: () => void;
+  width: number;
+}) {
+  const insets = useSafeAreaInsets();
+  const [current, setCurrent] = useState(index ?? 0);
+  useEffect(() => {
+    if (index !== null) setCurrent(index);
+  }, [index]);
+  if (index === null) return null;
+  return (
+    <Modal visible animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <View style={styles.viewer}>
+        <FlatList
+          data={photos}
+          horizontal
+          pagingEnabled
+          initialScrollIndex={index}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => setCurrent(Math.round(e.nativeEvent.contentOffset.x / width))}
+          keyExtractor={(uri, i) => `v${i}-${uri}`}
+          renderItem={({ item }) => (
+            <ScrollView
+              style={{ width }}
+              contentContainerStyle={styles.viewerPage}
+              maximumZoomScale={4}
+              minimumZoomScale={1}
+              bouncesZoom={false}
+              centerContent
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+            >
+              <Image source={{ uri: item }} style={styles.viewerImage} contentFit="contain" />
+            </ScrollView>
+          )}
+        />
+        <View style={[styles.viewerTop, { top: insets.top + 8 }]} pointerEvents="box-none">
+          <Text style={styles.counterText}>
+            {current + 1} / {photos.length}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer"
+            onPress={onClose}
+            style={styles.roundBtn}
+          >
+            <X size={22} color="#ffffff" />
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -482,11 +592,57 @@ function Row({ label, value, last = false }: { label: string; value: string; las
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  content: { paddingTop: 0, gap: theme.space["5"] },
-  gallery: { marginHorizontal: -theme.space["4"], backgroundColor: theme.colors.surface },
+  content: { gap: theme.space["5"] },
+  galleryWrap: { gap: theme.space["2"] },
+  gallery: {
+    borderRadius: theme.radius.card,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: "hidden",
+  },
+  thumbs: { gap: theme.space["2"] },
+  thumb: {
+    width: 64,
+    height: 48,
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "transparent",
+    backgroundColor: theme.colors.surface,
+  },
+  thumbOn: { borderColor: theme.colors.accent },
+  thumbImage: { width: "100%", height: "100%" },
+  priceInline: { flexDirection: "row", alignItems: "baseline", gap: theme.space["2"] },
+  cta: {
+    flex: 1,
+    minHeight: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.space["3"],
+    borderRadius: theme.radius.control,
+    backgroundColor: theme.colors.accent,
+    paddingHorizontal: theme.space["4"],
+  },
+  ctaPressed: { opacity: 0.9 },
+  ctaText: { color: "#ffffff" },
+  ctaDivider: { width: 1, height: 22, backgroundColor: "rgba(255,255,255,0.45)" },
+  viewer: { flex: 1, backgroundColor: "#000000" },
+  viewerPage: { flexGrow: 1, justifyContent: "center" },
+  viewerImage: { width: "100%", aspectRatio: 4 / 3 },
+  viewerTop: {
+    position: "absolute",
+    left: theme.space["4"],
+    right: theme.space["3"],
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   empty: { alignItems: "center", justifyContent: "center" },
   galleryTop: {
     position: "absolute",
+    top: theme.space["3"],
     left: theme.space["3"],
     right: theme.space["3"],
     flexDirection: "row",
@@ -514,7 +670,8 @@ const styles = StyleSheet.create({
   dotOn: { backgroundColor: "#ffffff", width: 16 },
   counter: {
     position: "absolute",
-    right: theme.space["4"],
+    right: theme.space["3"],
+    bottom: theme.space["3"],
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: theme.radius.full,
