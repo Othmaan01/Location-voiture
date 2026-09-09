@@ -5,6 +5,7 @@ import { Camera, ChevronRight, Pencil, Tag, Trash2 } from "lucide-react-native";
 
 import { Badge, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
+import { celebrate } from "@/lib/celebrate";
 import {
   BLOCKER_LABEL,
   CATEGORY_LABEL,
@@ -51,6 +52,9 @@ export default function VehicleScreen() {
 
   const togglePublish = () =>
     setPublished.mutate(!published, {
+      onSuccess: () => {
+        if (!published) celebrate("Véhicule en ligne", "Visible par les clients dès maintenant.");
+      },
       onError: (e) =>
         Alert.alert(
           "Publication impossible",

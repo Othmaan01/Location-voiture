@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppLockGate } from "@/components/AppLockGate";
+import { Celebration } from "@/components/Celebration";
 import { ApiRequestError } from "@/lib/api";
 import { PushListener } from "@/lib/push-listener";
 import { SessionProvider } from "@/lib/session";
@@ -79,6 +80,7 @@ export default function RootLayout() {
               <Stack.Screen name="invitations/[token]" />
             </Stack>
           </AppLockGate>
+          <Celebration />
         </QueryClientProvider>
       </SessionProvider>
     </SafeAreaProvider>

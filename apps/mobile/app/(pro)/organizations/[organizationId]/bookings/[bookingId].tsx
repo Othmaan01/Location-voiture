@@ -12,6 +12,7 @@ import {
 } from "@/features/client/booking-labels";
 import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
+import { celebrate } from "@/lib/celebrate";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useBooking, useBookingAction } from "@/lib/queries-bookings";
 import { useOrgConversations } from "@/lib/queries-messaging";
@@ -65,6 +66,9 @@ export default function OrgBookingScreen() {
         onSuccess: () => {
           setReasonFor(null);
           setReason("");
+          if (action === "confirm") celebrate("Réservation confirmée", "Le client est prévenu.");
+          if (action === "complete")
+            celebrate("Location terminée", "Le client peut laisser un avis.");
         },
         onError: (e) =>
           Alert.alert("Action impossible", e instanceof ApiRequestError ? e.message : "Réessayez."),

@@ -5,6 +5,7 @@ import { Alert, StyleSheet, View } from "react-native";
 import { Button, Input, Screen, Select, Text } from "@/components/ui";
 import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
+import { celebrate } from "@/lib/celebrate";
 import { useVehicles } from "@/lib/queries-catalog";
 import { useCreateOffer } from "@/lib/queries-offers";
 import { theme } from "@/theme";
@@ -46,7 +47,10 @@ export default function NewOfferScreen() {
         durationDays: Number(duration),
       },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => {
+          celebrate("Offre lancée", "Elle apparaît dans l'onglet Offres du feed.");
+          router.back();
+        },
         onError: (e) =>
           Alert.alert("Offre non créée", e instanceof ApiRequestError ? e.message : "Réessayez."),
       },

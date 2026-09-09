@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import type { Document, OrganizationStatus } from "@lv/contracts";
 
 import type { Database } from "../../db/client.js";
@@ -202,8 +202,26 @@ export function createAdminService(db: Database): AdminService {
               isNull(verificationRequests.decidedAt),
             ),
           );
-        // Dossier valide : les documents encore en attente sont acceptes avec lui (un refus individuel reste possible avant).
+        // Dossier valide : les documents encore en attente sont acceptes avec lui (un refus individuel reste possible avant),
+        // et les agences completes (SIRET, adresse, position) passent en ligne sans action du loueur.
+        let publishedAgencies = 0;
         if (decision === "verified") {
+          const published = await tx
+            .update(agencies)
+            .set({ status: "published" })
+            .where(
+              and(
+                eq(agencies.organizationId, organizationId),
+                eq(agencies.status, "draft"),
+                isNotNull(agencies.siret),
+                isNotNull(agencies.addressLine),
+                isNotNull(agencies.cityName),
+                isNotNull(agencies.latitude),
+                isNotNull(agencies.longitude),
+              ),
+            )
+            .returning({ id: agencies.id });
+          publishedAgencies = published.length;
           await tx
             .update(documents)
             .set({
@@ -223,7 +241,7 @@ export function createAdminService(db: Database): AdminService {
           subjectType: "organization",
           subjectId: organizationId,
           organizationId,
-          metadata: { reason: reason ?? null },
+          metadata: { reason: reason ?? null, publishedAgencies },
           requestId,
         });
       });

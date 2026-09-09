@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { DOCUMENT_KIND_LABEL } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
+import { celebrate } from "@/lib/celebrate";
 import { useMe } from "@/lib/queries";
 import { useAdminDecide, useAdminQueue, useDocumentReadUrl } from "@/lib/queries-catalog";
 import { theme } from "@/theme";
@@ -35,6 +36,8 @@ export function VerificationsView({ embedded = false }: { embedded?: boolean }) 
         onSuccess: () => {
           setRejecting(null);
           setReason("");
+          if (decision === "verified")
+            celebrate("Loueur validé", "Ses agences complètes sont en ligne.");
         },
         onError: (e) =>
           Alert.alert("Décision refusée", e instanceof ApiRequestError ? e.message : "Réessayez."),

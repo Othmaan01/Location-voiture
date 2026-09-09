@@ -6,6 +6,7 @@ import { Camera, Trash2 } from "lucide-react-native";
 
 import { Badge, Button, Screen, Text } from "@/components/ui";
 import { AgencyForm } from "@/features/pro/AgencyForm";
+import { celebrate } from "@/lib/celebrate";
 import { ApiRequestError } from "@/lib/api";
 import { useOrganization } from "@/lib/queries";
 import {
@@ -128,7 +129,9 @@ export default function EditAgencyScreen() {
         siren={org.data?.siren ?? null}
         submitting={update.isPending}
         onSubmit={async (input) => {
-          await update.mutateAsync({ agencyId, body: input });
+          const updated = await update.mutateAsync({ agencyId, body: input });
+          if (updated.status === "published" && agency.status !== "published")
+            celebrate("Agence en ligne", "Vous pouvez publier vos véhicules.");
           router.back();
         }}
       />

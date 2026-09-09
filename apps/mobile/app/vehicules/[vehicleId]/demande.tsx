@@ -10,6 +10,7 @@ import { PeriodSheet } from "@/features/client/PeriodSheet";
 import { defaultPeriod, formatPeriod, useSearchState } from "@/features/client/search-state";
 import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
+import { celebrate } from "@/lib/celebrate";
 import { useCreateBooking, useCreateQuote } from "@/lib/queries-bookings";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
@@ -58,7 +59,10 @@ export default function BookingRequestScreen() {
     createBooking.mutate(
       { quoteId: quote.id, message: message.trim() || undefined, idempotencyKey },
       {
-        onSuccess: (b) => router.replace(`/reservations/${b.id}`),
+        onSuccess: (b) => {
+          celebrate("Demande envoyée", "Le loueur est prévenu et vous répond ici.");
+          router.replace(`/reservations/${b.id}`);
+        },
         onError: (e) =>
           setError(e instanceof ApiRequestError ? e.message : "Envoi impossible. Réessayez."),
       },
