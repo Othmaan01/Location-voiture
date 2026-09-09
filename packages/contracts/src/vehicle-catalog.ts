@@ -216,6 +216,24 @@ export function normalizeModel(brand: string, input: string): string {
   return known ?? squeeze(input).charAt(0).toUpperCase() + squeeze(input).slice(1);
 }
 
+const byAlpha = (a: string, b: string) => a.localeCompare(b, "fr", { numeric: true });
+
+/** Liste deroulante : toutes les marques par ordre alphabetique, reduites au prefixe tape (« A » → marques en A). */
+export function listBrands(query = ""): string[] {
+  const key = fold(query);
+  return VEHICLE_BRANDS.map((b) => b.name)
+    .filter((n) => !key || fold(n).startsWith(key))
+    .sort(byAlpha);
+}
+
+/** Modeles de la marque, par ordre alphabetique, reduits au prefixe tape ; vide si la marque est inconnue. */
+export function listModels(brand: string, query = ""): string[] {
+  const key = fold(query);
+  return [...(findBrand(brand)?.models ?? [])]
+    .filter((m) => !key || fold(m).startsWith(key))
+    .sort(byAlpha);
+}
+
 export function suggestBrands(query: string, limit = 6): string[] {
   const key = fold(query);
   if (!key) return [];

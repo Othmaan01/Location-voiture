@@ -1,13 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View, type TextInput } from "react-native";
 import { z } from "zod";
 import {
+  listBrands,
+  listModels,
   normalizeBrand,
   normalizeModel,
-  suggestBrands,
-  suggestModels,
   type Agency,
   type Vehicle,
   type VehicleInput,
@@ -71,6 +71,11 @@ export function VehicleForm({
   });
 
   const brand = watch("brand");
+  const model = watch("model");
+  const [open, setOpen] = useState<"brand" | "model" | null>(null);
+  const modelRef = useRef<TextInput>(null);
+  const brandChoices = open === "brand" ? listBrands(brand).filter((b) => b !== brand) : [];
+  const modelChoices = open === "model" ? listModels(brand, model).filter((m) => m !== model) : [];
 
   const submit = handleSubmit(async (v) => {
     setServerError(null);
@@ -125,23 +130,22 @@ export function VehicleForm({
             control={control}
             name="brand"
             render={({ field, fieldState }) => (
-              <View style={styles.field}>
-                <Input
-                  label="Marque"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  onBlur={() => {
-                    field.onChange(normalizeBrand(field.value));
-                    field.onBlur();
-                  }}
-                  error={fieldState.error?.message}
-                  autoCapitalize="words"
-                />
-                <Suggestions
-                  items={suggestBrands(field.value).filter((b) => b !== field.value)}
-                  onPick={(b) => setValue("brand", b, { shouldDirty: true })}
-                />
-              </View>
+              <Input
+                label="Marque"
+                value={field.value}
+                onChangeText={(t) => {
+                  field.onChange(t);
+                  setOpen("brand");
+                }}
+                onFocus={() => setOpen("brand")}
+                onBlur={() => {
+                  field.onChange(normalizeBrand(field.value));
+                  field.onBlur();
+                }}
+                error={fieldState.error?.message}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
             )}
           />
         </View>
@@ -150,26 +154,47 @@ export function VehicleForm({
             control={control}
             name="model"
             render={({ field, fieldState }) => (
-              <View style={styles.field}>
-                <Input
-                  label="Modèle"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  onBlur={() => {
-                    field.onChange(normalizeModel(brand, field.value));
-                    field.onBlur();
-                  }}
-                  error={fieldState.error?.message}
-                  autoCapitalize="words"
-                />
-                <Suggestions
-                  items={suggestModels(brand, field.value).filter((m) => m !== field.value)}
-                  onPick={(m) => setValue("model", m, { shouldDirty: true })}
-                />
-              </View>
+              <Input
+                ref={modelRef}
+                label="Modèle"
+                value={field.value}
+                onChangeText={(t) => {
+                  field.onChange(t);
+                  setOpen("model");
+                }}
+                onFocus={() => setOpen("model")}
+                onBlur={() => {
+                  field.onChange(normalizeModel(brand, field.value));
+                  field.onBlur();
+                }}
+                error={fieldState.error?.message}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
             )}
           />
         </View>
+      </View>
+      {open === "brand" && brandChoices.length > 0 ? (
+        <DropList
+          items={brandChoices}
+          onPick={(b) => {
+            setValue("brand", b, { shouldDirty: true, shouldValidate: true });
+            setValue("model", "", { shouldDirty: true });
+            setOpen("model");
+            modelRef.current?.focus();
+          }}
+        />
+      ) : null}
+      {open === "model" && modelChoices.length > 0 ? (
+        <DropList
+          items={modelChoices}
+          onPick={(m) => {
+            setValue("model", m, { shouldDirty: true, shouldValidate: true });
+            setOpen(null);
+          }}
+        />
+      ) : null}
       </View>
       <View style={styles.row}>
         <View style={styles.half}>
@@ -350,24 +375,27 @@ export function VehicleForm({
   );
 }
 
-/** Puces de suggestion sous un champ : on tape « re », on touche « Renault ». */
-function Suggestions({ items, onPick }: { items: string[]; onPick: (value: string) => void }) {
-  if (items.length === 0) return null;
+/** Liste deroulante vivante sous la ligne marque/modele : alphabetique, filtree par le prefixe tape. */
+function DropList({ items, onPick }: { items: string[]; onPick: (value: string) => void }) {
   return (
     <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
+      style={styles.drop}
       keyboardShouldPersistTaps="always"
-      contentContainerStyle={styles.chips}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}
     >
-      {items.map((item) => (
+      {items.map((item, i) => (
         <Pressable
           key={item}
           accessibilityRole="button"
           onPress={() => onPick(item)}
-          style={({ pressed }) => [styles.chip, pressed ? styles.chipPressed : null]}
+          style={({ pressed }) => [
+            styles.dropRow,
+            i < items.length - 1 ? styles.dropBorder : null,
+            pressed ? styles.dropPressed : null,
+          ]}
         >
-          <Text variant="smStrong">{item}</Text>
+          <Text variant="body">{item}</Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -375,17 +403,17 @@ function Suggestions({ items, onPick }: { items: string[]; onPick: (value: strin
 }
 
 const styles = StyleSheet.create({
-  field: { gap: theme.space["2"] },
-  chips: { gap: theme.space["2"], paddingVertical: 2 },
-  chip: {
-    paddingHorizontal: theme.space["3"],
-    paddingVertical: 6,
-    borderRadius: theme.radius.full,
+  drop: {
+    maxHeight: 264,
+    marginTop: -theme.space["2"],
+    borderRadius: theme.radius.control,
     backgroundColor: theme.colors.surfaceRaised,
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  chipPressed: { backgroundColor: theme.colors.surfaceHigh },
+  dropRow: { paddingHorizontal: theme.space["4"], minHeight: 46, justifyContent: "center" },
+  dropBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  dropPressed: { backgroundColor: theme.colors.surfaceHigh },
   form: { gap: theme.space["4"] },
   row: { flexDirection: "row", gap: theme.space["3"] },
   half: { flex: 1 },
