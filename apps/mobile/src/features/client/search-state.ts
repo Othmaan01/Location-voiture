@@ -1,3 +1,4 @@
+import { defaultPeriod as nextDefaultPeriod } from "./slots";
 import { create } from "zustand";
 
 /**
@@ -28,12 +29,7 @@ export const useSearchState = create<SearchState>((set) => ({
 
 /** Periode par defaut : demain 9h -> surlendemain 9h, dans le fuseau du telephone. */
 export function defaultPeriod(): { from: string; to: string } {
-  const start = new Date();
-  start.setDate(start.getDate() + 1);
-  start.setHours(9, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 2);
-  return { from: start.toISOString(), to: end.toISOString() };
+  return nextDefaultPeriod();
 }
 
 export function formatPeriod(from: string | null, to: string | null): string {

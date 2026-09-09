@@ -18,6 +18,8 @@ export function ConfirmSheet({
   message,
   confirmLabel,
   cancelLabel = "Non, je garde",
+  secondaryLabel,
+  onSecondary,
   destructive = true,
   loading = false,
   icon,
@@ -29,6 +31,9 @@ export function ConfirmSheet({
   message?: string;
   confirmLabel: string;
   cancelLabel?: string;
+  /** Troisieme voie, entre confirmer et annuler (ex. « Faire l'etat des lieux ici »). */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
   destructive?: boolean;
   loading?: boolean;
   icon?: ReactNode;
@@ -62,6 +67,9 @@ export function ConfirmSheet({
             loading={loading}
             onPress={onConfirm}
           />
+          {secondaryLabel && onSecondary ? (
+            <Button label={secondaryLabel} variant="primary" onPress={onSecondary} />
+          ) : null}
           <Button label={cancelLabel} variant="ghost" onPress={onClose} />
         </View>
       </View>

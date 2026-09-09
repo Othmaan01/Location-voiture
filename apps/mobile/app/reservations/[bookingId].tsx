@@ -17,6 +17,7 @@ import {
   Text,
 } from "@/components/ui";
 import { InspectionsCard } from "@/features/inspections/InspectionsCard";
+import { useInspections } from "@/lib/queries-inspections";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useMe } from "@/lib/queries";
 import {
@@ -32,7 +33,10 @@ import { useBooking, useBookingAction } from "@/lib/queries-bookings";
 import { useCreateReview } from "@/lib/queries-reviews";
 import { theme } from "@/theme";
 
-const STEPS: BookingStatus[] = ["requested", "confirmed", "active", "completed"];
+const STATUS_STEPS: BookingStatus[] = ["requested", "confirmed", "active", "completed"];
+/** Cinq etapes lisibles (retour fondateur) : envoyee, en attente, confirmee, vehicule recupere, vehicule rendu. */
+type StepKey = "sent" | "waiting" | "confirmed" | "pickedUp" | "returned";
+const STEP_KEYS: StepKey[] = ["sent", "waiting", "confirmed", "pickedUp", "returned"];
 
 /** Suivi de location cote client (ADR-0009) : compte a rebours, frise, contact revele apres confirmation. */
 export default function BookingScreen() {
@@ -44,6 +48,7 @@ export default function BookingScreen() {
   const me = useMe();
   const [contactOpen, setContactOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const inspections = useInspections(bookingId);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
   const [rating, setRating] = useState(0);
@@ -67,6 +72,8 @@ export default function BookingScreen() {
     );
   }
   const b = booking.data;
+  const hasDeparture = !!inspections.data?.inspections.some((i) => i.kind === "departure");
+  const hasReturn = !!inspections.data?.inspections.some((i) => i.kind === "return");
   const s = BOOKING_STATUS[b.status];
   const cancel = () =>
     act.mutate(
@@ -91,56 +98,46 @@ export default function BookingScreen() {
     >
       <Countdown booking={b} />
       <Card style={styles.timeline}>
-        {STEPS.map((step, i) => {
-          const event = b.events.find((e) => e.toStatus === step);
-          const terminal = b.events.find((e) => !STEPS.includes(e.toStatus));
-          const reached = !!event;
-          const current =
-            !reached &&
-            !terminal &&
-            STEPS[i - 1] !== undefined &&
-            !!b.events.find((e) => e.toStatus === STEPS[i - 1]);
+        {STEP_KEYS.map((key, i) => {
+          const st = stepState(key, b, hasDeparture, hasReturn);
           return (
-            <View key={step} style={styles.step}>
+            <View key={key} style={styles.step}>
               <View style={styles.stepLeft}>
                 <View
-                  style={[styles.dot, reached ? styles.dotDone : current ? styles.dotNow : null]}
+                  style={[
+                    styles.dot,
+                    st.state === "done"
+                      ? styles.dotDone
+                      : st.state === "now"
+                        ? styles.dotNow
+                        : null,
+                  ]}
                 >
-                  {reached ? (
+                  {st.state === "done" ? (
                     <Check size={13} color="#ffffff" strokeWidth={3} />
-                  ) : current ? (
+                  ) : st.state === "now" ? (
                     <View style={styles.dotInner} />
                   ) : null}
                 </View>
-                {i < STEPS.length - 1 ? (
-                  <View style={[styles.link, reached ? styles.linkDone : null]} />
+                {i < STEP_KEYS.length - 1 ? (
+                  <View style={[styles.link, st.state === "done" ? styles.linkDone : null]} />
                 ) : null}
               </View>
               <View style={styles.stepTexts}>
-                <Text variant="smStrong" tone={reached || current ? "default" : "dim"}>
-                  {step === "requested"
-                    ? "Demande envoyée"
-                    : step === "confirmed"
-                      ? `Confirmée par ${b.loueurName}`
-                      : step === "active"
-                        ? "Véhicule retiré"
-                        : "Retour à l'agence"}
+                <Text variant="smStrong" tone={st.state === "todo" ? "dim" : "default"}>
+                  {st.title}
                 </Text>
-                <Text variant="small" tone="muted">
-                  {event
-                    ? formatDateTime(event.createdAt)
-                    : step === "active"
-                      ? `Prévu ${formatDateTime(b.from)}`
-                      : step === "completed"
-                        ? `Prévu ${formatDateTime(b.to)}`
-                        : ""}
-                </Text>
+                {st.subtitle ? (
+                  <Text variant="small" tone="muted">
+                    {st.subtitle}
+                  </Text>
+                ) : null}
               </View>
             </View>
           );
         })}
         {b.events
-          .filter((e) => !STEPS.includes(e.toStatus))
+          .filter((e) => !STATUS_STEPS.includes(e.toStatus))
           .map((e) => (
             <View key={e.id} style={styles.step}>
               <View style={styles.stepLeft}>
@@ -157,6 +154,27 @@ export default function BookingScreen() {
           ))}
       </Card>
 
+      <Card style={styles.when}>
+        <View style={styles.whenCol}>
+          <Text variant="caps" tone="muted">
+            Retrait
+          </Text>
+          <Text variant="h1">{timeFmt.format(new Date(b.from))}</Text>
+          <Text variant="sm" tone="muted">
+            {capDay(b.from)}
+          </Text>
+        </View>
+        <View style={styles.whenDivider} />
+        <View style={styles.whenCol}>
+          <Text variant="caps" tone="muted">
+            Retour
+          </Text>
+          <Text variant="h1">{timeFmt.format(new Date(b.to))}</Text>
+          <Text variant="sm" tone="muted">
+            {capDay(b.to)}
+          </Text>
+        </View>
+      </Card>
       {b.contact ? (
         <Card style={styles.contact}>
           <Text variant="bodyStrong">{b.contact.agencyName}</Text>
@@ -392,6 +410,88 @@ export default function BookingScreen() {
   );
 }
 
+const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const longDay = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+const capDay = (iso: string) => {
+  const t = longDay.format(new Date(iso));
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
+function stepState(
+  key: StepKey,
+  b: Booking,
+  hasDeparture: boolean,
+  hasReturn: boolean,
+): { state: "done" | "now" | "todo"; title: string; subtitle: string } {
+  const ev = (status: BookingStatus) => b.events.find((e) => e.toStatus === status);
+  const terminal = !!b.events.find((e) => !STATUS_STEPS.includes(e.toStatus));
+  const confirmed = !!ev("confirmed");
+  const active = !!ev("active");
+  const completed = !!ev("completed");
+  switch (key) {
+    case "sent":
+      return { state: "done", title: "Demande envoyée", subtitle: formatDateTime(b.createdAt) };
+    case "waiting":
+      return confirmed || active || completed
+        ? { state: "done", title: "Demande traitée", subtitle: "" }
+        : terminal
+          ? { state: "todo", title: "Demande en attente", subtitle: "" }
+          : {
+              state: "now",
+              title: "Demande en attente",
+              subtitle: `${b.loueurName} vous répond ici`,
+            };
+    case "confirmed":
+      return confirmed
+        ? {
+            state: "done",
+            title: `Confirmée par ${b.loueurName}`,
+            subtitle: formatDateTime(ev("confirmed")!.createdAt),
+          }
+        : { state: "todo", title: "Confirmation du loueur", subtitle: "" };
+    case "pickedUp":
+      if (active && hasDeparture)
+        return {
+          state: "done",
+          title: "Véhicule récupéré",
+          subtitle: `État des lieux de départ signé · ${formatDateTime(ev("active")!.createdAt)}`,
+        };
+      if (active)
+        return {
+          state: "now",
+          title: "Véhicule récupéré",
+          subtitle: "État des lieux de départ fait sur papier",
+        };
+      return {
+        state: confirmed && !terminal ? "now" : "todo",
+        title: "Véhicule récupéré",
+        subtitle: `Prévu ${formatDateTime(b.from)}`,
+      };
+    case "returned":
+      if (completed && hasReturn)
+        return {
+          state: "done",
+          title: "Véhicule rendu",
+          subtitle: `État des lieux de retour signé · ${formatDateTime(ev("completed")!.createdAt)}`,
+        };
+      if (completed)
+        return {
+          state: "done",
+          title: "Véhicule rendu",
+          subtitle: formatDateTime(ev("completed")!.createdAt),
+        };
+      return {
+        state: active ? "now" : "todo",
+        title: "Véhicule rendu",
+        subtitle: `Prévu ${formatDateTime(b.to)}`,
+      };
+  }
+}
+
 function Countdown({ booking: b }: { booking: Booking }) {
   const target =
     b.status === "active"
@@ -447,6 +547,9 @@ function Countdown({ booking: b }: { booking: Booking }) {
 }
 
 const styles = StyleSheet.create({
+  when: { flexDirection: "row", alignItems: "center", gap: theme.space["4"] },
+  whenCol: { flex: 1, gap: 2 },
+  whenDivider: { width: 1, alignSelf: "stretch", backgroundColor: theme.colors.border },
   review: { gap: theme.space["3"] },
   stars: { flexDirection: "row", gap: theme.space["2"] },
   countdown: { gap: theme.space["1"], backgroundColor: theme.colors.surfaceRaised },

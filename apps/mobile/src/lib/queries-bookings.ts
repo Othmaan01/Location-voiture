@@ -64,8 +64,10 @@ export function useOrgBookings(
   orgId: string,
   scope: "upcoming" | "past" | "all",
   status?: BookingStatus,
+  enabled = true,
 ) {
   return useQuery({
+    enabled: enabled && !!orgId,
     queryKey: bookingKeys.org(orgId, scope, status),
     queryFn: () =>
       apiRequest(

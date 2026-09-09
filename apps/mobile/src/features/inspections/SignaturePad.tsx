@@ -13,10 +13,13 @@ import { theme } from "@/theme";
 export function SignaturePad({
   value,
   onChange,
+  onDrawingChange,
   height = 160,
 }: {
   value: Signature;
   onChange: (next: Signature) => void;
+  /** Vrai pendant un trait : l'ecran parent fige son defilement. */
+  onDrawingChange?: (drawing: boolean) => void;
   height?: number;
 }) {
   const [size, setSize] = useState({ w: 1, h: height });
@@ -25,6 +28,8 @@ export function SignaturePad({
   const [live, setLive] = useState<[number, number][]>([]);
   const valueRef = useRef(value);
   valueRef.current = value;
+  const drawingRef = useRef(onDrawingChange);
+  drawingRef.current = onDrawingChange;
 
   const norm = (x: number, y: number): [number, number] => [
     Math.min(1, Math.max(0, x / sizeRef.current.w)),
@@ -36,6 +41,7 @@ export function SignaturePad({
       onMoveShouldSetPanResponder: () => true,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (e) => {
+        drawingRef.current?.(true);
         current.current = [norm(e.nativeEvent.locationX, e.nativeEvent.locationY)];
         setLive(current.current);
       },
@@ -46,7 +52,13 @@ export function SignaturePad({
         ];
         setLive(current.current);
       },
+      onPanResponderTerminate: () => {
+        drawingRef.current?.(false);
+        current.current = [];
+        setLive([]);
+      },
       onPanResponderRelease: () => {
+        drawingRef.current?.(false);
         if (current.current.length > 0) onChange([...valueRef.current, current.current]);
         current.current = [];
         setLive([]);

@@ -2,12 +2,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import * as Crypto from "expo-crypto";
-import { Calendar, Info } from "lucide-react-native";
+import { ArrowRight, Info } from "lucide-react-native";
 import type { Quote } from "@lv/contracts";
 
 import { Button, Card, EmptyState, Input, Screen, Text } from "@/components/ui";
 import { PeriodSheet } from "@/features/client/PeriodSheet";
-import { defaultPeriod, formatPeriod, useSearchState } from "@/features/client/search-state";
+import { defaultPeriod, useSearchState } from "@/features/client/search-state";
 import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
 import { celebrate } from "@/lib/celebrate";
@@ -31,6 +31,7 @@ export default function BookingRequestScreen() {
   const [message, setMessage] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blocker, setBlocker] = useState<{ kind: string; bookingId?: string } | null>(null);
   const createQuote = useCreateQuote();
   const createBooking = useCreateBooking();
   // Une cle d'idempotence par tentative d'envoi : un retry reseau ne cree jamais deux demandes.
@@ -38,13 +39,25 @@ export default function BookingRequestScreen() {
 
   useEffect(() => {
     setError(null);
+    setBlocker(null);
     setQuote(null);
     createQuote.mutate(
       { vehicleId, from: period.from, to: period.to },
       {
         onSuccess: setQuote,
-        onError: (e) =>
-          setError(e instanceof ApiRequestError ? e.message : "Impossible de calculer le prix."),
+        onError: (e) => {
+          setError(e instanceof ApiRequestError ? e.message : "Impossible de calculer le prix.");
+          const d = e instanceof ApiRequestError ? e.body?.error.details : undefined;
+          const kind = typeof d?.["blocker"] === "string" ? d["blocker"] : null;
+          setBlocker(
+            kind
+              ? {
+                  kind,
+                  ...(typeof d?.["bookingId"] === "string" ? { bookingId: d["bookingId"] } : {}),
+                }
+              : null,
+          );
+        },
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,8 +76,18 @@ export default function BookingRequestScreen() {
           celebrate("Demande envoyée", "Le loueur est prévenu et vous répond ici.");
           router.replace(`/reservations/${b.id}`);
         },
-        onError: (e) =>
-          setError(e instanceof ApiRequestError ? e.message : "Envoi impossible. Réessayez."),
+        onError: (e) => {
+          setError(e instanceof ApiRequestError ? e.message : "Envoi impossible. Réessayez.");
+          const d = e instanceof ApiRequestError ? e.body?.error.details : undefined;
+          const kind = typeof d?.["blocker"] === "string" ? d["blocker"] : null;
+          if (kind) {
+            setQuote(null);
+            setBlocker({
+              kind,
+              ...(typeof d?.["bookingId"] === "string" ? { bookingId: d["bookingId"] } : {}),
+            });
+          }
+        },
       },
     );
   };
@@ -73,13 +96,27 @@ export default function BookingRequestScreen() {
   return (
     <Screen title="Votre demande" back>
       <Card padded={false}>
-        <View style={styles.row}>
-          <Calendar size={22} color={theme.colors.textMuted} />
-          <View style={styles.rowTexts}>
-            <Text variant="small" tone="muted">
-              Retrait → retour
+        <View style={styles.when}>
+          <View style={styles.whenCol}>
+            <Text variant="caps" tone="muted">
+              Retrait
             </Text>
-            <Text variant="bodyStrong">{formatPeriod(period.from, period.to)}</Text>
+            <Text variant="h2">{formatTime(period.from)}</Text>
+            <Text variant="sm" tone="muted">
+              {formatDay(period.from)}
+            </Text>
+          </View>
+          <View style={styles.whenArrow}>
+            <ArrowRight size={18} color={theme.colors.textDim} />
+          </View>
+          <View style={styles.whenCol}>
+            <Text variant="caps" tone="muted">
+              Retour
+            </Text>
+            <Text variant="h2">{formatTime(period.to)}</Text>
+            <Text variant="sm" tone="muted">
+              {formatDay(period.to)}
+            </Text>
           </View>
           <Button label="Modifier" variant="ghost" size="sm" onPress={() => setDatesOpen(true)} />
         </View>
@@ -88,10 +125,34 @@ export default function BookingRequestScreen() {
       {createQuote.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
       {error && !quote ? (
         <EmptyState
-          title="Pas de prix pour ces dates"
-          description={error}
+          title={
+            blocker?.kind === "unavailable"
+              ? "Déjà réservé sur ces dates"
+              : blocker?.kind === "duplicate_request"
+                ? "Vous avez déjà une demande"
+                : "Pas de prix pour ces dates"
+          }
+          description={
+            blocker?.kind === "unavailable"
+              ? "Ce véhicule est pris sur la période choisie. Décalez vos dates, ou regardez les autres véhicules du loueur."
+              : blocker?.kind === "duplicate_request"
+                ? "Une demande est déjà en cours pour ce véhicule sur ces dates. Modifiez-la plutôt que d'en créer une seconde."
+                : error
+          }
           action={
-            <Button label="Changer les dates" variant="ghost" onPress={() => setDatesOpen(true)} />
+            <View style={styles.actions}>
+              {blocker?.kind === "duplicate_request" && blocker.bookingId ? (
+                <Button
+                  label="Voir ma demande"
+                  onPress={() => router.replace(`/reservations/${blocker.bookingId}`)}
+                />
+              ) : null}
+              <Button
+                label="Changer les dates"
+                variant="ghost"
+                onPress={() => setDatesOpen(true)}
+              />
+            </View>
           }
         />
       ) : null}
@@ -174,7 +235,24 @@ export default function BookingRequestScreen() {
   );
 }
 
+const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const formatDay = (iso: string) => {
+  const t = dayFmt.format(new Date(iso));
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+const formatTime = (iso: string) => timeFmt.format(new Date(iso));
+
 const styles = StyleSheet.create({
+  when: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space["3"],
+    padding: theme.space["4"],
+  },
+  whenCol: { flex: 1, gap: 2 },
+  whenArrow: { paddingTop: 18 },
+  actions: { gap: theme.space["2"], alignSelf: "stretch" },
   row: {
     flexDirection: "row",
     alignItems: "center",

@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmSheet,
   EmptyState,
   Input,
   Screen,
@@ -24,6 +25,7 @@ import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
 import { celebrate } from "@/lib/celebrate";
 import { InspectionsCard } from "@/features/inspections/InspectionsCard";
+import { useInspections } from "@/lib/queries-inspections";
 import { ReviewCustomerSheet } from "@/features/pro/ReviewCustomerSheet";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useBooking, useBookingAction } from "@/lib/queries-bookings";
@@ -44,6 +46,10 @@ export default function OrgBookingScreen() {
   const reviews = useLoueurReviews(organizationId, !!booking.data?.review);
   const replyReview = useReplyReview();
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [paperFor, setPaperFor] = useState<"start" | "complete" | null>(null);
+  const inspections = useInspections(bookingId);
+  const hasDeparture = !!inspections.data?.inspections.some((i) => i.kind === "departure");
+  const hasReturn = !!inspections.data?.inspections.some((i) => i.kind === "return");
   const [reasonFor, setReasonFor] = useState<"decline" | "cancel" | null>(null);
   const [reason, setReason] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
@@ -138,34 +144,12 @@ export default function OrgBookingScreen() {
         />
       ) : null}
 
-      {b.status === "requested" ? (
-        <>
-          <Text variant="small" tone="dim">
-            En acceptant, le véhicule est bloqué sur ces dates et le client reçoit vos coordonnées.
-            Le règlement se fait entre vous.
-          </Text>
-          <View style={styles.actions}>
-            <Button
-              label="Refuser"
-              variant="ghost"
-              style={styles.flex}
-              onPress={() => setReasonFor("decline")}
-            />
-            <Button
-              label="Accepter la réservation"
-              style={styles.flex2}
-              loading={act.isPending}
-              onPress={() => run("confirm")}
-            />
-          </View>
-        </>
-      ) : null}
       {b.status === "confirmed" ? (
         <View style={styles.stack}>
           <Button
             label="Véhicule remis au client"
             loading={act.isPending}
-            onPress={() => run("start")}
+            onPress={() => (hasDeparture ? run("start") : setPaperFor("start"))}
           />
           <View style={styles.actions}>
             <Button
@@ -184,7 +168,11 @@ export default function OrgBookingScreen() {
         </View>
       ) : null}
       {b.status === "active" ? (
-        <Button label="Véhicule rendu" loading={act.isPending} onPress={() => run("complete")} />
+        <Button
+          label="Véhicule rendu"
+          loading={act.isPending}
+          onPress={() => (hasReturn ? run("complete") : setPaperFor("complete"))}
+        />
       ) : null}
 
       {b.status === "completed" && b.customer ? (
@@ -360,6 +348,51 @@ export default function OrgBookingScreen() {
         organizationName={b.loueurName}
         bookingId={b.id}
         toCustomerName={b.customer?.firstName ?? "le client"}
+      />
+      {b.status === "requested" ? (
+        <>
+          <Text variant="small" tone="dim">
+            En acceptant, le véhicule est bloqué sur ces dates et le client reçoit vos coordonnées.
+            Le règlement se fait entre vous.
+          </Text>
+          <View style={styles.actions}>
+            <Button
+              label="Refuser"
+              variant="ghost"
+              style={styles.flex}
+              onPress={() => setReasonFor("decline")}
+            />
+            <Button
+              label="Accepter la réservation"
+              style={styles.flex2}
+              loading={act.isPending}
+              onPress={() => run("confirm")}
+            />
+          </View>
+        </>
+      ) : null}
+      <ConfirmSheet
+        visible={paperFor !== null}
+        onClose={() => setPaperFor(null)}
+        title={
+          paperFor === "start"
+            ? "État des lieux de départ non fait ici"
+            : "État des lieux de retour non fait ici"
+        }
+        message="L'état des lieux protège le loueur et le client. L'avez-vous fait sur papier ?"
+        confirmLabel="Oui, sur papier : valider"
+        destructive={false}
+        secondaryLabel="Le faire dans l'application"
+        onSecondary={() => {
+          setPaperFor(null);
+          router.push(`/(pro)/organizations/${organizationId}/bookings/${bookingId}/inspection`);
+        }}
+        cancelLabel="Annuler"
+        onConfirm={() => {
+          const action = paperFor;
+          setPaperFor(null);
+          if (action) run(action);
+        }}
       />
       <ReviewCustomerSheet
         bookingId={b.id}

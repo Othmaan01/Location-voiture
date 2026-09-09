@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 
 import { MODE_TABS, useMode } from "@/lib/mode";
+import { useOrgBookings } from "@/lib/queries-bookings";
 import { useUnread } from "@/lib/queries-messaging";
 import { theme } from "@/theme";
 
@@ -52,11 +53,21 @@ type DockProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[
 export function Dock({ state, descriptors, navigation }: DockProps) {
   const mode = useMode((s) => s.mode);
   const allowed = MODE_TABS[mode];
+  const organizationId = useMode((s) => s.organizationId);
   const unread = useUnread();
   const unreadOrg = Object.values(unread.data?.organizations ?? {}).reduce((a, b) => a + b, 0);
+  // Demandes en attente du loueur : le point reste tant que tout n'est pas traite (retour fondateur).
+  const pending = useOrgBookings(
+    mode === "pro" && organizationId ? organizationId : "",
+    "upcoming",
+    "requested",
+    mode === "pro" && !!organizationId,
+  );
+  const pendingCount = pending.data?.bookings.length ?? 0;
   const dotFor = (name: string) =>
     (name === "messages" && (unread.data?.customer ?? 0) > 0) ||
-    ((name === "pro-messages" || name === "pro-bookings") && unreadOrg > 0);
+    ((name === "pro-messages" || name === "pro-bookings") && unreadOrg > 0) ||
+    (name === "pro-bookings" && pendingCount > 0);
   const content = (
     <View style={styles.items}>
       {[...state.routes]

@@ -47,6 +47,7 @@ export default function InspectionScreen() {
   const [comment, setComment] = useState("");
   const [extraEmail, setExtraEmail] = useState("");
   const [signature, setSignature] = useState<Signature>([]);
+  const [signing, setSigning] = useState(false);
 
   const vehicle = booking.data?.vehicle;
   const customerName =
@@ -107,7 +108,7 @@ export default function InspectionScreen() {
   };
 
   return (
-    <Screen title="État des lieux" back>
+    <Screen title="État des lieux" back scrollEnabled={!signing}>
       {vehicle ? (
         <Text variant="sm" tone="muted">
           {vehicle.brand} {vehicle.model} · avec {customerName}
@@ -227,7 +228,7 @@ export default function InspectionScreen() {
 
       <View style={styles.field}>
         <Text variant="bodyStrong">Signature du client</Text>
-        <SignaturePad value={signature} onChange={setSignature} />
+        <SignaturePad value={signature} onChange={setSignature} onDrawingChange={setSigning} />
       </View>
 
       <Button

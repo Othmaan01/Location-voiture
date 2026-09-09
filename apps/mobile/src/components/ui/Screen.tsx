@@ -25,6 +25,8 @@ export interface ScreenProps extends PropsWithChildren {
   scroll?: boolean;
   /** Le contenu file sous la capsule (liste interne qui gere sa propre marge basse) : pas de bande noire. */
   bleed?: boolean;
+  /** Fige le defilement pendant un geste (signature au doigt). */
+  scrollEnabled?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
 }
 
@@ -37,6 +39,7 @@ export function Screen({
   dock = false,
   scroll = true,
   bleed = false,
+  scrollEnabled = true,
   contentStyle,
   children,
 }: ScreenProps) {
@@ -83,6 +86,7 @@ export function Screen({
           contentContainerStyle={[styles.content, { paddingBottom: bottomPad }, contentStyle]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          scrollEnabled={scrollEnabled}
         >
           {header}
           {children}

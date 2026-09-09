@@ -31,7 +31,8 @@ import { canTransition, type ActorKind } from "./state-machine.js";
 
 const QUOTE_TTL_MS = 15 * 60 * 1000;
 const RESPONSE_DELAY_MS = 24 * 60 * 60 * 1000;
-const MIN_LEAD_MS = 2 * 60 * 60 * 1000;
+/** Retrait possible le jour meme (retour fondateur, 2026-09-09) : 30 minutes de marge, pas plus. */
+const MIN_LEAD_MS = 30 * 60 * 1000;
 
 type BookingRow = typeof bookings.$inferSelect;
 
@@ -375,9 +376,22 @@ export function createBookingsService(
       if (from.getTime() < Date.now() + MIN_LEAD_MS)
         throw new DomainError(
           "validation_failed",
-          "Le retrait doit etre au moins 2 heures apres maintenant.",
+          "Le retrait doit etre au moins 30 minutes apres maintenant.",
           { field: "from" },
         );
+      // Une seule demande par client, par vehicule et par periode : on l'oriente vers sa demande existante.
+      if (actor.userId) {
+        const [dup] = await db.execute<{ id: string }>(
+          sql`select id from ${bookings} where customer_id = ${actor.userId}::uuid and vehicle_id = ${input.vehicleId}::uuid
+              and status in ('requested', 'confirmed', 'active') and period && ${toRange(input.from, input.to)} limit 1`,
+        );
+        if (dup)
+          throw new DomainError(
+            "conflict",
+            "Vous avez deja une demande en cours pour ce vehicule sur ces dates.",
+            { blocker: "duplicate_request", bookingId: dup.id },
+          );
+      }
       // Offre du loueur en cours au moment de la demande (pas au moment du retrait).
       const offerRow = (
         await liveOffersFor(db, [{ id: target.v.id, organizationId: target.v.organizationId }])
@@ -408,7 +422,9 @@ export function createBookingsService(
         sql`select public.vehicle_is_available(${input.vehicleId}::uuid, ${toRange(input.from, input.to)}) as ok`,
       );
       if (!avail?.ok)
-        throw new DomainError("conflict", "Ce vehicule n'est pas disponible sur ces dates.");
+        throw new DomainError("conflict", "Ce vehicule est deja reserve sur ces dates.", {
+          blocker: "unavailable",
+        });
       const expiresAt = new Date(Date.now() + QUOTE_TTL_MS);
       const [row] = await db
         .insert(quotes)
@@ -477,7 +493,19 @@ export function createBookingsService(
             sql`select public.vehicle_is_available(${q.vehicleId}::uuid, ${toRange(period.from, period.to)}) as ok`,
           );
           if (!avail?.ok)
-            throw new DomainError("conflict", "Ce vehicule n'est plus disponible sur ces dates.");
+            throw new DomainError("conflict", "Ce vehicule vient d'etre reserve sur ces dates.", {
+              blocker: "unavailable",
+            });
+          const [dup] = await tx.execute<{ id: string }>(
+            sql`select id from ${bookings} where customer_id = ${actor.userId}::uuid and vehicle_id = ${q.vehicleId}::uuid
+                and status in ('requested', 'confirmed', 'active') and period && ${toRange(period.from, period.to)} limit 1`,
+          );
+          if (dup)
+            throw new DomainError(
+              "conflict",
+              "Vous avez deja une demande en cours pour ce vehicule sur ces dates.",
+              { blocker: "duplicate_request", bookingId: dup.id },
+            );
           const [existing] = await tx.execute<{ id: string }>(
             sql`select id from ${bookings} where quote_id = ${q.id}::uuid limit 1`,
           );

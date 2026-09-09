@@ -197,12 +197,14 @@ export default function ProfileScreen() {
           title={`Verrouillage ${appLock.biometrics.label}`}
           subtitle="Demandé à l'ouverture et après 30 s en arrière-plan"
           right={
-            <Switch
-              value={appLock.enabled}
-              onValueChange={(v) => void toggleLock(v)}
-              trackColor={{ true: theme.colors.accent, false: theme.colors.border }}
-              thumbColor="#ffffff"
-            />
+            <View style={styles.switchWrap}>
+              <Switch
+                value={appLock.enabled}
+                onValueChange={(v) => void toggleLock(v)}
+                trackColor={{ true: theme.colors.accent, false: theme.colors.border }}
+                thumbColor="#ffffff"
+              />
+            </View>
           }
           last
         />
@@ -294,6 +296,12 @@ export default function ProfileScreen() {
 const ROLE_LABEL = { owner: "Propriétaire", manager: "Manager", agent: "Agent" } as const;
 
 const styles = StyleSheet.create({
+  switchWrap: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+    transform: [{ scale: 0.85 }],
+    marginRight: -6,
+  },
   identity: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
   reviewsCard: { gap: theme.space["3"] },
   review: { gap: 4 },
