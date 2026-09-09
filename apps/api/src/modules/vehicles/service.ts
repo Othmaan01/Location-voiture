@@ -1,3 +1,4 @@
+import { normalizeBrand, normalizeModel } from "@lv/contracts";
 import { randomUUID } from "node:crypto";
 import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import type {
@@ -213,6 +214,10 @@ export function createVehiclesService(db: Database, storage: StorageClient): Veh
     ] as const) {
       if (input[key] !== undefined) (out as Record<string, unknown>)[key] = input[key];
     }
+    // Referentiel partage : « REnaUlt » devient « Renault », les modeles connus prennent leur graphie.
+    if (out.brand !== undefined) out.brand = normalizeBrand(out.brand);
+    if (out.model !== undefined && (out.brand ?? input.brand) !== undefined)
+      out.model = normalizeModel(out.brand ?? input.brand ?? "", out.model);
     return out;
   }
 

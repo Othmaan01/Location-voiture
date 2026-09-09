@@ -1,9 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { z } from "zod";
-import type { Agency, Vehicle, VehicleInput } from "@lv/contracts";
+import {
+  normalizeBrand,
+  normalizeModel,
+  suggestBrands,
+  suggestModels,
+  type Agency,
+  type Vehicle,
+  type VehicleInput,
+} from "@lv/contracts";
 
 import { Button, Input, Select, Text } from "@/components/ui";
 import {
@@ -43,7 +51,7 @@ export function VehicleForm({
   onSubmit: (input: VehicleInput) => Promise<void>;
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
-  const { control, handleSubmit, formState } = useForm<Form>({
+  const { control, handleSubmit, formState, watch, setValue } = useForm<Form>({
     resolver: zodResolver(Schema),
     defaultValues: {
       agencyId: initial?.agencyId ?? agencies[0]?.id ?? "",
@@ -61,6 +69,8 @@ export function VehicleForm({
       minLicenseYears: initial?.minLicenseYears.toString() ?? "2",
     },
   });
+
+  const brand = watch("brand");
 
   const submit = handleSubmit(async (v) => {
     setServerError(null);
@@ -115,13 +125,23 @@ export function VehicleForm({
             control={control}
             name="brand"
             render={({ field, fieldState }) => (
-              <Input
-                label="Marque"
-                value={field.value}
-                onChangeText={field.onChange}
-                onBlur={field.onBlur}
-                error={fieldState.error?.message}
-              />
+              <View style={styles.field}>
+                <Input
+                  label="Marque"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={() => {
+                    field.onChange(normalizeBrand(field.value));
+                    field.onBlur();
+                  }}
+                  error={fieldState.error?.message}
+                  autoCapitalize="words"
+                />
+                <Suggestions
+                  items={suggestBrands(field.value).filter((b) => b !== field.value)}
+                  onPick={(b) => setValue("brand", b, { shouldDirty: true })}
+                />
+              </View>
             )}
           />
         </View>
@@ -130,13 +150,23 @@ export function VehicleForm({
             control={control}
             name="model"
             render={({ field, fieldState }) => (
-              <Input
-                label="Modèle"
-                value={field.value}
-                onChangeText={field.onChange}
-                onBlur={field.onBlur}
-                error={fieldState.error?.message}
-              />
+              <View style={styles.field}>
+                <Input
+                  label="Modèle"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={() => {
+                    field.onChange(normalizeModel(brand, field.value));
+                    field.onBlur();
+                  }}
+                  error={fieldState.error?.message}
+                  autoCapitalize="words"
+                />
+                <Suggestions
+                  items={suggestModels(brand, field.value).filter((m) => m !== field.value)}
+                  onPick={(m) => setValue("model", m, { shouldDirty: true })}
+                />
+              </View>
             )}
           />
         </View>
@@ -320,7 +350,42 @@ export function VehicleForm({
   );
 }
 
+/** Puces de suggestion sous un champ : on tape « re », on touche « Renault ». */
+function Suggestions({ items, onPick }: { items: string[]; onPick: (value: string) => void }) {
+  if (items.length === 0) return null;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="always"
+      contentContainerStyle={styles.chips}
+    >
+      {items.map((item) => (
+        <Pressable
+          key={item}
+          accessibilityRole="button"
+          onPress={() => onPick(item)}
+          style={({ pressed }) => [styles.chip, pressed ? styles.chipPressed : null]}
+        >
+          <Text variant="smStrong">{item}</Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
+  field: { gap: theme.space["2"] },
+  chips: { gap: theme.space["2"], paddingVertical: 2 },
+  chip: {
+    paddingHorizontal: theme.space["3"],
+    paddingVertical: 6,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  chipPressed: { backgroundColor: theme.colors.surfaceHigh },
   form: { gap: theme.space["4"] },
   row: { flexDirection: "row", gap: theme.space["3"] },
   half: { flex: 1 },

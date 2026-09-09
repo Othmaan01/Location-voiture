@@ -51,6 +51,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="pro-home" options={{ title: "Tableau de bord" }} />
         <Tabs.Screen name="pro-bookings" options={{ title: "Réservations" }} />
         <Tabs.Screen name="pro-vehicles" options={{ title: "Véhicules" }} />
+        <Tabs.Screen name="pro-showcase" options={{ title: "Vitrine" }} />
         <Tabs.Screen name="pro-calendar" options={{ title: "Calendrier" }} />
         <Tabs.Screen name="admin-verifications" options={{ title: "Vérifications" }} />
         <Tabs.Screen name="admin-loueurs" options={{ title: "Loueurs" }} />

@@ -1,124 +1,163 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Check } from "lucide-react-native";
+import Svg, { Circle } from "react-native-svg";
 
 import { Text } from "@/components/ui";
 import { useCelebration } from "@/lib/celebrate";
 import { theme } from "@/theme";
 
-const DURATION_MS = 1900;
-const PARTICLES = 18;
-const COLORS = [
-  theme.colors.accent,
-  theme.colors.accentTint,
-  "#d9a441",
-  "#3b82f6",
-  "#22c55e",
-  "#ffffff",
-];
+const HOLD_MS = 1700;
+const RING = 92;
+const STROKE = 3;
+const RADIUS = (RING - STROKE) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/** Superposition de reussite : pastille qui surgit, confettis, retour haptique, disparait seule. */
+/**
+ * Moment de reussite (D9) : une carte de verre, un anneau rouge qui se trace, une coche qui
+ * surgit, un halo discret. Sobre, dans la DA nuit. Disparait seul, ou au toucher.
+ */
 export function Celebration() {
   const current = useCelebration((s) => s.current);
   if (!current) return null;
-  return <Burst key={current.key} title={current.title} subtitle={current.subtitle} />;
+  return <Moment key={current.key} title={current.title} subtitle={current.subtitle} />;
 }
 
-function Burst({ title, subtitle }: { title: string; subtitle?: string }) {
+function Moment({ title, subtitle }: { title: string; subtitle?: string }) {
   const hide = useCelebration((s) => s.hide);
-  const backdrop = useRef(new Animated.Value(0)).current;
-  const badge = useRef(new Animated.Value(0)).current;
-  const burst = useRef(new Animated.Value(0)).current;
-  const particles = useMemo(
-    () =>
-      Array.from({ length: PARTICLES }, (_, i) => {
-        const angle = (i / PARTICLES) * Math.PI * 2 + (i % 2) * 0.2;
-        const distance = 110 + (i % 3) * 34;
-        return {
-          color: COLORS[i % COLORS.length]!,
-          x: Math.cos(angle) * distance,
-          y: Math.sin(angle) * distance,
-          size: 6 + (i % 3) * 3,
-          round: i % 2 === 0,
-        };
-      }),
-    [],
-  );
+  const veil = useRef(new Animated.Value(0)).current;
+  const card = useRef(new Animated.Value(0)).current;
+  const ring = useRef(new Animated.Value(0)).current;
+  const check = useRef(new Animated.Value(0)).current;
+  const halo = useRef(new Animated.Value(0)).current;
+  const text = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Animated.parallel([
-      Animated.timing(backdrop, { toValue: 1, duration: 180, useNativeDriver: true }),
-      Animated.spring(badge, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }),
-      Animated.timing(burst, {
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      Animated.parallel([
+        Animated.timing(veil, { toValue: 0, duration: 260, useNativeDriver: true }),
+        Animated.timing(card, { toValue: 0, duration: 260, useNativeDriver: true }),
+      ]).start(() => hide());
+    };
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(veil, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(card, { toValue: 1, friction: 9, tension: 70, useNativeDriver: true }),
+      ]),
+      Animated.timing(ring, {
         toValue: 1,
-        duration: 900,
+        duration: 520,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
-    ]).start();
-    const timer = setTimeout(() => {
-      Animated.timing(backdrop, { toValue: 0, duration: 220, useNativeDriver: true }).start(() =>
-        hide(),
-      );
-    }, DURATION_MS);
+      Animated.parallel([
+        Animated.spring(check, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
+        Animated.timing(halo, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(text, { toValue: 1, duration: 320, useNativeDriver: true }),
+      ]),
+    ]).start(() => {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    });
+    const timer = setTimeout(close, HOLD_MS + 900);
     return () => clearTimeout(timer);
-  }, [backdrop, badge, burst, hide]);
+  }, [veil, card, ring, check, halo, text, hide]);
+
+  const dismiss = () =>
+    Animated.parallel([
+      Animated.timing(veil, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(card, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start(() => hide());
 
   return (
-    <Animated.View style={[styles.root, { opacity: backdrop }]} pointerEvents="box-none">
-      <Pressable style={StyleSheet.absoluteFill} onPress={hide} accessibilityLabel="Fermer" />
-      <View style={styles.center} pointerEvents="none">
-        {particles.map((p, i) => (
+    <Animated.View style={[styles.root, { opacity: veil }]}>
+      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+      <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} accessibilityLabel="Fermer" />
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            opacity: card,
+            transform: [
+              { translateY: card.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+              { scale: card.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+            ],
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <View style={styles.ringBox}>
           <Animated.View
-            key={i}
             style={[
-              styles.particle,
+              styles.halo,
               {
-                width: p.size,
-                height: p.round ? p.size : p.size * 2,
-                borderRadius: p.round ? p.size / 2 : 2,
-                backgroundColor: p.color,
-                opacity: burst.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] }),
+                opacity: halo.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 0.35, 0] }),
                 transform: [
-                  { translateX: burst.interpolate({ inputRange: [0, 1], outputRange: [0, p.x] }) },
-                  {
-                    translateY: burst.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, p.y + 40],
-                    }),
-                  },
-                  {
-                    rotate: burst.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ["0deg", `${(i % 2 ? 1 : -1) * 260}deg`],
-                    }),
-                  },
-                  {
-                    scale: burst.interpolate({
-                      inputRange: [0, 0.2, 1],
-                      outputRange: [0, 1.2, 0.8],
-                    }),
-                  },
+                  { scale: halo.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.9] }) },
                 ],
               },
             ]}
           />
-        ))}
+          <Svg width={RING} height={RING} style={styles.ring}>
+            <Circle
+              cx={RING / 2}
+              cy={RING / 2}
+              r={RADIUS}
+              stroke={theme.colors.border}
+              strokeWidth={STROKE}
+              fill="none"
+            />
+            <AnimatedCircle
+              cx={RING / 2}
+              cy={RING / 2}
+              r={RADIUS}
+              stroke={theme.colors.accent}
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+              strokeDashoffset={ring.interpolate({
+                inputRange: [0, 1],
+                outputRange: [CIRCUMFERENCE, 0],
+              })}
+              transform={`rotate(-90 ${RING / 2} ${RING / 2})`}
+            />
+          </Svg>
+          <Animated.View
+            style={[
+              styles.check,
+              {
+                opacity: check,
+                transform: [
+                  { scale: check.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <Check size={34} color={theme.colors.text} strokeWidth={2.75} />
+          </Animated.View>
+        </View>
         <Animated.View
           style={[
-            styles.badge,
+            styles.texts,
             {
+              opacity: text,
               transform: [
-                { scale: badge.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
+                { translateY: text.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) },
               ],
             },
           ]}
         >
-          <Check size={40} color="#ffffff" strokeWidth={3} />
-        </Animated.View>
-        <Animated.View style={[styles.texts, { opacity: badge }]}>
           <Text variant="h1" style={styles.title}>
             {title}
           </Text>
@@ -128,7 +167,7 @@ function Burst({ title, subtitle }: { title: string; subtitle?: string }) {
             </Text>
           ) : null}
         </Animated.View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -140,26 +179,36 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(8,8,10,0.82)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,
   },
-  center: { alignItems: "center", justifyContent: "center", gap: theme.space["4"] },
-  particle: { position: "absolute" },
-  badge: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: theme.colors.accent,
+  card: {
+    width: 300,
+    paddingVertical: theme.space["7"],
+    paddingHorizontal: theme.space["5"],
+    borderRadius: 28,
+    backgroundColor: "rgba(22,22,26,0.96)",
+    borderWidth: 1,
+    borderColor: theme.colors.glassBorder,
     alignItems: "center",
-    justifyContent: "center",
-    shadowColor: theme.colors.accent,
-    shadowOpacity: 0.55,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
+    gap: theme.space["5"],
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 20 },
   },
-  texts: { alignItems: "center", gap: 6, paddingHorizontal: theme.space["6"] },
+  ringBox: { width: RING, height: RING, alignItems: "center", justifyContent: "center" },
+  ring: { position: "absolute" },
+  halo: {
+    position: "absolute",
+    width: RING,
+    height: RING,
+    borderRadius: RING / 2,
+    backgroundColor: theme.colors.accent,
+  },
+  check: { alignItems: "center", justifyContent: "center" },
+  texts: { alignItems: "center", gap: 6 },
   title: { textAlign: "center" },
   subtitle: { textAlign: "center" },
 });

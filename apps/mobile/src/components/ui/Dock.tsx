@@ -7,16 +7,17 @@ import {
   Building2,
   CalendarDays,
   Car,
+  Eye,
   Flag,
   Heart,
   Home,
   Inbox,
   LayoutDashboard,
+  type LucideIcon,
   MessageCircle,
   Search,
   ShieldCheck,
   User,
-  type LucideIcon,
 } from "lucide-react-native";
 
 import { MODE_TABS, useMode } from "@/lib/mode";
@@ -33,6 +34,7 @@ const ICONS: Record<string, LucideIcon> = {
   "pro-bookings": Inbox,
   "pro-vehicles": Car,
   "pro-calendar": CalendarDays,
+  "pro-showcase": Eye,
   messages: MessageCircle,
   "pro-messages": MessageCircle,
   "admin-verifications": ShieldCheck,
