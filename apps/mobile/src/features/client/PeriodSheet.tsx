@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
-
-import { Button, Sheet, Text } from "@/components/ui";
+import {
+  Button,
+  CalendarLegend,
+  MonthCalendar,
+  Sheet,
+  Text,
+  dayKey,
+  markRange,
+  type DayState,
+} from "@/components/ui";
 import { theme } from "@/theme";
 
 import {
@@ -22,6 +29,8 @@ interface Props {
   to: string | null;
   onClose: () => void;
   onApply: (from: string, to: string) => void;
+  /** Intervalles occupes du vehicule : ces jours ne se choisissent pas. */
+  unavailable?: { from: string; to: string }[];
 }
 
 const DAY_MS = 24 * 3600 * 1000;
@@ -39,7 +48,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * on touche le jour de retrait puis le jour de retour, puis un creneau de 30 minutes pour
  * chacun. Le jour meme est possible ; les creneaux passes disparaissent.
  */
-export function PeriodSheet({ visible, from, to, onClose, onApply }: Props) {
+export function PeriodSheet({ visible, from, to, onClose, onApply, unavailable = [] }: Props) {
   const now = new Date();
   const today = startOfDay(now);
   const [startDay, setStartDay] = useState<Date>(from ? startOfDay(new Date(from)) : today);
@@ -55,7 +64,7 @@ export function PeriodSheet({ visible, from, to, onClose, onApply }: Props) {
   const pickDay = (day: Date) => {
     if (day.getTime() < today.getTime()) return;
     // Premier toucher : le retrait. Deuxieme toucher apres le retrait : le retour. Sinon on recommence.
-    if (!endDay && day.getTime() > startDay.getTime()) {
+    if (!endDay && day.getTime() > startDay.getTime() && !crossesUnavailable(startDay, day)) {
       setEndDay(day);
       return;
     }
@@ -80,9 +89,16 @@ export function PeriodSheet({ visible, from, to, onClose, onApply }: Props) {
   const endOk = endChoices.some((s) => s.hour === endSlot.hour && s.minute === endSlot.minute);
   const ready = !!endDay && startOk && endOk;
 
-  const days = useMemo(() => monthGrid(month), [month]);
-  const inRange = (d: Date) =>
-    endDay ? d.getTime() > startDay.getTime() && d.getTime() < endDay.getTime() : false;
+  const dayStates = useMemo(() => {
+    const m = new Map<string, DayState>();
+    for (const u of unavailable) markRange(m, u.from, u.to, "unavailable");
+    return m;
+  }, [unavailable]);
+  const crossesUnavailable = (a: Date, b: Date) => {
+    for (let d = new Date(a); d.getTime() <= b.getTime(); d.setDate(d.getDate() + 1))
+      if (dayStates.has(dayKey(d))) return true;
+    return false;
+  };
 
   const quick = [
     { label: "Aujourd'hui", start: today, days: 1 },
@@ -112,63 +128,16 @@ export function PeriodSheet({ visible, from, to, onClose, onApply }: Props) {
         ))}
       </View>
 
-      <View style={styles.monthRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mois précédent"
-          onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-          disabled={month.getTime() <= new Date(today.getFullYear(), today.getMonth(), 1).getTime()}
-          style={styles.round}
-        >
-          <ChevronLeft size={18} color={theme.colors.text} />
-        </Pressable>
-        <Text variant="bodyStrong">{cap(monthFmt.format(month))}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mois suivant"
-          onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-          style={styles.round}
-        >
-          <ChevronRight size={18} color={theme.colors.text} />
-        </Pressable>
-      </View>
-      <View style={styles.week}>
-        {WEEKDAYS.map((w, i) => (
-          <Text key={i} variant="small" tone="dim" style={styles.weekday}>
-            {w}
-          </Text>
-        ))}
-      </View>
-      <View style={styles.grid}>
-        {days.map((d, i) => {
-          if (!d) return <View key={`e${i}`} style={styles.cell} />;
-          const past = d.getTime() < today.getTime();
-          const isStart = sameDay(d, startDay);
-          const isEnd = !!endDay && sameDay(d, endDay);
-          const between = inRange(d);
-          return (
-            <Pressable
-              key={d.toISOString()}
-              accessibilityRole="button"
-              accessibilityLabel={dayFmt.format(d)}
-              disabled={past}
-              onPress={() => pickDay(d)}
-              style={[
-                styles.cell,
-                between ? styles.cellBetween : null,
-                isStart || isEnd ? styles.cellEdge : null,
-              ]}
-            >
-              <Text
-                variant="smStrong"
-                tone={past ? "dim" : isStart || isEnd ? "inverse" : "default"}
-              >
-                {d.getDate()}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <MonthCalendar
+        month={month}
+        onMonthChange={setMonth}
+        minDay={today}
+        startDay={startDay}
+        endDay={endDay}
+        onPickDay={pickDay}
+        dayStates={dayStates}
+      />
+      {unavailable.length > 0 ? <CalendarLegend states={["unavailable"]} /> : null}
 
       <SlotRow
         label={`Retrait · ${dayFmt.format(startDay)}`}
@@ -251,17 +220,6 @@ function SlotRow({
   );
 }
 
-/** Grille du mois : 7 colonnes, lundi en premier, cases vides avant le 1er. */
-function monthGrid(month: Date): (Date | null)[] {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1);
-  const lead = (first.getDay() + 6) % 7;
-  const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  const cells: (Date | null)[] = Array.from({ length: lead }, () => null);
-  for (let d = 1; d <= count; d++) cells.push(new Date(month.getFullYear(), month.getMonth(), d));
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
-}
-
 function nextSaturday(today: Date): Date {
   const delta = (6 - today.getDay() + 7) % 7 || 7;
   return new Date(today.getTime() + delta * DAY_MS);
@@ -278,18 +236,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surfaceRaised,
     justifyContent: "center",
   },
-  monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  round: {
-    width: 38,
-    height: 38,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surfaceRaised,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  week: { flexDirection: "row" },
-  weekday: { flex: 1, textAlign: "center" },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
   cell: {
     width: `${100 / 7}%`,
     height: 40,
@@ -297,8 +243,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: theme.radius.full,
   },
-  cellBetween: { backgroundColor: theme.colors.accentSoft, borderRadius: 0 },
-  cellEdge: { backgroundColor: theme.colors.accent },
   slotRow: { gap: theme.space["2"] },
   slots: { gap: theme.space["2"] },
   slot: {

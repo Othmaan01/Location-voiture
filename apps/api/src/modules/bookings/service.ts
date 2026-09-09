@@ -62,6 +62,7 @@ export interface BookingsService {
     to: "active" | "completed" | "no_show" | "cancelled" | "disputed" | "resolved",
     reason: string | undefined,
     requestId: string,
+    extra?: Partial<typeof bookings.$inferInsert>,
   ): Promise<Booking>;
   expireOverdue(): Promise<number>;
 }
@@ -231,6 +232,8 @@ export function createBookingsService(
         reference: r.reference,
         status: r.status,
         statusChangedAt: r.statusChangedAt.toISOString(),
+        handedOverAt: r.handedOverAt?.toISOString() ?? null,
+        contractSignedAt: r.contractSignedAt?.toISOString() ?? null,
         from: period.from,
         to: period.to,
         days,
@@ -676,7 +679,7 @@ export function createBookingsService(
       }
     },
 
-    async transition(actor, bookingId, to, reason, requestId) {
+    async transition(actor, bookingId, to, reason, requestId, extra = {}) {
       const row = await loadVisible(actor, bookingId);
       const isCustomer = actor.userId === row.customerId;
       const actorType: ActorKind = isCustomer
@@ -694,15 +697,8 @@ export function createBookingsService(
         throw new DomainError("validation_failed", "Indiquez le motif.", { field: "reason" });
       try {
         const updated = await db.transaction(async (tx) =>
-          applyTransition(
-            tx,
-            row,
-            to,
-            actor,
-            actorType,
-            reason,
-            requestId,
-            to === "cancelled"
+          applyTransition(tx, row, to, actor, actorType, reason, requestId, {
+            ...(to === "cancelled"
               ? {
                   cancellationReason: reason ?? null,
                   cancelledBy:
@@ -712,8 +708,9 @@ export function createBookingsService(
                         ? "platform"
                         : "organization_member",
                 }
-              : {},
-          ),
+              : {}),
+            ...extra,
+          }),
         );
         const [dto] = await hydrate([updated], actor);
         if (to === "disputed") {
@@ -735,6 +732,14 @@ export function createBookingsService(
           };
           void notify.notifyOrganization(row.organizationId, payload);
           void notify.notifyUser(row.customerId, payload);
+        }
+        if (to === "active") {
+          void notify.notifyUser(row.customerId, {
+            kind: "booking.started",
+            title: "Vehicule remis",
+            body: `${dto!.loueurName} a valide la remise de votre ${dto!.vehicle.brand} ${dto!.vehicle.model}. Bonne route !`,
+            data: { bookingId: row.id },
+          });
         }
         if (to === "completed") {
           void notify.notifyUser(row.customerId, {

@@ -94,7 +94,12 @@ export function useBookingAction(id: string) {
     mutationFn: ({ action, reason }: { action: Action; reason?: string }) =>
       apiRequest(`/v1/bookings/${id}/${action}`, BookingSchema, {
         method: "POST",
-        body: reason ? { reason } : {},
+        body:
+          action === "start"
+            ? { inspectionDone: true, contractSigned: true }
+            : reason
+              ? { reason }
+              : {},
       }),
     onSuccess: (booking) => {
       client.setQueryData(bookingKeys.one(id), booking);

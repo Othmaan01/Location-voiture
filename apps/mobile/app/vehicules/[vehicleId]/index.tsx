@@ -32,13 +32,33 @@ import {
 } from "lucide-react-native";
 import type { PublicVehicleDetail } from "@lv/contracts";
 
-import { Avatar, Badge, Button, Card, EmptyState, Screen, Text } from "@/components/ui";
+import {
+  Avatar,
+  Badge,
+  Button,
+  CalendarLegend,
+  Card,
+  EmptyState,
+  MonthCalendar,
+  Screen,
+  Text,
+  dayKey,
+  markRange,
+  type DayState,
+} from "@/components/ui";
 import { ACCENT_COLOR } from "@/features/client/accent";
 import { CATEGORY_LABEL, FUEL_LABEL, TRANSMISSION_LABEL, formatEuros } from "@/features/pro/labels";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { formatOffer } from "@/lib/queries-offers";
-import { useFavorites, useToggleFavorite, useVehicle } from "@/lib/queries-public";
+import {
+  useFavorites,
+  useToggleFavorite,
+  useVehicle,
+  useVehicleAvailability,
+} from "@/lib/queries-public";
+import { startOfDay, withSlot } from "@/features/client/slots";
+import { useMemo } from "react";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
 
@@ -54,7 +74,7 @@ export default function VehicleScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { session } = useSession();
-  const { from, to } = useSearchState();
+  const { from, to, setPeriod } = useSearchState();
   const period = from && to ? { from, to } : null;
   const vehicle = useVehicle(vehicleId, period);
   const favorites = useFavorites();
@@ -62,6 +82,43 @@ export default function VehicleScreen() {
   const [index, setIndex] = useState(0);
   const [contact, setContact] = useState(false);
   const listRef = useRef<FlatList<string>>(null);
+  // Disponibilites sur trois mois : la meme source que le calendrier de reservation.
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const horizon = useMemo(() => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + 3);
+    return d;
+  }, [today]);
+  const availability = useVehicleAvailability(
+    vehicleId,
+    today.toISOString(),
+    horizon.toISOString(),
+  );
+  const dayStates = useMemo(() => {
+    const m = new Map<string, DayState>();
+    for (const u of availability.data?.unavailable ?? []) markRange(m, u.from, u.to, "unavailable");
+    return m;
+  }, [availability.data]);
+  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [pickStart, setPickStart] = useState<Date | null>(from ? startOfDay(new Date(from)) : null);
+  const [pickEnd, setPickEnd] = useState<Date | null>(to ? startOfDay(new Date(to)) : null);
+  const pickDay = (day: Date) => {
+    const crosses = (a: Date, b: Date) => {
+      for (let d = new Date(a); d.getTime() <= b.getTime(); d.setDate(d.getDate() + 1))
+        if (dayStates.has(dayKey(d))) return true;
+      return false;
+    };
+    if (pickStart && !pickEnd && day.getTime() > pickStart.getTime() && !crosses(pickStart, day)) {
+      setPickEnd(day);
+      setPeriod(
+        withSlot(pickStart, { hour: 9, minute: 0 }).toISOString(),
+        withSlot(day, { hour: 9, minute: 0 }).toISOString(),
+      );
+      return;
+    }
+    setPickStart(day);
+    setPickEnd(null);
+  };
 
   if (vehicle.isPending) {
     return (
@@ -243,6 +300,29 @@ export default function VehicleScreen() {
           </Section>
         ) : null}
 
+        <Section title="Disponibilités">
+          <Card>
+            <MonthCalendar
+              month={month}
+              onMonthChange={setMonth}
+              minDay={today}
+              startDay={pickStart}
+              endDay={pickEnd}
+              onPickDay={pickDay}
+              dayStates={dayStates}
+              compact
+            />
+            <CalendarLegend states={dayStates.size > 0 ? ["unavailable"] : []} />
+            <Text variant="small" tone="dim">
+              {pickStart && pickEnd
+                ? `Vos dates : ${formatPeriod(withSlot(pickStart, { hour: 9, minute: 0 }).toISOString(), withSlot(pickEnd, { hour: 9, minute: 0 }).toISOString())}. Les heures se précisent à l'étape suivante.`
+                : pickStart
+                  ? "Touchez maintenant le jour de retour."
+                  : "Touchez le jour de retrait, puis le jour de retour. Les jours barrés sont déjà pris."}
+            </Text>
+          </Card>
+        </Section>
+
         <Section title="Tarif">
           <Card padded={false}>
             <Row label="Par jour" value={v.dailyCents !== null ? formatEuros(v.dailyCents) : "—"} />
@@ -361,7 +441,7 @@ export default function VehicleScreen() {
         </Pressable>
         <View style={styles.flex}>
           <Button
-            label={v.available === false ? "Voir d'autres dates" : "Demander ce véhicule"}
+            label={v.available === false ? "Choisir d'autres dates" : "Réserver ce véhicule"}
             onPress={() => router.push(`/vehicules/${v.id}/demande`)}
           />
         </View>

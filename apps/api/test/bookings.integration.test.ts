@@ -337,6 +337,7 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
         await app.inject({
           method: "POST",
           url: `/v1/bookings/${id}/start`,
+          payload: { inspectionDone: true, contractSigned: true },
           headers: auth(customerToken),
         })
       ).statusCode,
@@ -346,6 +347,7 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
         await app.inject({
           method: "POST",
           url: `/v1/bookings/${id}/start`,
+          payload: { inspectionDone: true, contractSigned: true },
           headers: auth(ownerToken),
         })
       ).json(),

@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Linking, StyleSheet, View } from "react-native";
-import { MessageCircle, Phone, Star } from "lucide-react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
+import { Check, MessageCircle, Phone, Star } from "lucide-react-native";
 
 import {
   Avatar,
@@ -47,6 +47,8 @@ export default function OrgBookingScreen() {
   const replyReview = useReplyReview();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [paperFor, setPaperFor] = useState<"start" | "complete" | null>(null);
+  const [inspectionChecked, setInspectionChecked] = useState(false);
+  const [contractChecked, setContractChecked] = useState(false);
   const inspections = useInspections(bookingId);
   const hasDeparture = !!inspections.data?.inspections.some((i) => i.kind === "departure");
   const hasReturn = !!inspections.data?.inspections.some((i) => i.kind === "return");
@@ -145,11 +147,42 @@ export default function OrgBookingScreen() {
       ) : null}
 
       {b.status === "confirmed" ? (
-        <View style={styles.stack}>
+        <Card style={styles.handover}>
+          <Text variant="bodyStrong">Remise du véhicule</Text>
+          <Text variant="small" tone="muted">
+            Le contrat et le paiement se font hors application. Confirmez les deux étapes pour
+            valider la remise : le client est prévenu et la location démarre.
+          </Text>
+          <CheckRow
+            label="État des lieux de départ effectué"
+            hint={hasDeparture ? "Signé dans l'application" : "Dans l'application ou sur papier"}
+            checked={hasDeparture || inspectionChecked}
+            locked={hasDeparture}
+            onToggle={() => setInspectionChecked((v) => !v)}
+          />
+          <CheckRow
+            label="Contrat de location signé"
+            hint="Signé avec le client, hors application"
+            checked={contractChecked}
+            onToggle={() => setContractChecked((v) => !v)}
+          />
+          {!hasDeparture ? (
+            <Button
+              label="Faire l'état des lieux dans l'application"
+              variant="ghost"
+              size="sm"
+              onPress={() =>
+                router.push(
+                  `/(pro)/organizations/${organizationId}/bookings/${bookingId}/inspection`,
+                )
+              }
+            />
+          ) : null}
           <Button
-            label="Véhicule remis au client"
+            label="Valider la remise du véhicule"
+            disabled={!(hasDeparture || inspectionChecked) || !contractChecked}
             loading={act.isPending}
-            onPress={() => (hasDeparture ? run("start") : setPaperFor("start"))}
+            onPress={() => run("start")}
           />
           <View style={styles.actions}>
             <Button
@@ -165,7 +198,12 @@ export default function OrgBookingScreen() {
               onPress={() => setReasonFor("cancel")}
             />
           </View>
-        </View>
+        </Card>
+      ) : null}
+      {b.handedOverAt ? (
+        <Text variant="small" tone="muted">
+          Remise validée le {formatDateTime(b.handedOverAt)} · état des lieux et contrat confirmés.
+        </Text>
       ) : null}
       {b.status === "active" ? (
         <Button
@@ -374,11 +412,7 @@ export default function OrgBookingScreen() {
       <ConfirmSheet
         visible={paperFor !== null}
         onClose={() => setPaperFor(null)}
-        title={
-          paperFor === "start"
-            ? "État des lieux de départ non fait ici"
-            : "État des lieux de retour non fait ici"
-        }
+        title="État des lieux de retour non fait ici"
         message="L'état des lieux protège le loueur et le client. L'avez-vous fait sur papier ?"
         confirmLabel="Oui, sur papier : valider"
         destructive={false}
@@ -417,7 +451,56 @@ function Info({ label, value, last = false }: { label: string; value: string; la
   );
 }
 
+/** Case a cocher de confirmation (remise du vehicule) : verrouillee quand l'application a la preuve. */
+function CheckRow({
+  label,
+  hint,
+  checked,
+  locked = false,
+  onToggle,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  locked?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled: locked }}
+      disabled={locked}
+      onPress={onToggle}
+      style={styles.checkRow}
+    >
+      <View style={[styles.checkBox, checked ? styles.checkBoxOn : null]}>
+        {checked ? <Check size={16} color="#ffffff" strokeWidth={3} /> : null}
+      </View>
+      <View style={styles.flex}>
+        <Text variant="smStrong">{label}</Text>
+        {hint ? (
+          <Text variant="small" tone="muted">
+            {hint}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  handover: { gap: theme.space["3"] },
+  checkRow: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
+  checkBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkBoxOn: { backgroundColor: theme.colors.success, borderColor: theme.colors.success },
   customerRow: {
     flexDirection: "row",
     alignItems: "center",

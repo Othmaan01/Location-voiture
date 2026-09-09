@@ -3,7 +3,19 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
 
-import { Button, Card, EmptyState, Screen, Select, Sheet, Text } from "@/components/ui";
+import {
+  Button,
+  CalendarLegend,
+  Card,
+  EmptyState,
+  MonthCalendar,
+  Screen,
+  Select,
+  Sheet,
+  Text,
+  markRange,
+  type DayState,
+} from "@/components/ui";
 import { PeriodSheet } from "@/features/client/PeriodSheet";
 import { ApiRequestError } from "@/lib/api";
 import { useBlocks, useCreateBlock, useDeleteBlock, useOrgBookings } from "@/lib/queries-bookings";
@@ -37,6 +49,11 @@ export function OrgCalendarView({
   const router = useRouter();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [blockFor, setBlockFor] = useState<string | null>(null);
+  const [view, setView] = useState<"week" | "month">("week");
+  const [monthVehicle, setMonthVehicle] = useState<string | null>(null);
+  const [month, setMonth] = useState(
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  );
   const vehicles = useVehicles(organizationId);
   const bookings = useOrgBookings(organizationId, "all");
   const days = useMemo(
@@ -67,7 +84,42 @@ export function OrgCalendarView({
       }
       contentStyle={styles.content}
     >
-      <View style={styles.nav}>
+      <View style={styles.viewToggle}>
+        {(
+          [
+            { key: "week", label: "Semaine" },
+            { key: "month", label: "Mois" },
+          ] as const
+        ).map(({ key, label }) => (
+          <Pressable
+            key={key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: view === key }}
+            onPress={() => setView(key)}
+            style={[styles.viewItem, view === key ? styles.viewOn : null]}
+          >
+            <Text variant="smStrong" tone={view === key ? "inverse" : "muted"}>
+              {label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {view === "month" ? (
+        <MonthView
+          organizationId={organizationId}
+          vehicles={
+            vehicles.data?.vehicles.map((v) => ({ value: v.id, label: `${v.brand} ${v.model}` })) ??
+            []
+          }
+          vehicleId={monthVehicle ?? vehicles.data?.vehicles[0]?.id ?? null}
+          onChangeVehicle={setMonthVehicle}
+          month={month}
+          onMonthChange={setMonth}
+          bookings={bookings.data?.bookings ?? []}
+          onBooking={(id) => router.push(`/(pro)/organizations/${organizationId}/bookings/${id}`)}
+        />
+      ) : null}
+      <View style={[styles.nav, view === "month" ? styles.hidden : null]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Semaine précédente"
@@ -88,7 +140,7 @@ export function OrgCalendarView({
           <ChevronRight size={20} color={theme.colors.textMuted} />
         </Pressable>
       </View>
-      <View style={styles.header}>
+      <View style={[styles.header, view === "month" ? styles.hidden : null]}>
         <View style={styles.label} />
         <View style={styles.grid}>
           {days.map((d) => (
@@ -109,7 +161,10 @@ export function OrgCalendarView({
       {vehicles.data && vehicles.data.vehicles.length === 0 ? (
         <EmptyState title="Aucun véhicule" />
       ) : null}
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={view === "month" ? styles.hidden : null}
+      >
         {vehicles.data?.vehicles.map((v) => (
           <VehicleRow
             key={v.id}
@@ -121,9 +176,10 @@ export function OrgCalendarView({
           />
         ))}
       </ScrollView>
-      <View style={styles.legend}>
-        <Legend color={theme.colors.text} label="Confirmée" />
+      <View style={[styles.legend, view === "month" ? styles.hidden : null]}>
         <Legend color={theme.colors.accentSoft} border={theme.colors.accent} label="Demande" />
+        <Legend color={theme.colors.text} label="Confirmée" />
+        <Legend color={theme.colors.success} label="En location" />
         <Legend color={theme.colors.surfaceHigh} label="Bloqué" />
       </View>
       {blockFor ? (
@@ -212,6 +268,7 @@ function VehicleRow({
         {bookings.map((b) => {
           const s = span(b.from, b.to);
           const pending = b.status === "requested";
+          const active = b.status === "active";
           return (
             <Pressable
               key={b.id}
@@ -219,7 +276,7 @@ function VehicleRow({
               onPress={() => onBooking(b.id)}
               style={[
                 styles.bar,
-                pending ? styles.barPending : styles.barFirm,
+                pending ? styles.barPending : active ? styles.barActive : styles.barFirm,
                 { left: `${s.left}%`, width: `${s.width}%` },
               ]}
             >
@@ -235,6 +292,75 @@ function VehicleRow({
         })}
       </View>
     </View>
+  );
+}
+
+/** Vue mois d'un vehicule : le calendrier partage avec le client, plus les demandes et blocages du loueur. */
+function MonthView({
+  vehicles,
+  vehicleId,
+  onChangeVehicle,
+  month,
+  onMonthChange,
+  bookings,
+  onBooking,
+}: {
+  organizationId: string;
+  vehicles: { value: string; label: string }[];
+  vehicleId: string | null;
+  onChangeVehicle: (id: string) => void;
+  month: Date;
+  onMonthChange: (d: Date) => void;
+  bookings: { id: string; from: string; to: string; status: string; vehicle: { id: string } }[];
+  onBooking: (id: string) => void;
+}) {
+  const blocks = useBlocks(vehicleId ?? "");
+  const dayStates = useMemo(() => {
+    const m = new Map<string, DayState>();
+    for (const b of bookings) {
+      if (b.vehicle.id !== vehicleId) continue;
+      const state: DayState | null =
+        b.status === "active"
+          ? "active"
+          : b.status === "confirmed"
+            ? "confirmed"
+            : b.status === "requested"
+              ? "requested"
+              : null;
+      if (state) markRange(m, b.from, b.to, state);
+    }
+    for (const k of blocks.data?.blocks ?? []) markRange(m, k.from, k.to, "blocked");
+    return m;
+  }, [bookings, blocks.data, vehicleId]);
+  const present = (["requested", "confirmed", "active", "blocked"] as DayState[]).filter((st) =>
+    [...dayStates.values()].includes(st),
+  );
+  const onPickDay = (day: Date) => {
+    const hit = bookings.find(
+      (b) =>
+        b.vehicle.id === vehicleId &&
+        new Date(b.from).getTime() <= day.getTime() + 86_399_999 &&
+        new Date(b.to).getTime() > day.getTime(),
+    );
+    if (hit) onBooking(hit.id);
+  };
+  if (!vehicleId) return <EmptyState title="Aucun véhicule" />;
+  return (
+    <Card style={{ gap: theme.space["3"] }}>
+      <Select label="Véhicule" value={vehicleId} options={vehicles} onChange={onChangeVehicle} />
+      <MonthCalendar
+        month={month}
+        onMonthChange={onMonthChange}
+        dayStates={dayStates}
+        disabledStates={[]}
+        onPickDay={onPickDay}
+        compact
+      />
+      <CalendarLegend states={present} />
+      <Text variant="small" tone="dim">
+        Un jour sans point est disponible. Touchez un jour occupé pour ouvrir la réservation.
+      </Text>
+    </Card>
   );
 }
 
@@ -361,7 +487,25 @@ const styles = StyleSheet.create({
   },
   barPendingText: { color: theme.colors.accentTint, fontWeight: theme.font.weight.bold },
   barBlock: { backgroundColor: theme.colors.surfaceHigh },
-  legend: { flexDirection: "row", gap: theme.space["4"] },
+  barActive: { backgroundColor: theme.colors.success },
+  viewToggle: {
+    flexDirection: "row",
+    padding: 3,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignSelf: "flex-start",
+  },
+  viewItem: {
+    paddingHorizontal: theme.space["3"],
+    minHeight: 32,
+    justifyContent: "center",
+    borderRadius: theme.radius.full,
+  },
+  viewOn: { backgroundColor: theme.colors.text },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: theme.space["3"] },
+  hidden: { display: "none" },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   swatch: { width: 12, height: 12, borderRadius: 4, borderWidth: 1.5 },
 });

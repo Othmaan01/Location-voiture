@@ -454,17 +454,11 @@ function stepState(
           }
         : { state: "todo", title: "Confirmation du loueur", subtitle: "" };
     case "pickedUp":
-      if (active && hasDeparture)
+      if (active)
         return {
           state: "done",
           title: "Véhicule récupéré",
-          subtitle: `État des lieux de départ signé · ${formatDateTime(ev("active")!.createdAt)}`,
-        };
-      if (active)
-        return {
-          state: "now",
-          title: "Véhicule récupéré",
-          subtitle: "État des lieux de départ fait sur papier",
+          subtitle: `Remise validée le ${formatDateTime(b.handedOverAt ?? ev("active")!.createdAt)}${hasDeparture ? " · état des lieux signé" : ""}`,
         };
       return {
         state: confirmed && !terminal ? "now" : "todo",

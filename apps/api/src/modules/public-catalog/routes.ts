@@ -10,6 +10,7 @@ import {
   SearchQuerySchema,
   SearchResponseSchema,
   UuidSchema,
+  VehicleAvailabilitySchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
@@ -50,7 +51,7 @@ export const publicCatalogRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
-    "/v1/vehicles/:vehicleId",
+    "/v1/catalog/vehicles/:vehicleId",
     {
       schema: {
         tags,
@@ -66,6 +67,21 @@ export const publicCatalogRoutes: FastifyPluginAsyncZod = async (app) => {
       const { from, to } = request.query;
       return service.vehicle(request.params.vehicleId, from && to ? { from, to } : null);
     },
+  );
+
+  app.get(
+    "/v1/catalog/vehicles/:vehicleId/availability",
+    {
+      schema: {
+        tags,
+        params: z.object({ vehicleId: UuidSchema }).strict(),
+        querystring: z.object({ from: IsoDateTimeSchema, to: IsoDateTimeSchema }).strict(),
+        response: { 200: VehicleAvailabilitySchema },
+      },
+      config: publicLimit,
+    },
+    async (request) =>
+      service.availability(request.params.vehicleId, request.query.from, request.query.to),
   );
 
   app.get(

@@ -6,6 +6,7 @@ import {
   FeedResponseSchema,
   LoueurProfileSchema,
   PublicVehicleDetailSchema,
+  VehicleAvailabilitySchema,
   SearchResponseSchema,
   type FeedTab,
 } from "@lv/contracts";
@@ -94,10 +95,29 @@ export function useVehicle(id: string, period: { from: string; to: string } | nu
     queryKey: publicKeys.vehicle(id, period),
     queryFn: () =>
       apiRequest(
-        `/v1/vehicles/${id}${period ? `?${qs({ from: period.from, to: period.to })}` : ""}`,
+        `/v1/catalog/vehicles/${id}${period ? `?${qs({ from: period.from, to: period.to })}` : ""}`,
         PublicVehicleDetailSchema,
       ),
     staleTime: 60_000,
+  });
+}
+
+/** Intervalles occupes d'un vehicule (reservations fermes, blocages) : le meme calendrier partout. */
+export function useVehicleAvailability(
+  vehicleId: string,
+  from: string,
+  to: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["vehicles", vehicleId, "availability", from, to] as const,
+    queryFn: () =>
+      apiRequest(
+        `/v1/catalog/vehicles/${vehicleId}/availability?${qs({ from, to })}`,
+        VehicleAvailabilitySchema,
+      ),
+    enabled: enabled && !!vehicleId,
+    staleTime: 30_000,
   });
 }
 

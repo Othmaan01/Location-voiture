@@ -4,11 +4,12 @@ import {
   BookingSchema,
   BookingsResponseSchema,
   CancelBodySchema,
-  DisputeBodySchema,
   CreateBookingBodySchema,
   DecisionBodySchema,
+  DisputeBodySchema,
   QuoteRequestSchema,
   QuoteSchema,
+  StartBodySchema,
   UuidSchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
@@ -154,11 +155,28 @@ export const bookingsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     "/v1/bookings/:bookingId/start",
     {
-      schema: { tags, params: bookingParams, response: { 200: BookingSchema } },
+      schema: {
+        tags,
+        params: bookingParams,
+        body: StartBodySchema,
+        response: { 200: BookingSchema },
+      },
       onRequest: [app.requireAuth],
     },
-    async (request) =>
-      service.transition(request.actor, request.params.bookingId, "active", undefined, request.id),
+    async (request) => {
+      const now = new Date();
+      return service.transition(
+        request.actor,
+        request.params.bookingId,
+        "active",
+        undefined,
+        request.id,
+        {
+          handedOverAt: now,
+          contractSignedAt: now,
+        },
+      );
+    },
   );
   app.post(
     "/v1/bookings/:bookingId/complete",

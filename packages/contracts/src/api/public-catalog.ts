@@ -246,3 +246,22 @@ export const CitiesResponseSchema = z.object({ cities: z.array(CitySchema) }).st
 // Favoris
 // ---------------------------------------------------------------------
 export const FavoritesResponseSchema = z.object({ vehicles: z.array(SearchResultSchema) }).strict();
+
+/** Disponibilite publique d'un vehicule : intervalles occupes (reservations fermes et blocages), sans detail. */
+export const VehicleAvailabilitySchema = z
+  .object({
+    vehicleId: UuidSchema,
+    from: IsoDateTimeSchema,
+    to: IsoDateTimeSchema,
+    unavailable: z.array(
+      z
+        .object({
+          from: IsoDateTimeSchema,
+          to: IsoDateTimeSchema,
+          kind: z.enum(["booking", "block"]),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+export type VehicleAvailability = z.infer<typeof VehicleAvailabilitySchema>;

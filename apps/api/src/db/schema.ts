@@ -494,6 +494,8 @@ export const bookings = pgTable("bookings", {
   period: text("period").notNull(),
   status: bookingStatusEnum("status").notNull().default("requested"),
   statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
+  handedOverAt: timestamp("handed_over_at", { withTimezone: true }),
+  contractSignedAt: timestamp("contract_signed_at", { withTimezone: true }),
   customerMessage: text("customer_message"),
   declineReason: text("decline_reason"),
   cancellationReason: text("cancellation_reason"),

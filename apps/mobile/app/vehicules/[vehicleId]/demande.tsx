@@ -13,6 +13,7 @@ import { ApiRequestError } from "@/lib/api";
 import { celebrate } from "@/lib/celebrate";
 import { useCreateBooking, useCreateQuote } from "@/lib/queries-bookings";
 import { useSession } from "@/lib/session";
+import { useVehicleAvailability } from "@/lib/queries-public";
 import { theme } from "@/theme";
 
 /**
@@ -33,6 +34,21 @@ export default function BookingRequestScreen() {
   const [error, setError] = useState<string | null>(null);
   const [blocker, setBlocker] = useState<{ kind: string; bookingId?: string } | null>(null);
   const createQuote = useCreateQuote();
+  const horizonFrom = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const horizonTo = useMemo(() => {
+    const d = new Date(horizonFrom);
+    d.setMonth(d.getMonth() + 3);
+    return d;
+  }, [horizonFrom]);
+  const availability = useVehicleAvailability(
+    vehicleId,
+    horizonFrom.toISOString(),
+    horizonTo.toISOString(),
+  );
   const createBooking = useCreateBooking();
   // Une cle d'idempotence par tentative d'envoi : un retry reseau ne cree jamais deux demandes.
   const idempotencyKey = useMemo(() => Crypto.randomUUID(), []);
@@ -225,6 +241,7 @@ export default function BookingRequestScreen() {
         from={period.from}
         to={period.to}
         onClose={() => setDatesOpen(false)}
+        unavailable={availability.data?.unavailable ?? []}
         onApply={(f, t) => {
           setPeriod({ from: f, to: t });
           search.setPeriod(f, t);

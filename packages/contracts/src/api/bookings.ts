@@ -107,6 +107,9 @@ export const BookingSchema = z
     reference: z.string(),
     status: BookingStatusSchema,
     statusChangedAt: IsoDateTimeSchema,
+    /** Remise validee par le loueur : etat des lieux + contrat signe hors application (horodatage). */
+    handedOverAt: IsoDateTimeSchema.nullable(),
+    contractSignedAt: IsoDateTimeSchema.nullable(),
     from: IsoDateTimeSchema,
     to: IsoDateTimeSchema,
     days: z.number().int(),
@@ -191,3 +194,12 @@ export const CalendarResponseSchema = z
     blocks: z.array(AvailabilityBlockSchema),
   })
   .strict();
+
+/** Remise du vehicule : les deux confirmations sont obligatoires, le moteur refuse sinon. */
+export const StartBodySchema = z
+  .object({
+    inspectionDone: z.literal(true),
+    contractSigned: z.literal(true),
+  })
+  .strict();
+export type StartBody = z.infer<typeof StartBodySchema>;

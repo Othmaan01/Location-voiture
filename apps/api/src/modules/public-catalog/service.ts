@@ -8,11 +8,14 @@ import type {
   PublicVehicleDetail,
   SearchQuery,
   SearchResult,
+  VehicleAvailability,
 } from "@lv/contracts";
 
 import type { Database } from "../../db/client.js";
 import {
   agencies,
+  availabilityBlocks,
+  bookings,
   cities,
   favorites,
   organizations,
@@ -44,6 +47,7 @@ type VehicleRow = typeof vehicles.$inferSelect;
  * des vehicules publies et non suspendus. Jamais de plaque, jamais de document.
  */
 export interface PublicCatalogService {
+  availability(vehicleId: string, from: string, to: string): Promise<VehicleAvailability>;
   vehicle(
     vehicleId: string,
     period: { from: string; to: string } | null,
@@ -403,6 +407,34 @@ export function createPublicCatalogService(
           ratingCount: rating.count,
           vehicleCount: count[0]?.n ?? 0,
         },
+      };
+    },
+
+    async availability(vehicleId, from, to) {
+      const [v] = await db
+        .select({ id: vehicles.id })
+        .from(vehicles)
+        .where(and(eq(vehicles.id, vehicleId), publishedVehicleFilter(true)))
+        .limit(1);
+      if (!v) throw notFound("Vehicule");
+      const rows = await db.execute<{ from: string; to: string; kind: "booking" | "block" }>(sql`
+        select lower(period) as "from", upper(period) as "to", 'booking'::text as kind
+          from ${bookings} where vehicle_id = ${vehicleId}::uuid and status in ('confirmed', 'active')
+          and period && tstzrange(${from}::timestamptz, ${to}::timestamptz, '[)')
+        union all
+        select lower(period), upper(period), 'block'::text
+          from ${availabilityBlocks} where vehicle_id = ${vehicleId}::uuid
+          and period && tstzrange(${from}::timestamptz, ${to}::timestamptz, '[)')
+        order by 1`);
+      return {
+        vehicleId,
+        from,
+        to,
+        unavailable: rows.map((r) => ({
+          from: new Date(r.from).toISOString(),
+          to: new Date(r.to).toISOString(),
+          kind: r.kind,
+        })),
       };
     },
 
