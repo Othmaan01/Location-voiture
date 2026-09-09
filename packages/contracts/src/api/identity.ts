@@ -39,7 +39,6 @@ export const UpdateProfileBodySchema = z
     firstName: z.string().trim().min(1).max(80).optional(),
     lastName: z.string().trim().min(1).max(80).optional(),
     phone: PhoneSchema.nullable().optional(),
-    preferredMode: PreferredModeSchema.optional(),
   })
   .strict();
 export type UpdateProfileBody = z.infer<typeof UpdateProfileBodySchema>;

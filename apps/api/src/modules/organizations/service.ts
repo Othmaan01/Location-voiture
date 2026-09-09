@@ -174,8 +174,23 @@ export function createOrganizationsService(
 ): OrganizationsService {
   return {
     async create(actor, input, requestId) {
-      assertCan(actor, "booking.create"); // tout utilisateur authentifie peut fonder une organisation
+      assertCan(actor, "booking.create");
       const userId = actor.userId!;
+      // Le type de compte se choisit a l'inscription (retour fondateur, 2026-09-09) : seul un compte
+      // « loueur » fonde une organisation ; l'equipe plateforme reste libre.
+      if (actor.platformRole === null) {
+        const [profile] = await db
+          .select({ preferredMode: profiles.preferredMode })
+          .from(profiles)
+          .where(eq(profiles.id, userId))
+          .limit(1);
+        if (profile?.preferredMode !== "pro")
+          throw new DomainError(
+            "forbidden",
+            "Ce compte est un compte client. Creez un compte loueur pour publier des vehicules.",
+            { blocker: "client_account" },
+          );
+      }
       if (input.siren && !isValidSiren(input.siren)) {
         throw new DomainError("validation_failed", "SIREN invalide.", { field: "siren" });
       }

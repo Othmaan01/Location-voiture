@@ -18,7 +18,7 @@ import { Avatar, Button, Card, EmptyState, ListItem, Screen, Text } from "@/comp
 import { ApiRequestError } from "@/lib/api";
 import { useAppLockSetting } from "@/lib/app-lock";
 import { MODE_HOME, MODE_LABEL, useMode, type AppMode } from "@/lib/mode";
-import { useMe, useUpdateProfile } from "@/lib/queries";
+import { useMe } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { theme } from "@/theme";
@@ -29,16 +29,18 @@ export default function ProfileScreen() {
   const me = useMe();
   const appLock = useAppLockSetting();
   const { mode, setMode } = useMode();
-  const updateProfile = useUpdateProfile();
 
-  /** Bascule d'espace (D9) : immediate, memorisee sur le compte pour les prochaines connexions. */
+  /**
+   * Le type de compte (client ou loueur) est choisi a l'inscription et ne change plus (retour
+   * fondateur, 2026-09-09). Seule l'equipe plateforme peut passer en Admin et revenir.
+   */
+  const accountMode: AppMode = me.data?.preferredMode === "pro" ? "pro" : "client";
   const switchMode = (next: AppMode) => {
     if (next === mode) return;
     setMode(next);
-    if (next !== "admin") updateProfile.mutate({ preferredMode: next });
     router.replace(MODE_HOME[next]);
   };
-  const modes: AppMode[] = me.data?.platformRole ? ["client", "pro", "admin"] : ["client", "pro"];
+  const modes: AppMode[] = me.data?.platformRole ? [accountMode, "admin"] : [];
 
   const toggleLock = async (next: boolean) => {
     if (next && !appLock.biometrics.available) {
@@ -105,31 +107,33 @@ export default function ProfileScreen() {
         </Card>
       ) : null}
 
-      <Card style={styles.modeCard}>
-        <Text variant="bodyStrong">Mon espace</Text>
-        <View style={styles.modes}>
-          {modes.map((m) => (
-            <Pressable
-              key={m}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: mode === m }}
-              onPress={() => switchMode(m)}
-              style={[styles.modeChip, mode === m ? styles.modeChipOn : null]}
-            >
-              <Text variant="smStrong" tone={mode === m ? "inverse" : "default"}>
-                {MODE_LABEL[m]}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text variant="small" tone="dim">
-          {mode === "client"
-            ? "Chercher et réserver des véhicules."
-            : mode === "pro"
-              ? "Gérer votre flotte, vos agences et vos demandes."
-              : "Vérifier et administrer les loueurs."}
-        </Text>
-      </Card>
+      {modes.length > 0 ? (
+        <Card style={styles.modeCard}>
+          <Text variant="bodyStrong">Mon espace</Text>
+          <View style={styles.modes}>
+            {modes.map((m) => (
+              <Pressable
+                key={m}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: mode === m }}
+                onPress={() => switchMode(m)}
+                style={[styles.modeChip, mode === m ? styles.modeChipOn : null]}
+              >
+                <Text variant="smStrong" tone={mode === m ? "inverse" : "default"}>
+                  {MODE_LABEL[m]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text variant="small" tone="dim">
+            {mode === "client"
+              ? "Chercher et réserver des véhicules."
+              : mode === "pro"
+                ? "Gérer votre flotte, vos agences et vos demandes."
+                : "Vérifier et administrer les loueurs."}
+          </Text>
+        </Card>
+      ) : null}
 
       <Card padded={false}>
         <ListItem
@@ -192,18 +196,23 @@ export default function ProfileScreen() {
               onPress={() => router.push("/(pro)/onboarding")}
             />
           </View>
-        ) : (
+        ) : accountMode === "pro" ? (
           <View style={styles.stack}>
             <Text variant="sm" tone="muted">
-              Vous êtes loueur ? Publiez votre flotte, recevez des demandes, gérez votre planning.
+              Publiez votre flotte, recevez des demandes, gérez votre planning.
             </Text>
             <Button
-              label="Ouvrir l'espace pro"
+              label="Créer mon organisation"
               size="sm"
               onPress={() => router.push("/(pro)/onboarding")}
               style={styles.proButton}
             />
           </View>
+        ) : (
+          <Text variant="sm" tone="muted">
+            Compte client. Pour publier des véhicules, créez un compte loueur avec une autre adresse
+            e-mail.
+          </Text>
         )}
       </Card>
 
