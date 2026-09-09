@@ -59,39 +59,43 @@ export function Dock({ state, descriptors, navigation }: DockProps) {
     ((name === "pro-messages" || name === "pro-bookings") && unreadOrg > 0);
   const content = (
     <View style={styles.items}>
-      {state.routes.map((route, index) => {
-        if (!allowed.includes(route.name)) return null;
-        const focused = state.index === index;
-        const Icon = ICONS[route.name] ?? Home;
-        const label = descriptors[route.key]?.options.title ?? route.name;
-        return (
-          <Pressable
-            key={route.key}
-            accessibilityRole="tab"
-            accessibilityLabel={label}
-            accessibilityState={{ selected: focused }}
-            onPress={() => {
-              const event = navigation.emit({
-                type: "tabPress",
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!focused && !event.defaultPrevented) {
-                void Haptics.selectionAsync();
-                navigation.navigate(route.name);
-              }
-            }}
-            style={[styles.item, focused ? styles.itemActive : null]}
-          >
-            <Icon
-              size={24}
-              color={focused ? "#ffffff" : theme.colors.textDim}
-              strokeWidth={focused ? 2.25 : 1.75}
-            />
-            {dotFor(route.name) ? <View style={styles.dot} /> : null}
-          </Pressable>
-        );
-      })}
+      {[...state.routes]
+        .map((route, index) => ({ route, index }))
+        .filter(({ route }) => allowed.includes(route.name))
+        // L'ordre de la capsule est celui de MODE_TABS, pas celui des fichiers.
+        .sort((a, b) => allowed.indexOf(a.route.name) - allowed.indexOf(b.route.name))
+        .map(({ route, index }) => {
+          const focused = state.index === index;
+          const Icon = ICONS[route.name] ?? Home;
+          const label = descriptors[route.key]?.options.title ?? route.name;
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="tab"
+              accessibilityLabel={label}
+              accessibilityState={{ selected: focused }}
+              onPress={() => {
+                const event = navigation.emit({
+                  type: "tabPress",
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!focused && !event.defaultPrevented) {
+                  void Haptics.selectionAsync();
+                  navigation.navigate(route.name);
+                }
+              }}
+              style={[styles.item, focused ? styles.itemActive : null]}
+            >
+              <Icon
+                size={24}
+                color={focused ? "#ffffff" : theme.colors.textDim}
+                strokeWidth={focused ? 2.25 : 1.75}
+              />
+              {dotFor(route.name) ? <View style={styles.dot} /> : null}
+            </Pressable>
+          );
+        })}
     </View>
   );
   return (
