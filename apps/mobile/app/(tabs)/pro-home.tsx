@@ -18,7 +18,7 @@ import { useCurrentOrganization } from "@/features/pro/use-current-organization"
 import { useMode } from "@/lib/mode";
 import { useMe, useOrganization } from "@/lib/queries";
 import { useOrgBookings } from "@/lib/queries-bookings";
-import { useVerification } from "@/lib/queries-catalog";
+import { useVehicles, useVerification } from "@/lib/queries-catalog";
 import { useUnread } from "@/lib/queries-messaging";
 import { useSubscription } from "@/lib/queries-subscriptions";
 import { theme } from "@/theme";
@@ -38,6 +38,8 @@ function Dashboard({ organizationId }: { organizationId: string }) {
   const verification = useVerification(organizationId);
   const subscription = useSubscription(organizationId);
   const requested = useOrgBookings(organizationId, "upcoming", "requested");
+  const upcoming = useOrgBookings(organizationId, "upcoming");
+  const fleet = useVehicles(organizationId);
   const unread = useUnread();
   const unreadCount = unread.data?.organizations[organizationId] ?? 0;
   const memberships = me.data?.memberships ?? [];
@@ -52,6 +54,23 @@ function Dashboard({ organizationId }: { organizationId: string }) {
   const status = ORG_STATUS[org.data?.status ?? "draft"] ?? ORG_STATUS["draft"]!;
   const missing = verification.data?.missing.length ?? 0;
   const pending = requested.data?.bookings.length ?? 0;
+  // Indicateurs du jour (retour fondateur) : calcules ici, chaque tuile mene au bon ecran.
+  const today = new Date();
+  const isToday = (iso: string) => {
+    const d = new Date(iso);
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    );
+  };
+  const all = upcoming.data?.bookings ?? [];
+  const rented = all.filter((b) => b.status === "active").length;
+  const departures = all.filter((b) => b.status === "confirmed" && isToday(b.from)).length;
+  const returns = all.filter((b) => b.status === "active" && isToday(b.to)).length;
+  const vehicles = fleet.data?.vehicles ?? [];
+  const drafts = vehicles.filter((v) => v.status === "draft").length;
+  const available = vehicles.filter((v) => v.status === "published").length - rented;
   const sub = subscription.data;
   const trialDays = sub?.trialEndsAt
     ? Math.max(0, Math.ceil((new Date(sub.trialEndsAt).getTime() - Date.now()) / 86_400_000))
@@ -93,27 +112,66 @@ function Dashboard({ organizationId }: { organizationId: string }) {
         </Card>
       ) : null}
 
+      <Text variant="caps" tone="muted">
+        À traiter
+      </Text>
       <View style={styles.kpis}>
         <Kpi
           value={String(pending)}
           label={pending > 1 ? "demandes à traiter" : "demande à traiter"}
-          onPress={() => router.push("/(tabs)/pro-bookings")}
-          accent={pending > 0}
-        />
-        <Kpi
-          value={
-            sub
-              ? `${sub.publishedCount}${sub.plan.maxVehicles ? ` / ${sub.plan.maxVehicles}` : ""}`
-              : "—"
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/pro-bookings",
+              params: { section: "bookings", tab: "requested" },
+            })
           }
-          label="véhicules publiés"
-          onPress={() => router.push("/(tabs)/pro-vehicles")}
+          accent={pending > 0}
         />
         <Kpi
           value={String(unreadCount)}
           label={unreadCount > 1 ? "messages non lus" : "message non lu"}
-          onPress={() => router.push("/(tabs)/pro-messages")}
+          onPress={() =>
+            router.push({ pathname: "/(tabs)/pro-bookings", params: { section: "messages" } })
+          }
           accent={unreadCount > 0}
+        />
+        <Kpi
+          value={String(drafts)}
+          label={drafts > 1 ? "véhicules à publier" : "véhicule à publier"}
+          onPress={() => router.push("/(tabs)/pro-vehicles")}
+          accent={drafts > 0}
+        />
+      </View>
+      <Text variant="caps" tone="muted">
+        Aujourd'hui
+      </Text>
+      <View style={styles.kpis}>
+        <Kpi
+          value={String(departures)}
+          label={departures > 1 ? "départs" : "départ"}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/pro-bookings",
+              params: { section: "bookings", tab: "upcoming" },
+            })
+          }
+          accent={departures > 0}
+        />
+        <Kpi
+          value={String(returns)}
+          label={returns > 1 ? "retours" : "retour"}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/pro-bookings",
+              params: { section: "bookings", tab: "upcoming" },
+            })
+          }
+          accent={returns > 0}
+        />
+        <Kpi
+          value={`${rented} / ${Math.max(0, available) + rented}`}
+          label="en location"
+          onPress={() => router.push("/(tabs)/pro-vehicles")}
         />
       </View>
 

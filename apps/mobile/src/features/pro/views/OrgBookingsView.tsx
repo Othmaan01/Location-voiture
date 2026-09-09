@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { Car, Clock } from "lucide-react-native";
@@ -20,13 +20,22 @@ type Section = "bookings" | "messages";
 export function OrgBookingsView({
   organizationId,
   embedded = false,
+  initialSection = "bookings",
+  initialTab,
 }: {
   organizationId: string;
   embedded?: boolean;
+  /** Ouverture depuis le tableau de bord : section et sous-onglet demandes. */
+  initialSection?: Section;
+  initialTab?: Tab;
 }) {
   const router = useRouter();
-  const [section, setSection] = useState<Section>("bookings");
-  const [tab, setTab] = useState<Tab>("requested");
+  const [section, setSection] = useState<Section>(initialSection);
+  const [tab, setTab] = useState<Tab>(initialTab ?? "requested");
+  useEffect(() => {
+    setSection(initialSection);
+    if (initialTab) setTab(initialTab);
+  }, [initialSection, initialTab]);
   const [showOlder, setShowOlder] = useState(false);
   const conversations = useOrgConversations(organizationId);
   const unread = useUnread();
