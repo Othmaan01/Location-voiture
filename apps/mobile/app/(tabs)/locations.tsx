@@ -16,7 +16,13 @@ export default function RentalsScreen() {
   const router = useRouter();
   const [scope, setScope] = useState<"upcoming" | "past">("upcoming");
   const bookings = useMyBookings(scope);
-  const items = bookings.data?.bookings ?? [];
+  const [showOlder, setShowOlder] = useState(false);
+  const all = bookings.data?.bookings ?? [];
+  // Passees : 30 jours par defaut (ADR-0017), l'historique complet sur demande.
+  const cutoff = Date.now() - 30 * 86_400_000;
+  const items =
+    scope === "past" && !showOlder ? all.filter((b) => new Date(b.to).getTime() >= cutoff) : all;
+  const hiddenOlder = scope === "past" && !showOlder ? all.length - items.length : 0;
   const active = items.find((b) => b.status === "active");
 
   return (
@@ -54,15 +60,26 @@ export default function RentalsScreen() {
         .map((b) => (
           <BookingRow key={b.id} booking={b} onPress={() => router.push(`/reservations/${b.id}`)} />
         ))}
+      {hiddenOlder > 0 ? (
+        <Button
+          label={`Voir plus ancien (${hiddenOlder})`}
+          variant="ghost"
+          onPress={() => setShowOlder(true)}
+        />
+      ) : null}
       {session && bookings.data && items.length === 0 ? (
         <EmptyState
           title={scope === "upcoming" ? "Aucune location à venir" : "Aucune location passée"}
-          description="Vos demandes et réservations apparaîtront ici."
+          description={
+            scope === "upcoming"
+              ? "Trouvez un loueur près de chez vous et envoyez votre première demande."
+              : "Vos locations terminées apparaîtront ici."
+          }
           action={
             <Button
-              label="Explorer"
+              label="Voir les loueurs"
               variant="ghost"
-              onPress={() => router.push("/(tabs)/explorer")}
+              onPress={() => router.navigate("/(tabs)")}
             />
           }
         />

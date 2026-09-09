@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import { Car, Clock } from "lucide-react-native";
 import type { Booking } from "@lv/contracts";
 
-import { Badge, Card, EmptyState, Screen, Text } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Screen, Text } from "@/components/ui";
 import { ConversationList } from "@/features/messaging/ConversationList";
 import { BOOKING_STATUS, formatDate, formatRemaining } from "@/features/client/booking-labels";
 import { formatEuros } from "@/features/pro/labels";
@@ -27,6 +27,7 @@ export function OrgBookingsView({
   const router = useRouter();
   const [section, setSection] = useState<Section>("bookings");
   const [tab, setTab] = useState<Tab>("requested");
+  const [showOlder, setShowOlder] = useState(false);
   const conversations = useOrgConversations(organizationId);
   const unread = useUnread();
   const unreadCount = unread.data?.organizations[organizationId] ?? 0;
@@ -35,9 +36,14 @@ export function OrgBookingsView({
     tab === "past" ? "past" : "upcoming",
     tab === "requested" ? "requested" : undefined,
   );
-  const items = (bookings.data?.bookings ?? []).filter((b) =>
+  const cutoff = Date.now() - 30 * 86_400_000;
+  const all = (bookings.data?.bookings ?? []).filter((b) =>
     tab === "upcoming" ? b.status !== "requested" : true,
   );
+  // Passees : 30 jours par defaut (ADR-0017), l'historique complet sur demande.
+  const items =
+    tab === "past" && !showOlder ? all.filter((b) => new Date(b.to).getTime() >= cutoff) : all;
+  const hiddenOlder = tab === "past" && !showOlder ? all.length - items.length : 0;
 
   return (
     <Screen
@@ -118,6 +124,13 @@ export function OrgBookingsView({
           onPress={() => router.push(`/(pro)/organizations/${organizationId}/bookings/${b.id}`)}
         />
       ))}
+      {section === "bookings" && hiddenOlder > 0 ? (
+        <Button
+          label={`Voir plus ancien (${hiddenOlder})`}
+          variant="ghost"
+          onPress={() => setShowOlder(true)}
+        />
+      ) : null}
     </Screen>
   );
 }
