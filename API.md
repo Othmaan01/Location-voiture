@@ -104,6 +104,15 @@ Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discoun
 | ------- | ----------------- | ------ | ----------------------------------------------------------------------------------------------------- |
 | POST    | `/v1/auth/signup` | public | `{ email, password, firstName, lastName, preferredMode }` → compte confirmé ; 409 si l'adresse existe |
 
+### Profil client (ADR-0020)
+
+| Méthode | Route                              | Accès    | Rôle                                                                 |
+| ------- | ---------------------------------- | -------- | -------------------------------------------------------------------- |
+| POST    | `/v1/me/avatar/upload-url`         | connecté | envoi signé de la photo de profil                                    |
+| POST    | `/v1/me/avatar`                    | connecté | confirme la photo ; renvoie le profil                                |
+| GET     | `/v1/me/reviews`                   | connecté | notes reçues des loueurs, moyenne et nombre                          |
+| POST    | `/v1/bookings/:id/customer-review` | manager+ | `{ rating 1-5, comment? }` sur une location terminée, une seule fois |
+
 ### États des lieux (ADR-0018)
 
 | Méthode | Route                          | Accès            | Rôle                                                                                                              |
