@@ -98,6 +98,19 @@ Règle absolue du catalogue public : organisation vérifiée, agence publiée, v
 
 Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discountedDailyCents` ; le devis applique la remise (ligne `discount`) et renvoie `offer`.
 
+### Inscription (ADR-0019)
+
+| Méthode | Route             | Accès  | Rôle                                                                                                  |
+| ------- | ----------------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| POST    | `/v1/auth/signup` | public | `{ email, password, firstName, lastName, preferredMode }` → compte confirmé ; 409 si l'adresse existe |
+
+### États des lieux (ADR-0018)
+
+| Méthode | Route                          | Accès            | Rôle                                                                                                              |
+| ------- | ------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| GET     | `/v1/bookings/:id/inspections` | membre ou client | PDF signés de la réservation, liens de lecture d'une heure                                                        |
+| POST    | `/v1/bookings/:id/inspections` | manager+         | `{ kind, mileageKm?, fuelEighths?, damages[], comment?, customerSignature, staffName?, sendTo[] }` → PDF + e-mail |
+
 ### Stories (ADR-0016)
 
 | Méthode | Route                                      | Accès    | Rôle                                                                                                            |

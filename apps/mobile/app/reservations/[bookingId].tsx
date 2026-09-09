@@ -16,6 +16,7 @@ import {
   Sheet,
   Text,
 } from "@/components/ui";
+import { InspectionsCard } from "@/features/inspections/InspectionsCard";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useMe } from "@/lib/queries";
 import {
@@ -298,6 +299,7 @@ export default function BookingScreen() {
           ) : null}
         </Card>
       ) : null}
+      <InspectionsCard bookingId={b.id} canCreate={false} />
       {b.status === "requested" || b.status === "confirmed" ? (
         <Button
           label="Annuler la réservation"

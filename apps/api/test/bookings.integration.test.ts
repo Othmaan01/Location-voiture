@@ -6,6 +6,7 @@ import {
   createTestKeys,
   createTestServer,
   testDatabaseUrl,
+  testEmail,
 } from "./helpers.js";
 
 /** Flux de reservation : devis fige, demande idempotente, decision du loueur, transitions, concurrence. */
@@ -826,5 +827,90 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
       list.json<{ offers: { id: string; status: string }[] }>().offers.find((o) => o.id === offerId)
         ?.status,
     ).toBe("archived");
+  });
+
+  it("etat des lieux : le loueur releve, le client signe, le PDF est archive et envoye ; le client le voit, un etranger non", async () => {
+    const sql = database.sql;
+    const [rp] = await sql<
+      { id: string }[]
+    >`select id from public.rate_plans where vehicle_id = ${vehicleId} limit 1`;
+    const [quote] = await sql<
+      { id: string }[]
+    >`insert into public.quotes (user_id, vehicle_id, organization_id, rate_plan_id, pickup_agency_id, period, lines, subtotal_cents, total_cents, currency, expires_at)
+      values (${customer}, ${vehicleId}, ${orgId}, ${rp!.id}, ${agencyId}, tstzrange('2027-03-10 09:00+01', '2027-03-12 09:00+01', '[)'), '[]', 9800, 9800, 'EUR', now() + interval '1 hour') returning id`;
+    const [bk] = await sql<
+      { id: string }[]
+    >`insert into public.bookings (organization_id, agency_id, vehicle_id, customer_id, quote_id, period, status, total_cents, currency, price_snapshot)
+      values (${orgId}, ${agencyId}, ${vehicleId}, ${customer}, ${quote!.id}, tstzrange('2027-03-10 09:00+01', '2027-03-12 09:00+01', '[)'), 'confirmed', 9800, 'EUR', '{}') returning id`;
+    const bookingId = bk!.id;
+    const body = {
+      kind: "departure",
+      mileageKm: 42350,
+      fuelEighths: 6,
+      damages: [{ x: 0.3, y: 0.2, type: "rayure", note: "5 cm, aile avant gauche" }],
+      comment: "Vehicule propre, roue de secours presente.",
+      customerSignature: [
+        [
+          [0.1, 0.6],
+          [0.3, 0.4],
+          [0.5, 0.7],
+        ],
+      ],
+      staffName: "Agent Test",
+      sendTo: ["copie@example.com"],
+    };
+    // Un client ne peut pas etablir l'etat des lieux ; un etranger ne voit pas la reservation.
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/v1/bookings/${bookingId}/inspections`,
+          headers: auth(customerToken),
+          payload: body,
+        })
+      ).statusCode,
+    ).toBe(403);
+    expect(
+      (
+        await app.inject({
+          method: "GET",
+          url: `/v1/bookings/${bookingId}/inspections`,
+          headers: auth(otherToken),
+        })
+      ).statusCode,
+    ).toBe(404);
+    const before = testEmail.sent.length;
+    const created = await app.inject({
+      method: "POST",
+      url: `/v1/bookings/${bookingId}/inspections`,
+      headers: auth(ownerToken),
+      payload: body,
+    });
+    expect(created.statusCode).toBe(201);
+    const inspection = created.json<{
+      kind: string;
+      pdfUrl: string | null;
+      sentTo: string[];
+      sentAt: string | null;
+      damages: unknown[];
+    }>();
+    expect(inspection.kind).toBe("departure");
+    expect(inspection.pdfUrl).toContain("/documents/inspections/");
+    expect(inspection.sentTo).toEqual(
+      expect.arrayContaining(["client@test.local", "copie@example.com"]),
+    );
+    expect(inspection.sentAt).not.toBeNull();
+    expect(testEmail.sent.length).toBe(before + 1);
+    const mail = testEmail.sent[testEmail.sent.length - 1]!;
+    expect(mail.attachments?.[0]?.contentType).toBe("application/pdf");
+    expect(mail.attachments![0]!.content.length).toBeGreaterThan(1000);
+    // Le client retrouve le document sur sa reservation.
+    const mine = await app.inject({
+      method: "GET",
+      url: `/v1/bookings/${bookingId}/inspections`,
+      headers: auth(customerToken),
+    });
+    expect(mine.statusCode).toBe(200);
+    expect(mine.json<{ inspections: unknown[] }>().inspections).toHaveLength(1);
   });
 });

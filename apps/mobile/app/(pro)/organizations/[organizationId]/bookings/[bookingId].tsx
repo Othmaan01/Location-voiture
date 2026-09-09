@@ -13,6 +13,7 @@ import {
 import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
 import { celebrate } from "@/lib/celebrate";
+import { InspectionsCard } from "@/features/inspections/InspectionsCard";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useBooking, useBookingAction } from "@/lib/queries-bookings";
 import { useOrgConversations } from "@/lib/queries-messaging";
@@ -162,6 +163,12 @@ export default function OrgBookingScreen() {
       {b.status === "active" ? (
         <Button label="Véhicule rendu" loading={act.isPending} onPress={() => run("complete")} />
       ) : null}
+
+      <InspectionsCard
+        bookingId={b.id}
+        organizationId={organizationId}
+        canCreate={b.status === "confirmed" || b.status === "active" || b.status === "completed"}
+      />
 
       <Card style={styles.events}>
         <Text variant="caps" tone="muted">
