@@ -164,12 +164,11 @@ export function OrgVehiclesView({
           })}
         </Card>
       ) : null}
-      {shown.length > 0 && layout === "cards"
-        ? shown.map((v) => {
+      {shown.length > 0 && layout === "cards" ? (
+        <View style={styles.grid}>
+          {shown.map((v) => {
             const st = statusOf(v);
-            const meta = [v.year, v.licensePlate, CATEGORY_LABEL[v.category] ?? v.category]
-              .filter(Boolean)
-              .join(" · ");
+            const meta = [v.year, v.licensePlate].filter(Boolean).join(" · ");
             return (
               <Pressable
                 key={v.id}
@@ -186,20 +185,20 @@ export function OrgVehiclesView({
                   />
                 ) : (
                   <View style={[styles.cardPhoto, styles.thumbEmpty]}>
-                    <Car size={32} color={theme.colors.textDim} />
+                    <Car size={26} color={theme.colors.textDim} />
                   </View>
                 )}
+                <View style={styles.cardBadge}>
+                  <Badge label={st.label} tone={st.tone} />
+                </View>
                 <View style={styles.cardBody}>
-                  <View style={styles.cardHead}>
-                    <Text variant="h2" numberOfLines={1} style={styles.cardTitle}>
-                      {v.brand} {v.model}
-                    </Text>
-                    <Badge label={st.label} tone={st.tone} />
-                  </View>
-                  <Text variant="sm" tone="muted" numberOfLines={1}>
-                    {meta}
+                  <Text variant="bodyStrong" numberOfLines={1}>
+                    {v.brand} {v.model}
                   </Text>
-                  <Text variant="bodyStrong">
+                  <Text variant="small" tone="muted" numberOfLines={1}>
+                    {meta || (CATEGORY_LABEL[v.category] ?? v.category)}
+                  </Text>
+                  <Text variant="smStrong">
                     {v.ratePlan
                       ? `${formatEuros(v.ratePlan.dailyCents)} / jour`
                       : "Tarif à définir"}
@@ -207,8 +206,9 @@ export function OrgVehiclesView({
                 </View>
               </Pressable>
             );
-          })
-        : null}
+          })}
+        </View>
+      ) : null}
       {all.length > 0 ? (
         <Text variant="small" tone="dim">
           Un véhicule supprimé est archivé : son historique de réservations est conservé.
@@ -277,7 +277,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: theme.space["3"] },
   card: {
+    width: "48%",
+    flexGrow: 1,
     borderRadius: theme.radius.card,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
@@ -285,8 +288,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   cardPressed: { opacity: 0.9 },
-  cardPhoto: { width: "100%", aspectRatio: 16 / 9, backgroundColor: theme.colors.surfaceRaised },
-  cardBody: { padding: theme.space["4"], gap: 4 },
-  cardHead: { flexDirection: "row", alignItems: "center", gap: theme.space["2"] },
-  cardTitle: { flex: 1 },
+  cardPhoto: { width: "100%", aspectRatio: 4 / 3, backgroundColor: theme.colors.surfaceRaised },
+  cardBody: { padding: theme.space["3"], gap: 2 },
+  cardBadge: { position: "absolute", top: 8, left: 8 },
 });
