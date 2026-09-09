@@ -5,7 +5,17 @@ import { Image } from "expo-image";
 import { Car, Check, MapPin, MessageCircle, Phone, Star } from "lucide-react-native";
 import type { Booking, BookingStatus } from "@lv/contracts";
 
-import { Badge, Button, Card, EmptyState, Input, Screen, Sheet, Text } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmSheet,
+  EmptyState,
+  Input,
+  Screen,
+  Sheet,
+  Text,
+} from "@/components/ui";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useMe } from "@/lib/queries";
 import {
@@ -32,6 +42,7 @@ export default function BookingScreen() {
   const review = useCreateReview(bookingId);
   const me = useMe();
   const [contactOpen, setContactOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
   const [rating, setRating] = useState(0);
@@ -57,27 +68,15 @@ export default function BookingScreen() {
   const b = booking.data;
   const s = BOOKING_STATUS[b.status];
   const cancel = () =>
-    Alert.alert(
-      "Annuler cette réservation ?",
-      b.status === "confirmed" ? "Le loueur sera prévenu." : "Votre demande sera retirée.",
-      [
-        { text: "Non", style: "cancel" },
-        {
-          text: "Annuler la réservation",
-          style: "destructive",
-          onPress: () =>
-            act.mutate(
-              { action: "cancel" },
-              {
-                onError: (e) =>
-                  Alert.alert(
-                    "Impossible",
-                    e instanceof ApiRequestError ? e.message : "Réessayez.",
-                  ),
-              },
-            ),
+    act.mutate(
+      { action: "cancel" },
+      {
+        onSuccess: () => setCancelOpen(false),
+        onError: (e) => {
+          setCancelOpen(false);
+          Alert.alert("Impossible", e instanceof ApiRequestError ? e.message : "Réessayez.");
         },
-      ],
+      },
     );
 
   return (
@@ -303,8 +302,7 @@ export default function BookingScreen() {
         <Button
           label="Annuler la réservation"
           variant="danger"
-          loading={act.isPending}
-          onPress={cancel}
+          onPress={() => setCancelOpen(true)}
         />
       ) : null}
       {b.status === "active" ? (
@@ -372,6 +370,21 @@ export default function BookingScreen() {
         organizationId={b.loueurId}
         organizationName={b.loueurName}
         bookingId={b.id}
+      />
+      <ConfirmSheet
+        visible={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        title={b.status === "confirmed" ? "Annuler cette réservation ?" : "Retirer votre demande ?"}
+        message={
+          b.status === "confirmed"
+            ? "Le loueur sera prévenu immédiatement. Cette action est définitive."
+            : "Le loueur ne verra plus votre demande. Vous pourrez en refaire une plus tard."
+        }
+        confirmLabel={
+          b.status === "confirmed" ? "Oui, annuler la réservation" : "Oui, retirer ma demande"
+        }
+        loading={act.isPending}
+        onConfirm={cancel}
       />
     </Screen>
   );

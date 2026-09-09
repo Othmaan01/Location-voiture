@@ -10,3 +10,4 @@ export { Screen } from "./Screen";
 export { Select } from "./Select";
 export { Sheet } from "./Sheet";
 export { Text } from "./Text";
+export { ConfirmSheet } from "./ConfirmSheet";
