@@ -175,7 +175,6 @@ export function AgencyForm({
               (siretMismatch ? `Doit commencer par le SIREN ${siren}` : undefined)
             }
             keyboardType="number-pad"
-            maxLength={14}
           />
         )}
       />

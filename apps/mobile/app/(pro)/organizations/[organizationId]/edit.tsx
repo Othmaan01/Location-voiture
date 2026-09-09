@@ -165,7 +165,6 @@ export default function EditOrganizationScreen() {
               onBlur={field.onBlur}
               error={fieldState.error?.message}
               keyboardType="number-pad"
-              maxLength={9}
             />
           )}
         />
