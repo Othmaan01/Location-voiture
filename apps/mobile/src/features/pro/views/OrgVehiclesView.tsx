@@ -7,7 +7,6 @@ import type { Vehicle } from "@lv/contracts";
 
 import { Badge, Button, EmptyState, Screen, Text } from "@/components/ui";
 import { CATEGORY_LABEL, formatEuros } from "@/features/pro/labels";
-import { formatDate } from "@/features/client/booking-labels";
 import { useOrgBookings } from "@/lib/queries-bookings";
 import { useAgencies, useVehicles } from "@/lib/queries-catalog";
 import { fontFamily, theme } from "@/theme";
@@ -31,15 +30,34 @@ function matches(v: Vehicle, query: string): boolean {
   return haystack.some((h) => h.includes(q)) || fold(`${v.brand} ${v.model}`).includes(q);
 }
 
-/** Etat du jour : loue (retour a telle date) ou disponible, d'apres les reservations en cours. */
+const shortDay = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+
+/** Etat du jour, d'apres les reservations en cours : disponible, ou loue avec la date de retour. */
 function rentalOf(
   vehicleId: string,
   active: Map<string, string>,
 ): { label: string; rented: boolean } {
   const returnAt = active.get(vehicleId);
   return returnAt
-    ? { label: `Loué · retour le ${formatDate(returnAt)}`, rented: true }
+    ? { label: `Retour ${shortDay.format(new Date(returnAt))}`, rented: true }
     : { label: "Disponible", rented: false };
+}
+
+/** Pastille discrete posee sur la photo : un point de couleur et un mot, sans toucher a la mise en page. */
+function StatePill({ rental }: { rental: { label: string; rented: boolean } }) {
+  return (
+    <View style={styles.pill}>
+      <View
+        style={[
+          styles.pillDot,
+          { backgroundColor: rental.rented ? theme.colors.warning : theme.colors.success },
+        ]}
+      />
+      <Text style={styles.pillText} numberOfLines={1}>
+        {rental.label}
+      </Text>
+    </View>
+  );
 }
 
 function statusOf(v: Vehicle): { label: string; tone: "success" | "accent" | "neutral" } {
@@ -185,7 +203,10 @@ export function OrgVehiclesView({
                 onPress={() => open(v.id)}
                 style={({ pressed }) => [styles.row, pressed ? styles.cardPressed : null]}
               >
-                <Thumb vehicle={v} />
+                <View>
+                  <Thumb vehicle={v} />
+                  <StatePill rental={rental} />
+                </View>
                 <View style={styles.rowBody}>
                   <View style={styles.rowHead}>
                     <Text variant="bodyStrong" numberOfLines={1} style={styles.rowTitle}>
@@ -198,34 +219,11 @@ export function OrgVehiclesView({
                       .filter(Boolean)
                       .join(" · ")}
                   </Text>
-                  <View style={styles.rowFoot}>
-                    <Text variant="smStrong">
-                      {v.ratePlan
-                        ? `${formatEuros(v.ratePlan.dailyCents)} / jour`
-                        : "Tarif à définir"}
-                    </Text>
-                    <View
-                      style={[styles.state, rental.rented ? styles.stateRented : styles.stateFree]}
-                    >
-                      <View
-                        style={[
-                          styles.stateDot,
-                          {
-                            backgroundColor: rental.rented
-                              ? theme.colors.warning
-                              : theme.colors.success,
-                          },
-                        ]}
-                      />
-                      <Text
-                        variant="small"
-                        tone={rental.rented ? "warning" : "success"}
-                        numberOfLines={1}
-                      >
-                        {rental.label}
-                      </Text>
-                    </View>
-                  </View>
+                  <Text variant="smStrong">
+                    {v.ratePlan
+                      ? `${formatEuros(v.ratePlan.dailyCents)} / jour`
+                      : "Tarif à définir"}
+                  </Text>
                 </View>
               </Pressable>
             );
@@ -244,20 +242,23 @@ export function OrgVehiclesView({
                 onPress={() => open(v.id)}
                 style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
               >
-                {v.photos[0] ? (
-                  <Image
-                    source={{ uri: v.photos[0].url }}
-                    style={styles.cardPhoto}
-                    contentFit="cover"
-                    transition={150}
-                  />
-                ) : (
-                  <View style={[styles.cardPhoto, styles.thumbEmpty]}>
-                    <Car size={26} color={theme.colors.textDim} />
+                <View>
+                  {v.photos[0] ? (
+                    <Image
+                      source={{ uri: v.photos[0].url }}
+                      style={styles.cardPhoto}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <View style={[styles.cardPhoto, styles.thumbEmpty]}>
+                      <Car size={26} color={theme.colors.textDim} />
+                    </View>
+                  )}
+                  <View style={styles.cardBadge}>
+                    <Badge label={st.label} tone={st.tone} />
                   </View>
-                )}
-                <View style={styles.cardBadge}>
-                  <Badge label={st.label} tone={st.tone} />
+                  <StatePill rental={rentalOf(v.id, active)} />
                 </View>
                 <View style={styles.cardBody}>
                   <Text variant="bodyStrong" numberOfLines={1}>
@@ -358,16 +359,20 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, gap: 3, justifyContent: "center" },
   rowHead: { flexDirection: "row", alignItems: "center", gap: theme.space["2"] },
   rowTitle: { flex: 1 },
-  rowFoot: {
+  pill: {
+    position: "absolute",
+    left: 5,
+    bottom: 5,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: theme.space["2"],
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.full,
+    backgroundColor: "rgba(10,10,12,0.72)",
   },
-  state: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
-  stateFree: {},
-  stateRented: {},
-  stateDot: { width: 6, height: 6, borderRadius: 3 },
+  pillDot: { width: 5, height: 5, borderRadius: 3 },
+  pillText: { fontSize: 10, lineHeight: 13, color: "#ffffff", fontWeight: "700" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: theme.space["3"] },
   card: {
     width: "48%",
