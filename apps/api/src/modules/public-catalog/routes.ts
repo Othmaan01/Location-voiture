@@ -6,6 +6,7 @@ import {
   FeedResponseSchema,
   IsoDateTimeSchema,
   LoueurProfileSchema,
+  PublicVehicleDetailSchema,
   SearchQuerySchema,
   SearchResponseSchema,
   UuidSchema,
@@ -45,6 +46,25 @@ export const publicCatalogRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => {
       const { from, to } = request.query;
       return service.loueur(request.params.organizationId, from && to ? { from, to } : null);
+    },
+  );
+
+  app.get(
+    "/v1/vehicles/:vehicleId",
+    {
+      schema: {
+        tags,
+        params: z.object({ vehicleId: UuidSchema }).strict(),
+        querystring: z
+          .object({ from: IsoDateTimeSchema.optional(), to: IsoDateTimeSchema.optional() })
+          .strict(),
+        response: { 200: PublicVehicleDetailSchema },
+      },
+      config: publicLimit,
+    },
+    async (request) => {
+      const { from, to } = request.query;
+      return service.vehicle(request.params.vehicleId, from && to ? { from, to } : null);
     },
   );
 

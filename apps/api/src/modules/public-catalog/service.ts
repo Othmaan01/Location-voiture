@@ -5,6 +5,7 @@ import type {
   LoueurProfile,
   LoueurSummary,
   PublicVehicleCard,
+  PublicVehicleDetail,
   SearchQuery,
   SearchResult,
 } from "@lv/contracts";
@@ -43,6 +44,10 @@ type VehicleRow = typeof vehicles.$inferSelect;
  * des vehicules publies et non suspendus. Jamais de plaque, jamais de document.
  */
 export interface PublicCatalogService {
+  vehicle(
+    vehicleId: string,
+    period: { from: string; to: string } | null,
+  ): Promise<PublicVehicleDetail>;
   feed(query: FeedQuery): Promise<{ items: LoueurSummary[]; nextCursor: string | null }>;
   loueur(
     organizationId: string,
@@ -303,6 +308,101 @@ export function createPublicCatalogService(
         })),
         vehicles: cards,
         memberSince: org.createdAt.toISOString(),
+      };
+    },
+
+    async vehicle(vehicleId, period) {
+      const [v] = await db
+        .select()
+        .from(vehicles)
+        .where(and(eq(vehicles.id, vehicleId), publishedVehicleFilter(true)))
+        .limit(1);
+      if (!v) throw notFound("Vehicule");
+      const [[org], [agency], photoRows, { plans, offers: vehicleOffers }, ratings, count] =
+        await Promise.all([
+          db.select().from(organizations).where(eq(organizations.id, v.organizationId)).limit(1),
+          db.select().from(agencies).where(eq(agencies.id, v.agencyId)).limit(1),
+          db
+            .select({ path: vehiclePhotos.storagePath })
+            .from(vehiclePhotos)
+            .where(eq(vehiclePhotos.vehicleId, v.id))
+            .orderBy(vehiclePhotos.position),
+          decorate([v]),
+          ratingsFor(db, [v.organizationId]),
+          db
+            .select({ n: sql<number>`count(*)::int` })
+            .from(vehicles)
+            .where(
+              and(eq(vehicles.organizationId, v.organizationId), publishedVehicleFilter(false)),
+            ),
+        ]);
+      if (!org || !agency) throw notFound("Vehicule");
+      let available: boolean | null = null;
+      if (period) {
+        const [row] = await db.execute<{ ok: boolean }>(
+          sql`select public.vehicle_is_available(${v.id}::uuid, tstzrange(${period.from}::timestamptz, ${period.to}::timestamptz, '[)')) as ok`,
+        );
+        available = row?.ok ?? null;
+      }
+      const plan = plans.get(v.id) ?? null;
+      const offer = vehicleOffers.get(v.id) ?? null;
+      const rating = ratings.get(v.organizationId) ?? { average: null, count: 0 };
+      return {
+        id: v.id,
+        brand: v.brand,
+        model: v.model,
+        version: v.version,
+        category: v.category,
+        transmission: v.transmission,
+        fuel: v.fuel,
+        seats: v.seats,
+        dailyCents: plan?.dailyCents ?? null,
+        discountedDailyCents: offer && plan ? discountedDaily(plan.dailyCents, offer) : null,
+        offer,
+        depositCents: plan?.depositCents ?? null,
+        currency: "EUR",
+        agencyId: v.agencyId,
+        available,
+        photos: photoRows.map((p) => storage.publicUrl(PHOTOS_BUCKET, p.path)),
+        year: v.year,
+        doors: v.doors,
+        luggage: v.luggage,
+        color: v.color,
+        description: v.description,
+        options: v.options ?? [],
+        minDriverAge: v.minDriverAge,
+        minLicenseYears: v.minLicenseYears,
+        ratePlan: plan
+          ? {
+              weekendDailyCents: plan.weekendDailyCents,
+              weeklyCents: plan.weeklyCents,
+              monthlyCents: plan.monthlyCents,
+              kmIncludedPerDay: plan.kmIncludedPerDay,
+              extraKmCents: plan.extraKmCents,
+              minDays: plan.minDays,
+              maxDays: plan.maxDays,
+            }
+          : null,
+        agency: {
+          id: agency.id,
+          name: agency.name,
+          addressLine: agency.addressLine,
+          postalCode: agency.postalCode,
+          cityName: agency.cityName,
+          latitude: agency.latitude,
+          longitude: agency.longitude,
+          phone: agency.phone,
+        },
+        loueur: {
+          id: org.id,
+          name: org.name,
+          logoUrl: publicUrl(org.logoPath),
+          accent: org.accent as PublicVehicleDetail["loueur"]["accent"],
+          verified: org.status === "verified",
+          ratingAverage: rating.average,
+          ratingCount: rating.count,
+          vehicleCount: count[0]?.n ?? 0,
+        },
       };
     },
 

@@ -79,7 +79,7 @@ export function ProfileHero({ me, email }: { me: MeResponse; email: string | nul
         <Stat
           value={
             me.ratingAverage !== null
-              ? me.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })
+              ? `${me.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`
               : "—"
           }
           label={

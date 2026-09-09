@@ -106,6 +106,57 @@ export const PublicVehicleCardSchema = z
   .strict();
 export type PublicVehicleCard = z.infer<typeof PublicVehicleCardSchema>;
 
+/** Fiche vehicule publique (retour fondateur, 2026-09-09) : toutes les photos, les caracteristiques, le tarif, l'agence, le loueur. */
+export const PublicVehicleDetailSchema = PublicVehicleCardSchema.omit({ photoUrl: true })
+  .extend({
+    photos: z.array(z.string()),
+    year: z.number().int().nullable(),
+    doors: z.number().int().nullable(),
+    luggage: z.number().int().nullable(),
+    color: z.string().nullable(),
+    description: z.string().nullable(),
+    options: z.array(z.string()),
+    minDriverAge: z.number().int().nullable(),
+    minLicenseYears: z.number().int().nullable(),
+    ratePlan: z
+      .object({
+        weekendDailyCents: z.number().int().nullable(),
+        weeklyCents: z.number().int().nullable(),
+        monthlyCents: z.number().int().nullable(),
+        kmIncludedPerDay: z.number().int().nullable(),
+        extraKmCents: z.number().int().nullable(),
+        minDays: z.number().int().nullable(),
+        maxDays: z.number().int().nullable(),
+      })
+      .nullable(),
+    agency: z
+      .object({
+        id: UuidSchema,
+        name: z.string(),
+        addressLine: z.string().nullable(),
+        postalCode: z.string().nullable(),
+        cityName: z.string().nullable(),
+        latitude: z.number().nullable(),
+        longitude: z.number().nullable(),
+        phone: z.string().nullable(),
+      })
+      .strict(),
+    loueur: z
+      .object({
+        id: UuidSchema,
+        name: z.string(),
+        logoUrl: z.string().nullable(),
+        accent: AccentSchema,
+        verified: z.boolean(),
+        ratingAverage: z.number().nullable(),
+        ratingCount: z.number().int(),
+        vehicleCount: z.number().int(),
+      })
+      .strict(),
+  })
+  .strict();
+export type PublicVehicleDetail = z.infer<typeof PublicVehicleDetailSchema>;
+
 export const LoueurProfileSchema = z
   .object({
     id: UuidSchema,

@@ -134,7 +134,7 @@ export function LoueurProfile({
         <Stat
           value={
             l.ratingAverage != null
-              ? l.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })
+              ? `${l.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`
               : "—"
           }
           label={l.ratingCount > 0 ? `${l.ratingCount} avis` : "pas encore d'avis"}
@@ -200,7 +200,7 @@ export function LoueurProfile({
               <VehicleCard
                 key={v.id}
                 vehicle={v}
-                onPress={() => setSelected(v)}
+                onPress={() => router.push(`/vehicules/${v.id}`)}
                 onAction={() => setSelected(v)}
                 favorite={favSet.has(v.id)}
                 onToggleFavorite={() => onToggleFavorite(v.id)}
@@ -230,6 +230,9 @@ export function LoueurProfile({
                       fill={n <= r.rating ? theme.colors.text : "transparent"}
                     />
                   ))}
+                  <Text variant="smStrong" style={styles.ratingOutOf}>
+                    {r.rating}/5
+                  </Text>
                 </View>
                 <Text variant="small" tone="muted">
                   {r.customerName} · {new Date(r.createdAt).toLocaleDateString("fr-FR")}
@@ -360,6 +363,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
+  ratingOutOf: { marginLeft: 6 },
   banner: { height: 120, borderRadius: theme.radius.card, backgroundColor: theme.colors.surface },
   bannerEmpty: { borderWidth: 1, opacity: 0.6 },
   logoRing: { borderWidth: 2, borderRadius: 20, padding: 2 },

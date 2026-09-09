@@ -125,7 +125,7 @@ export default function OrgBookingScreen() {
               {b.customer
                 ? `${b.customer.completedBookings} location${b.customer.completedBookings > 1 ? "s" : ""} terminée${b.customer.completedBookings > 1 ? "s" : ""}${
                     b.customer.ratingAverage !== null
-                      ? ` · ${b.customer.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} ★ (${b.customer.ratingCount})`
+                      ? ` · ${b.customer.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5 (${b.customer.ratingCount} avis)`
                       : " · pas encore noté"
                   }`
                 : "Client"}

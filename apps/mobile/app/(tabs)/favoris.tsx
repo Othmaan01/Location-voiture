@@ -41,7 +41,7 @@ export default function FavoritesScreen() {
             <VehicleCard
               key={v.id}
               vehicle={v}
-              onPress={() => router.push(`/loueurs/${v.loueurId}`)}
+              onPress={() => router.push(`/vehicules/${v.id}`)}
               favorite
               onToggleFavorite={() => toggle.mutate({ vehicleId: v.id, on: false })}
             />

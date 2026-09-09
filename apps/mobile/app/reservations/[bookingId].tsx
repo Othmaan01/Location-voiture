@@ -532,7 +532,7 @@ function Countdown({ booking: b }: { booking: Booking }) {
       <Text variant="display">
         {remaining ?? "Maintenant"}{" "}
         {remaining ? (
-          <Text variant="sm" tone="muted">
+          <Text variant="sm" tone="muted" style={styles.countLabel}>
             {label}
           </Text>
         ) : null}
@@ -547,6 +547,7 @@ function Countdown({ booking: b }: { booking: Booking }) {
 }
 
 const styles = StyleSheet.create({
+  countLabel: { flex: 1, flexShrink: 1, minWidth: 120 },
   when: { flexDirection: "row", alignItems: "center", gap: theme.space["4"] },
   whenCol: { flex: 1, gap: 2 },
   whenDivider: { width: 1, alignSelf: "stretch", backgroundColor: theme.colors.border },

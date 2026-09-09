@@ -5,6 +5,7 @@ import {
   FavoritesResponseSchema,
   FeedResponseSchema,
   LoueurProfileSchema,
+  PublicVehicleDetailSchema,
   SearchResponseSchema,
   type FeedTab,
 } from "@lv/contracts";
@@ -20,6 +21,8 @@ export const publicKeys = {
   loueur: (id: string, period: { from: string; to: string } | null) =>
     ["loueurs", id, period?.from ?? null, period?.to ?? null] as const,
   search: (params: Record<string, string>) => ["search", params] as const,
+  vehicle: (id: string, period: { from: string; to: string } | null) =>
+    ["vehicles", id, period?.from ?? null, period?.to ?? null] as const,
   cities: ["cities"] as const,
   favorites: ["favorites"] as const,
 };
@@ -82,6 +85,19 @@ export function useSearch(params: SearchParams, enabled: boolean) {
     queryFn: () => apiRequest(`/v1/search?${qs({ ...clean, limit: 50 })}`, SearchResponseSchema),
     enabled,
     staleTime: 30_000,
+  });
+}
+
+/** Fiche vehicule publique : toutes les photos, le tarif, l'agence, le loueur ; disponibilite si dates. */
+export function useVehicle(id: string, period: { from: string; to: string } | null) {
+  return useQuery({
+    queryKey: publicKeys.vehicle(id, period),
+    queryFn: () =>
+      apiRequest(
+        `/v1/vehicles/${id}${period ? `?${qs({ from: period.from, to: period.to })}` : ""}`,
+        PublicVehicleDetailSchema,
+      ),
+    staleTime: 60_000,
   });
 }
 

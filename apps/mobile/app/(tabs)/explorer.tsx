@@ -170,7 +170,7 @@ export default function ExploreScreen() {
               <VehicleCard
                 key={v.id}
                 vehicle={v}
-                onPress={() => router.push(`/loueurs/${v.loueurId}`)}
+                onPress={() => router.push(`/vehicules/${v.id}`)}
                 onAction={() => setSelected(v)}
                 favorite={favSet.has(v.id)}
                 onToggleFavorite={() =>
