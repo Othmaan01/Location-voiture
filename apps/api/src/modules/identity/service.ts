@@ -158,6 +158,14 @@ export function createIdentityService(
      */
     async deleteAccount(actor, requestId) {
       const userId = actor.userId!;
+      // Un compte de l'equipe plateforme ne se supprime pas depuis l'app (incident du 9 septembre 2026) :
+      // le role est d'abord retire en base, puis le compte peut partir.
+      if (actor.platformRole !== null)
+        throw new DomainError(
+          "conflict",
+          "Ce compte porte un role d'administration : il ne peut pas etre supprime depuis l'application.",
+          { blocker: "platform_role" },
+        );
       for (const [organizationId, role] of actor.memberships) {
         if (role !== "owner") continue;
         const others = await db

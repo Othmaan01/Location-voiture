@@ -275,14 +275,17 @@ export default function ProfileScreen() {
           icon={<LogOut size={22} color={theme.colors.text} />}
           title="Se déconnecter"
           onPress={() => void supabase.auth.signOut()}
+          last={!!me.data?.platformRole}
         />
-        <ListItem
-          icon={<Trash2 size={22} color={theme.colors.danger} />}
-          title="Supprimer mon compte"
-          danger
-          onPress={() => router.push("/profil/delete")}
-          last
-        />
+        {me.data?.platformRole ? null : (
+          <ListItem
+            icon={<Trash2 size={22} color={theme.colors.danger} />}
+            title="Supprimer mon compte"
+            danger
+            onPress={() => router.push("/profil/delete")}
+            last
+          />
+        )}
       </Card>
     </Screen>
   );
