@@ -168,7 +168,7 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
       method: "POST",
       url: "/v1/organizations",
       headers: { authorization: `Bearer ${token}` },
-      payload: { name: "Pas un loueur", slug: `pas-un-loueur-${Date.now()}` },
+      payload: { name: "Pas un loueur" },
     });
     expect(res.statusCode).toBe(403);
     await database.sql`delete from auth.users where id = ${clientId}`;
