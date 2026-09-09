@@ -33,6 +33,7 @@ import { reportsRoutes } from "./modules/reports/routes.js";
 import { storiesRoutes } from "./modules/stories/routes.js";
 import { inspectionsRoutes } from "./modules/inspections/routes.js";
 import { authRoutes } from "./modules/auth/routes.js";
+import { customerReviewsRoutes } from "./modules/customer-reviews/routes.js";
 import { reviewsRoutes } from "./modules/reviews/routes.js";
 import { subscriptionsRoutes } from "./modules/subscriptions/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
@@ -192,6 +193,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(reportsRoutes);
   await app.register(offersRoutes);
   await app.register(storiesRoutes);
+  await app.register(customerReviewsRoutes);
   await app.register(inspectionsRoutes, { email: opts.email, supabaseAdmin: opts.supabaseAdmin });
   await app.register(adminRoutes, {
     requireMfa: opts.env.API_ADMIN_REQUIRE_MFA ?? opts.env.NODE_ENV === "production",

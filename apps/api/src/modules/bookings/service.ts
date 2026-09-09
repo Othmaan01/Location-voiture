@@ -7,6 +7,7 @@ import {
   agencies,
   bookingEvents,
   bookings,
+  customerReviews,
   organizations,
   profiles,
   quotes,
@@ -25,6 +26,7 @@ import type { NotificationsService } from "../notifications/service.js";
 import { liveOffersFor, publicOffer } from "../offers/service.js";
 import { canReviewBooking } from "../reviews/service.js";
 import { PHOTOS_BUCKET } from "../vehicles/service.js";
+import { customerRatingsFor } from "../customer-reviews/service.js";
 import { canTransition, type ActorKind } from "./state-machine.js";
 
 const QUOTE_TTL_MS = 15 * 60 * 1000;
@@ -151,6 +153,7 @@ export function createBookingsService(
           firstName: profiles.firstName,
           lastName: profiles.lastName,
           phone: profiles.phone,
+          avatarPath: profiles.avatarPath,
         })
         .from(profiles)
         .where(inArray(profiles.id, customerIds)),
@@ -193,6 +196,21 @@ export function createBookingsService(
     const planMap = new Map(planRows.map((p) => [p.vehicleId, p]));
     const completedMap = new Map(completedRows.map((c) => [c.customerId, c.n]));
     const reviewMap = new Map(reviewRows.map((rv) => [rv.bookingId, rv]));
+    // Note des clients par les loueurs (ADR-0020), et reservations deja notees par l'organisation.
+    const customerRatings = await customerRatingsFor(db, customerIds);
+    const reviewedBookings = new Set(
+      (
+        await db
+          .select({ bookingId: customerReviews.bookingId })
+          .from(customerReviews)
+          .where(
+            inArray(
+              customerReviews.bookingId,
+              rows.map((r) => r.id),
+            ),
+          )
+      ).map((x) => x.bookingId),
+    );
 
     return rows.map((r) => {
       const v = vehicleMap.get(r.vehicleId)!;
@@ -259,6 +277,10 @@ export function createBookingsService(
                     ? c.phone
                     : null,
                 completedBookings: completedMap.get(c.id) ?? 0,
+                avatarUrl: c.avatarPath ? storage.publicUrl(PHOTOS_BUCKET, c.avatarPath) : null,
+                ratingAverage: customerRatings.get(c.id)?.average ?? null,
+                ratingCount: customerRatings.get(c.id)?.count ?? 0,
+                reviewedByOrganization: reviewedBookings.has(r.id),
               }
             : null,
         total: { cents: r.totalCents, currency: "EUR" },

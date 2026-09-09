@@ -3,7 +3,17 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, StyleSheet, View } from "react-native";
 import { MessageCircle, Phone, Star } from "lucide-react-native";
 
-import { Badge, Button, Card, EmptyState, Input, Screen, Sheet, Text } from "@/components/ui";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Screen,
+  Sheet,
+  Text,
+} from "@/components/ui";
 import {
   BOOKING_STATUS,
   EVENT_LABEL,
@@ -14,6 +24,7 @@ import { formatEuros } from "@/features/pro/labels";
 import { ApiRequestError } from "@/lib/api";
 import { celebrate } from "@/lib/celebrate";
 import { InspectionsCard } from "@/features/inspections/InspectionsCard";
+import { ReviewCustomerSheet } from "@/features/pro/ReviewCustomerSheet";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { useBooking, useBookingAction } from "@/lib/queries-bookings";
 import { useOrgConversations } from "@/lib/queries-messaging";
@@ -32,6 +43,7 @@ export default function OrgBookingScreen() {
   const conversations = useOrgConversations(organizationId);
   const reviews = useLoueurReviews(organizationId, !!booking.data?.review);
   const replyReview = useReplyReview();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [reasonFor, setReasonFor] = useState<"decline" | "cancel" | null>(null);
   const [reason, setReason] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
@@ -99,10 +111,21 @@ export default function OrgBookingScreen() {
           label="Prix affiché"
           value={`${formatEuros(b.total.cents)} · caution ${formatEuros(b.deposit.cents)}`}
         />
-        <Info
-          label="Client"
-          value={`${name}${b.customer ? ` · ${b.customer.completedBookings} location${b.customer.completedBookings > 1 ? "s" : ""} terminée${b.customer.completedBookings > 1 ? "s" : ""}` : ""}`}
-        />
+        <View style={styles.customerRow}>
+          <Avatar name={name} uri={b.customer?.avatarUrl ?? null} size={40} round />
+          <View style={styles.customerTexts}>
+            <Text variant="bodyStrong">{name}</Text>
+            <Text variant="small" tone="muted">
+              {b.customer
+                ? `${b.customer.completedBookings} location${b.customer.completedBookings > 1 ? "s" : ""} terminée${b.customer.completedBookings > 1 ? "s" : ""}${
+                    b.customer.ratingAverage !== null
+                      ? ` · ${b.customer.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} ★ (${b.customer.ratingCount})`
+                      : " · pas encore noté"
+                  }`
+                : "Client"}
+            </Text>
+          </View>
+        </View>
         <Info label="Téléphone" value={b.customer?.phone ?? "Transmis après confirmation"} />
         <Info label="Message" value={b.customerMessage ? `« ${b.customerMessage} »` : "—"} last />
       </Card>
@@ -164,6 +187,20 @@ export default function OrgBookingScreen() {
         <Button label="Véhicule rendu" loading={act.isPending} onPress={() => run("complete")} />
       ) : null}
 
+      {b.status === "completed" && b.customer ? (
+        b.customer.reviewedByOrganization ? (
+          <Text variant="sm" tone="muted">
+            Vous avez noté ce client.
+          </Text>
+        ) : (
+          <Button
+            label="Noter le client"
+            variant="ghost"
+            icon={<Star size={18} color={theme.colors.text} />}
+            onPress={() => setReviewOpen(true)}
+          />
+        )
+      ) : null}
       <InspectionsCard
         bookingId={b.id}
         organizationId={organizationId}
@@ -324,6 +361,12 @@ export default function OrgBookingScreen() {
         bookingId={b.id}
         toCustomerName={b.customer?.firstName ?? "le client"}
       />
+      <ReviewCustomerSheet
+        bookingId={b.id}
+        customerName={name}
+        visible={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+      />
     </Screen>
   );
 }
@@ -342,6 +385,16 @@ function Info({ label, value, last = false }: { label: string; value: string; la
 }
 
 const styles = StyleSheet.create({
+  customerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space["3"],
+    paddingHorizontal: theme.space["4"],
+    paddingVertical: theme.space["3"],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  customerTexts: { flex: 1, gap: 2 },
   reviewCard: { gap: theme.space["3"] },
   stars: { flexDirection: "row", gap: 4 },
   info: { paddingHorizontal: theme.space["4"], paddingVertical: theme.space["3"], gap: 2 },

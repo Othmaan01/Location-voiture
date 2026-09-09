@@ -10,6 +10,7 @@ import {
   ScrollText,
   ShieldAlert,
   ShieldCheck,
+  Star,
   Trash2,
   UserRound,
 } from "lucide-react-native";
@@ -19,6 +20,8 @@ import { ApiRequestError } from "@/lib/api";
 import { useAppLockSetting } from "@/lib/app-lock";
 import { MODE_HOME, MODE_LABEL, useMode, type AppMode } from "@/lib/mode";
 import { useMe } from "@/lib/queries";
+import { useMyReviews } from "@/lib/queries-customer-reviews";
+import { ProfileHero } from "@/features/client/ProfileHero";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { theme } from "@/theme";
@@ -27,6 +30,7 @@ export default function ProfileScreen() {
   const { session, loading } = useSession();
   const router = useRouter();
   const me = useMe();
+  const reviews = useMyReviews(!!session);
   const appLock = useAppLockSetting();
   const { mode, setMode } = useMode();
 
@@ -90,15 +94,46 @@ export default function ProfileScreen() {
 
   return (
     <Screen title="Profil" dock>
-      <View style={styles.identity}>
-        <Avatar name={fullName} size={56} round />
-        <View style={styles.identityTexts}>
-          <Text variant="h2">{fullName}</Text>
-          <Text variant="sm" tone="muted">
-            {session.user.email}
-          </Text>
+      {me.data ? (
+        <ProfileHero me={me.data} email={session.user.email ?? null} />
+      ) : (
+        <View style={styles.identity}>
+          <Avatar name={fullName} size={56} round />
+          <View style={styles.identityTexts}>
+            <Text variant="h2">{fullName}</Text>
+            <Text variant="sm" tone="muted">
+              {session.user.email}
+            </Text>
+          </View>
         </View>
-      </View>
+      )}
+      {reviews.data && reviews.data.count > 0 ? (
+        <Card style={styles.reviewsCard}>
+          <Text variant="bodyStrong">Ce que disent les loueurs</Text>
+          {reviews.data.reviews.slice(0, 5).map((r) => (
+            <View key={r.id} style={styles.review}>
+              <View style={styles.reviewHead}>
+                <Text variant="smStrong">{r.organizationName}</Text>
+                <View style={styles.reviewStars}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      size={12}
+                      color={n <= r.rating ? theme.colors.warning : theme.colors.textDim}
+                      fill={n <= r.rating ? theme.colors.warning : "transparent"}
+                    />
+                  ))}
+                </View>
+              </View>
+              {r.comment ? (
+                <Text variant="sm" tone="muted">
+                  {r.comment}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+        </Card>
+      ) : null}
       {isUnreachable ? (
         <Card raised>
           <Text variant="sm" tone="muted">
@@ -257,6 +292,10 @@ const ROLE_LABEL = { owner: "Propriétaire", manager: "Manager", agent: "Agent" 
 
 const styles = StyleSheet.create({
   identity: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
+  reviewsCard: { gap: theme.space["3"] },
+  review: { gap: 4 },
+  reviewHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reviewStars: { flexDirection: "row", gap: 2 },
   identityTexts: { flex: 1, gap: 2 },
   stack: { gap: theme.space["2"], alignSelf: "stretch" },
   proCard: { borderColor: theme.colors.accentDark, gap: theme.space["3"] },

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { OrganizationRoleSchema, PlatformRoleSchema } from "../enums.js";
-import { UuidSchema } from "./common.js";
+import { UuidSchema, IsoDateTimeSchema } from "./common.js";
 
 /** Mode prefere de l'app (choisi a l'inscription, modifiable). Jamais un role : le serveur ne s'en sert pas pour autoriser. */
 export const PreferredModeSchema = z.enum(["client", "pro"]);
@@ -25,9 +25,17 @@ export const MeResponseSchema = z
     platformRole: PlatformRoleSchema.nullable(),
     preferredMode: PreferredModeSchema,
     memberships: z.array(MembershipSummarySchema),
+    /** Profil facon Airbnb (ADR-0020) : photo, anciennete, locations terminees, note recue des loueurs. */
+    avatarUrl: z.string().nullable(),
+    memberSince: IsoDateTimeSchema,
+    completedBookings: z.number().int(),
+    ratingAverage: z.number().nullable(),
+    ratingCount: z.number().int(),
   })
   .strict();
 export type MeResponse = z.infer<typeof MeResponseSchema>;
+
+export const AvatarConfirmSchema = z.object({ path: z.string().min(10).max(300) }).strict();
 
 export const PhoneSchema = z
   .string()

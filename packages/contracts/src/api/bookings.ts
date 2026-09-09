@@ -92,6 +92,12 @@ export const BookingCustomerSchema = z
     /** Telephone transmis au loueur uniquement une fois la reservation confirmee. */
     phone: z.string().nullable(),
     completedBookings: z.number().int(),
+    avatarUrl: z.string().nullable(),
+    /** Note donnee par les loueurs (ADR-0020), null tant qu'aucune evaluation. */
+    ratingAverage: z.number().nullable(),
+    ratingCount: z.number().int(),
+    /** Vrai si cette organisation a deja note le client pour cette reservation. */
+    reviewedByOrganization: z.boolean(),
   })
   .strict();
 

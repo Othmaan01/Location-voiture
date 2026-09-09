@@ -428,6 +428,19 @@ export const offers = pgTable("offers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const customerReviews = pgTable("customer_reviews", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  bookingId: uuid("booking_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  customerId: uuid("customer_id").notNull(),
+  authorId: uuid("author_id"),
+  rating: smallint("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const inspections = pgTable("inspections", {
   id: uuid("id")
     .primaryKey()
