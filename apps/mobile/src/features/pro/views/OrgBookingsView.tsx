@@ -6,12 +6,15 @@ import { Car, Clock } from "lucide-react-native";
 import type { Booking } from "@lv/contracts";
 
 import { Badge, Card, EmptyState, Screen, Text } from "@/components/ui";
+import { ConversationList } from "@/features/messaging/ConversationList";
 import { BOOKING_STATUS, formatDate, formatRemaining } from "@/features/client/booking-labels";
 import { formatEuros } from "@/features/pro/labels";
 import { useOrgBookings } from "@/lib/queries-bookings";
+import { useOrgConversations, useUnread } from "@/lib/queries-messaging";
 import { theme } from "@/theme";
 
 type Tab = "requested" | "upcoming" | "past";
+type Section = "bookings" | "messages";
 
 /** Boite de reception du loueur : demandes a traiter, reservations a venir, historique. */
 export function OrgBookingsView({
@@ -22,7 +25,11 @@ export function OrgBookingsView({
   embedded?: boolean;
 }) {
   const router = useRouter();
+  const [section, setSection] = useState<Section>("bookings");
   const [tab, setTab] = useState<Tab>("requested");
+  const conversations = useOrgConversations(organizationId);
+  const unread = useUnread();
+  const unreadCount = unread.data?.organizations[organizationId] ?? 0;
   const bookings = useOrgBookings(
     organizationId,
     tab === "past" ? "past" : "upcoming",
@@ -33,8 +40,46 @@ export function OrgBookingsView({
   );
 
   return (
-    <Screen title="Réservations" {...(embedded ? { dock: true } : { back: true })}>
-      <View style={styles.tabs}>
+    <Screen
+      title={section === "bookings" ? "Réservations" : "Messages"}
+      {...(embedded ? { dock: true } : { back: true })}
+      headerRight={
+        embedded ? (
+          <View style={styles.segment}>
+            {(
+              [
+                { key: "bookings", label: "Demandes" },
+                { key: "messages", label: "Messages" },
+              ] as const
+            ).map(({ key, label }) => (
+              <Pressable
+                key={key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: section === key }}
+                onPress={() => setSection(key)}
+                style={[styles.segmentItem, section === key ? styles.segmentOn : null]}
+              >
+                <Text variant="smStrong" tone={section === key ? "inverse" : "muted"}>
+                  {label}
+                </Text>
+                {key === "messages" && unreadCount > 0 && section !== "messages" ? (
+                  <View style={styles.segmentDot} />
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
+        ) : undefined
+      }
+    >
+      {section === "messages" ? (
+        <ConversationList
+          conversations={conversations.data?.conversations ?? []}
+          side="organization"
+          pending={conversations.isPending}
+          emptyDescription="Les questions des clients et les échanges liés aux réservations apparaîtront ici."
+        />
+      ) : null}
+      <View style={[styles.tabs, section === "messages" ? styles.hidden : null]}>
         {(["requested", "upcoming", "past"] as const).map((t) => (
           <Pressable
             key={t}
@@ -49,8 +94,10 @@ export function OrgBookingsView({
           </Pressable>
         ))}
       </View>
-      {bookings.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
-      {bookings.data && items.length === 0 ? (
+      {section === "bookings" && bookings.isPending ? (
+        <ActivityIndicator color={theme.colors.accent} />
+      ) : null}
+      {section === "bookings" && bookings.data && items.length === 0 ? (
         <EmptyState
           title={
             tab === "requested"
@@ -64,7 +111,7 @@ export function OrgBookingsView({
           }
         />
       ) : null}
-      {items.map((b) => (
+      {(section === "bookings" ? items : []).map((b) => (
         <Row
           key={b.id}
           booking={b}
@@ -118,6 +165,31 @@ function Row({ booking: b, onPress }: { booking: Booking; onPress: () => void })
 
 const styles = StyleSheet.create({
   tabs: { flexDirection: "row", gap: theme.space["2"] },
+  hidden: { display: "none" },
+  segment: {
+    flexDirection: "row",
+    padding: 3,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  segmentItem: {
+    paddingHorizontal: theme.space["3"],
+    minHeight: 34,
+    justifyContent: "center",
+    borderRadius: theme.radius.full,
+  },
+  segmentOn: { backgroundColor: theme.colors.text },
+  segmentDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: theme.colors.accent,
+  },
   chip: {
     height: 36,
     paddingHorizontal: theme.space["3"],

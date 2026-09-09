@@ -56,7 +56,7 @@ export function Dock({ state, descriptors, navigation }: DockProps) {
   const unreadOrg = Object.values(unread.data?.organizations ?? {}).reduce((a, b) => a + b, 0);
   const dotFor = (name: string) =>
     (name === "messages" && (unread.data?.customer ?? 0) > 0) ||
-    (name === "pro-messages" && unreadOrg > 0);
+    ((name === "pro-messages" || name === "pro-bookings") && unreadOrg > 0);
   const content = (
     <View style={styles.items}>
       {state.routes.map((route, index) => {

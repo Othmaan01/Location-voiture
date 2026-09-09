@@ -4,6 +4,6 @@ import { useCurrentOrganization } from "@/features/pro/use-current-organization"
 
 export default function ProBookingsTab() {
   const organizationId = useCurrentOrganization();
-  if (!organizationId) return <NoOrganization title="Réservations" />;
+  if (!organizationId) return <NoOrganization title="Réservations et messages" />;
   return <OrgBookingsView organizationId={organizationId} embedded />;
 }

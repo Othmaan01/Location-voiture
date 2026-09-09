@@ -19,14 +19,14 @@ export const MODE_LABEL: Record<AppMode, string> = {
 /** Onglets de la capsule par mode ; « profil » est commun. L'ordre est celui de la capsule. */
 export const MODE_TABS: Record<AppMode, readonly string[]> = {
   client: ["index", "messages", "locations", "favoris", "profil"],
-  pro: ["pro-home", "pro-bookings", "pro-vehicles", "pro-showcase", "pro-messages", "profil"],
+  pro: ["pro-home", "pro-bookings", "pro-vehicles", "pro-showcase", "profil"],
   admin: ["admin-verifications", "admin-loueurs", "admin-reports", "profil"],
 };
 
 /** Ecrans a onglets autorises par mode : la capsule plus les ecrans atteints depuis elle (Explorer, calendrier). */
 export const MODE_SCREENS: Record<AppMode, readonly string[]> = {
   client: [...MODE_TABS.client, "explorer"],
-  pro: [...MODE_TABS.pro, "pro-calendar"],
+  pro: [...MODE_TABS.pro, "pro-calendar", "pro-messages"],
   admin: MODE_TABS.admin,
 };
 

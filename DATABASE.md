@@ -19,6 +19,11 @@ Source de vérité : `supabase/migrations/*.sql` (Postgres 17 + PostGIS, via Sup
 | `20260905000003_v1_bookings.sql`             | devis, réservations (contrainte d'exclusion), événements, favoris, notifications                                                                                                                                           |
 | `20260905000004_v1_rls.sql`                  | policies RLS, buckets Storage                                                                                                                                                                                              |
 
+## Connexion (pooler)
+
+- L'API et les tests passent par le **pooler transactionnel** Supabase (port `6543`), `prepare: false` côté postgres.js. Le pooler de session (port `5432`) est limité à 15 clients : deux machines Fly (ou un déploiement en cours) plus une suite de tests suffisaient à saturer (`EMAXCONNSESSION`, constaté le 9 septembre 2026).
+- `DATABASE_URL` (secret Fly) et `TEST_DATABASE_URL` (`.env.local`) pointent donc sur `…pooler.supabase.com:6543/postgres`. Les migrations restent appliquées par le MCP Supabase ou l'éditeur SQL, jamais par l'API.
+
 ## Conventions
 
 - `id uuid` v7, `created_at`/`updated_at`, `organization_id` dénormalisé sur toute table d'organisation.
