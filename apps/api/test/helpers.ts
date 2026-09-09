@@ -1,6 +1,7 @@
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pino from "pino";
 import type { BillingEvent, BillingGateway } from "../src/shared/billing.js";
+import type { EmailGateway, EmailMessage } from "../src/shared/email.js";
 
 import { createDatabase, type Database } from "../src/db/client.js";
 import { buildServer } from "../src/server.js";
@@ -52,10 +53,18 @@ export async function createTestServer(db: Database, verifyToken: TokenVerifier)
       NODE_ENV: "test",
       APP_DEEP_LINK_SCHEME: "lv",
     },
-    supabaseAdmin: { deleteUser: async () => undefined },
+    supabaseAdmin: {
+      deleteUser: async () => undefined,
+      getUserEmail: async () => "client@test.local",
+      createUser: async () => ({
+        status: "created" as const,
+        userId: "00000000-0000-0000-0000-000000000000",
+      }),
+    },
     storage: fakeStorage(),
     notifications: { notifyUser: async () => undefined, notifyOrganization: async () => undefined },
     billing: fakeBilling(),
+    email: testEmail,
     db,
     verifyToken,
     logger: pino({ level: process.env["TEST_LOG_LEVEL"] ?? "silent" }),
@@ -101,6 +110,9 @@ export function fakeStorage(): StorageClient & { issued: Set<string>; removed: s
     async exists(bucket, path) {
       return issued.has(`${bucket}/${path}`);
     },
+    async upload(bucket, path) {
+      issued.add(`${bucket}/${path}`);
+    },
   };
 }
 
@@ -125,3 +137,17 @@ export function fakeBilling(): BillingGateway {
     },
   };
 }
+
+/** Passerelle e-mail simulee : memorise les envois (instance partagee par les serveurs de test). */
+export function fakeEmail(): EmailGateway & { sent: EmailMessage[] } {
+  const sent: EmailMessage[] = [];
+  return {
+    enabled: true,
+    sent,
+    async send(message) {
+      sent.push(message);
+      return { sent: true, id: `mail-${sent.length}` };
+    },
+  };
+}
+export const testEmail = fakeEmail();

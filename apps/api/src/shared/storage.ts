@@ -20,6 +20,8 @@ export interface StorageClient {
   publicUrl(bucket: string, path: string): string;
   remove(bucket: string, paths: string[]): Promise<void>;
   exists(bucket: string, path: string): Promise<boolean>;
+  /** Depot direct par le moteur (PDF generes) ; les photos des utilisateurs passent par une URL signee. */
+  upload(bucket: string, path: string, body: Uint8Array, contentType: string): Promise<void>;
 }
 
 export function createStorageClient(
@@ -95,6 +97,18 @@ export function createStorageClient(
         headers: headers(),
       });
       return response.ok;
+    },
+
+    async upload(bucket, path, body, contentType) {
+      const response = await fetch(`${base}/object/${bucket}/${encodePath(path)}`, {
+        method: "POST",
+        headers: { ...headers(), "Content-Type": contentType, "x-upsert": "true" },
+        body,
+      });
+      if (!response.ok)
+        throw new DomainError("internal", "Depot du fichier impossible.", {
+          status: response.status,
+        });
     },
   };
 }

@@ -428,6 +428,30 @@ export const offers = pgTable("offers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const inspections = pgTable("inspections", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  bookingId: uuid("booking_id").notNull(),
+  organizationId: uuid("organization_id").notNull(),
+  vehicleId: uuid("vehicle_id"),
+  kind: text("kind").$type<"departure" | "return">().notNull(),
+  mileageKm: integer("mileage_km"),
+  fuelEighths: smallint("fuel_eighths"),
+  damages: jsonb("damages")
+    .$type<{ x: number; y: number; type: string; note?: string | undefined }[]>()
+    .notNull()
+    .default([]),
+  comment: text("comment"),
+  customerSignature: jsonb("customer_signature").$type<[number, number][][]>(),
+  staffName: text("staff_name"),
+  pdfPath: text("pdf_path"),
+  sentTo: text("sent_to").array().notNull().default([]),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const stories = pgTable("stories", {
   id: uuid("id")
     .primaryKey()

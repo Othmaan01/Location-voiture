@@ -9,6 +9,7 @@ import { loadEnv } from "./env.js";
 import { buildServer } from "./server.js";
 import { createTokenVerifier } from "./shared/auth.js";
 import { createStripeGateway } from "./shared/billing.js";
+import { createResendGateway } from "./shared/email.js";
 import { createLogger } from "./shared/logger.js";
 import { createStorageClient } from "./shared/storage.js";
 import { createSupabaseAdmin } from "./shared/supabase-admin.js";
@@ -26,6 +27,7 @@ const app = await buildServer({
   supabaseAdmin: createSupabaseAdmin(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
   storage,
   notifications,
+  email: createResendGateway(env.RESEND_API_KEY, env.EMAIL_FROM, logger),
   billing: env.STRIPE_SECRET_KEY
     ? createStripeGateway(env.STRIPE_SECRET_KEY, env.STRIPE_WEBHOOK_SECRET)
     : null,

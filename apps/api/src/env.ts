@@ -46,6 +46,9 @@ const EnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(16).optional(),
   /** Stripe Billing (Phase 5). Absents : le paiement est "bientot disponible", rien n'est bloque. */
   STRIPE_SECRET_KEY: z.string().min(16).optional(),
+  /** Envoi d'e-mails (etats des lieux) via Resend ; absent = e-mails desactives, PDF toujours produit. */
+  RESEND_API_KEY: z.string().min(10).optional(),
+  EMAIL_FROM: z.string().default("Location Voiture <onboarding@resend.dev>"),
   STRIPE_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 

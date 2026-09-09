@@ -31,11 +31,14 @@ import { organizationsRoutes } from "./modules/organizations/routes.js";
 import { publicCatalogRoutes } from "./modules/public-catalog/routes.js";
 import { reportsRoutes } from "./modules/reports/routes.js";
 import { storiesRoutes } from "./modules/stories/routes.js";
+import { inspectionsRoutes } from "./modules/inspections/routes.js";
+import { authRoutes } from "./modules/auth/routes.js";
 import { reviewsRoutes } from "./modules/reviews/routes.js";
 import { subscriptionsRoutes } from "./modules/subscriptions/routes.js";
 import { vehiclesRoutes } from "./modules/vehicles/routes.js";
 import type { TokenVerifier } from "./shared/auth.js";
 import type { BillingGateway } from "./shared/billing.js";
+import type { EmailGateway } from "./shared/email.js";
 import { DomainError } from "./shared/errors.js";
 import { idempotencyPlugin } from "./shared/idempotency.js";
 import { authPlugin } from "./shared/plugins.js";
@@ -58,6 +61,8 @@ export interface BuildServerOptions {
   notifications: NotificationsService;
   /** Passerelle de facturation ; `null` tant qu'aucune cle Stripe n'est configuree. */
   billing: BillingGateway | null;
+  /** Passerelle e-mail (etats des lieux) ; inerte sans cle. */
+  email: EmailGateway;
   logger: Logger;
 }
 
@@ -167,6 +172,7 @@ export async function buildServer(opts: BuildServerOptions) {
   );
 
   await app.register(healthRoutes, { version: opts.env.API_VERSION });
+  await app.register(authRoutes, { supabaseAdmin: opts.supabaseAdmin });
   await app.register(identityRoutes);
   await app.register(devicesRoutes);
   await app.register(organizationsRoutes, { deepLinkScheme: opts.env.APP_DEEP_LINK_SCHEME });
@@ -186,6 +192,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(reportsRoutes);
   await app.register(offersRoutes);
   await app.register(storiesRoutes);
+  await app.register(inspectionsRoutes, { email: opts.email, supabaseAdmin: opts.supabaseAdmin });
   await app.register(adminRoutes, {
     requireMfa: opts.env.API_ADMIN_REQUIRE_MFA ?? opts.env.NODE_ENV === "production",
   });

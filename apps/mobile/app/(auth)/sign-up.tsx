@@ -1,3 +1,4 @@
+import { SignUpResponseSchema } from "@lv/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
@@ -8,6 +9,7 @@ import type { z } from "zod";
 
 import { Button, Input, Screen, Text } from "@/components/ui";
 import { describeAuthError } from "@/lib/auth-errors";
+import { ApiRequestError, apiRequest } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { PASSWORD_HINT, SignUpSchema } from "@/lib/validation";
 import { theme } from "@/theme";
@@ -28,19 +30,28 @@ export default function SignUpScreen() {
     setServerError(null);
     const normalized = email.trim().toLowerCase();
     // Le role n'est JAMAIS transmis ici : le serveur ne lit que prenom et nom (ADR-0007).
-    const { data, error } = await supabase.auth.signUp({
-      email: normalized,
-      password,
-      options: { data: { first_name: firstName, last_name: lastName, preferred_mode: intent } },
-    });
+    try {
+      await apiRequest("/v1/auth/signup", SignUpResponseSchema, {
+        method: "POST",
+        body: { email: normalized, password, firstName, lastName, preferredMode: intent },
+      });
+    } catch (e) {
+      setServerError(
+        e instanceof ApiRequestError
+          ? e.status === 409
+            ? "Un compte existe déjà avec cette adresse."
+            : e.message
+          : "Création du compte impossible. Réessayez.",
+      );
+      return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
     if (error) {
       setServerError(describeAuthError(error));
       return;
     }
-    if (data.session) {
-      router.replace("/(tabs)");
-      return;
-    }
+    router.replace("/(tabs)");
+    return;
     router.replace({ pathname: "/(auth)/verify", params: { email: normalized, type: "signup" } });
   });
 

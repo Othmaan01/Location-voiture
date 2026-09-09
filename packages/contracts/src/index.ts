@@ -12,6 +12,8 @@ export * from "./api/reviews.js";
 export * from "./api/reports.js";
 export * from "./api/offers.js";
 export * from "./api/stories.js";
+export * from "./api/inspections.js";
+export * from "./api/auth.js";
 export * from "./vehicle-catalog.js";
 export * from "./api/catalog.js";
 export * from "./api/documents.js";
