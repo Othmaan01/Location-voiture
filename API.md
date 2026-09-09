@@ -104,6 +104,14 @@ Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discoun
 | ------- | ----------------- | ------ | ----------------------------------------------------------------------------------------------------- |
 | POST    | `/v1/auth/signup` | public | `{ email, password, firstName, lastName, preferredMode }` → compte confirmé ; 409 si l'adresse existe |
 
+### Fiche véhicule et disponibilité (ADR-0021)
+
+| Méthode | Route                                   | Accès    | Rôle                                                                                                  |
+| ------- | --------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| GET     | `/v1/catalog/vehicles/:id`              | public   | fiche complète : photos, caractéristiques, tarif, agence, loueur ; `from`/`to` → `available`          |
+| GET     | `/v1/catalog/vehicles/:id/availability` | public   | `from`, `to` → intervalles occupés (réservations fermes, blocages), sans détail                       |
+| POST    | `/v1/bookings/:id/start`                | manager+ | `{ inspectionDone: true, contractSigned: true }` obligatoires ; horodate la remise, notifie le client |
+
 ### Profil client (ADR-0020)
 
 | Méthode | Route                              | Accès    | Rôle                                                                 |
