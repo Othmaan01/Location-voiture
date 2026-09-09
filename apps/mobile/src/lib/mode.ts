@@ -23,6 +23,13 @@ export const MODE_TABS: Record<AppMode, readonly string[]> = {
   admin: ["admin-verifications", "admin-loueurs", "admin-reports", "profil"],
 };
 
+/** Ecrans a onglets autorises par mode : la capsule plus les ecrans atteints depuis elle (Explorer, calendrier). */
+export const MODE_SCREENS: Record<AppMode, readonly string[]> = {
+  client: [...MODE_TABS.client, "explorer"],
+  pro: [...MODE_TABS.pro, "pro-calendar"],
+  admin: MODE_TABS.admin,
+};
+
 export const MODE_HOME: Record<AppMode, Href> = {
   client: "/(tabs)",
   pro: "/(tabs)/pro-home",

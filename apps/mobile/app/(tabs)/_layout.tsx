@@ -2,7 +2,7 @@ import { Tabs, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 
 import { Dock } from "@/components/ui";
-import { MODE_HOME, MODE_TABS, useMode } from "@/lib/mode";
+import { MODE_HOME, MODE_SCREENS, useMode } from "@/lib/mode";
 import { useMe } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
@@ -29,7 +29,7 @@ function ModeGuard() {
   }, [loading, session, mode, setMode]);
   useEffect(() => {
     if (!hydrated || current === null) return;
-    if (!MODE_TABS[mode].includes(current)) router.replace(MODE_HOME[mode]);
+    if (!MODE_SCREENS[mode].includes(current)) router.replace(MODE_HOME[mode]);
   }, [hydrated, mode, current, router]);
   return null;
 }
