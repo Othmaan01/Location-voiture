@@ -136,31 +136,42 @@ describe.skipIf(!testDatabaseUrl)("organizations — API + authz + base", () => 
     ).toBe(422);
   });
 
-  it("mode prefere : client par defaut, modifiable, jamais un role", async () => {
+  it("mode prefere : fixe a l'inscription (ADR-0019), jamais modifiable, jamais un role", async () => {
     const before = await app.inject({
       method: "GET",
       url: "/v1/me",
       headers: { authorization: `Bearer ${aliceToken}` },
     });
-    expect(before.json()).toMatchObject({ preferredMode: "client" });
-    const updated = await app.inject({
-      method: "PATCH",
-      url: "/v1/me",
-      headers: { authorization: `Bearer ${aliceToken}` },
-      payload: { preferredMode: "pro" },
+    expect(before.json()).toMatchObject({ preferredMode: "pro", platformRole: null });
+    for (const preferredMode of ["client", "admin"]) {
+      expect(
+        (
+          await app.inject({
+            method: "PATCH",
+            url: "/v1/me",
+            headers: { authorization: `Bearer ${aliceToken}` },
+            payload: { preferredMode },
+          })
+        ).statusCode,
+      ).toBe(422);
+    }
+  });
+
+  it("un compte client ne peut pas fonder une organisation (ADR-0019)", async () => {
+    const clientId = await createAuthUser(
+      database.sql,
+      `client-only-${Date.now()}@test.local`,
+      "client",
+    );
+    const token = await keys.sign(clientId);
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/organizations",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: "Pas un loueur", slug: `pas-un-loueur-${Date.now()}` },
     });
-    expect(updated.statusCode).toBe(200);
-    expect(updated.json()).toMatchObject({ preferredMode: "pro", platformRole: null });
-    expect(
-      (
-        await app.inject({
-          method: "PATCH",
-          url: "/v1/me",
-          headers: { authorization: `Bearer ${aliceToken}` },
-          payload: { preferredMode: "admin" },
-        })
-      ).statusCode,
-    ).toBe(422);
+    expect(res.statusCode).toBe(403);
+    await database.sql`delete from auth.users where id = ${clientId}`;
   });
 
   it("IDOR : un autre utilisateur obtient 404 (pas 403) sur l'organisation et ses membres", async () => {

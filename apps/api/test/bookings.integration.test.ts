@@ -645,6 +645,7 @@ describe.skipIf(!testDatabaseUrl)("reservations", () => {
             method: "POST",
             url: `/v1/bookings/${id}/${step}`,
             headers: auth(ownerToken),
+            payload: step === "start" ? { inspectionDone: true, contractSigned: true } : {},
           })
         ).statusCode,
       ).toBe(200);

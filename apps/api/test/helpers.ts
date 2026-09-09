@@ -75,10 +75,12 @@ export async function createTestServer(db: Database, verifyToken: TokenVerifier)
 export async function createAuthUser(
   sql: ReturnType<typeof createDatabase>["sql"],
   email: string,
+  preferredMode: "client" | "pro" = "pro",
 ): Promise<string> {
+  const meta = JSON.stringify({ preferred_mode: preferredMode });
   const rows = await sql<{ id: string }[]>`
     insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
-    values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', ${email}, 'x', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
+    values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', ${email}, 'x', now(), '{"provider":"email","providers":["email"]}', ${meta}::jsonb, now(), now())
     returning id`;
   return rows[0]!.id;
 }
