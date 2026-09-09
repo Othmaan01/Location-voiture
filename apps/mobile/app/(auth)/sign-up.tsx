@@ -4,10 +4,10 @@ import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, StyleSheet, View } from "react-native";
-import { Building2, Search } from "lucide-react-native";
+import { Building2, Search, UserRound } from "lucide-react-native";
 import type { z } from "zod";
 
-import { Button, Input, Screen, Text } from "@/components/ui";
+import { Button, ConfirmSheet, Input, Screen, Text } from "@/components/ui";
 import { describeAuthError } from "@/lib/auth-errors";
 import { ApiRequestError, apiRequest } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,7 @@ type Form = z.infer<typeof SignUpSchema>;
 export default function SignUpScreen() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [existing, setExisting] = useState<string | null>(null);
   /** Intention (D9) : definit l'espace d'ouverture ; modifiable ensuite dans le profil. Jamais un role. */
   const [intent, setIntent] = useState<"client" | "pro">("client");
   const { control, handleSubmit, formState } = useForm<Form>({
@@ -36,12 +37,12 @@ export default function SignUpScreen() {
         body: { email: normalized, password, firstName, lastName, preferredMode: intent },
       });
     } catch (e) {
+      if (e instanceof ApiRequestError && e.status === 409) {
+        setExisting(normalized);
+        return;
+      }
       setServerError(
-        e instanceof ApiRequestError
-          ? e.status === 409
-            ? "Un compte existe déjà avec cette adresse."
-            : e.message
-          : "Création du compte impossible. Réessayez.",
+        e instanceof ApiRequestError ? e.message : "Création du compte impossible. Réessayez.",
       );
       return;
     }
@@ -177,6 +178,21 @@ export default function SignUpScreen() {
           </Text>
         </Link>
       </View>
+      <ConfirmSheet
+        visible={existing !== null}
+        onClose={() => setExisting(null)}
+        title="Vous avez déjà un compte"
+        message={`Un compte existe avec ${existing ?? "cette adresse"}. Connectez-vous avec votre mot de passe habituel.`}
+        confirmLabel="Se connecter"
+        cancelLabel="Utiliser une autre adresse"
+        destructive={false}
+        icon={<UserRound size={26} color={theme.colors.text} strokeWidth={2.25} />}
+        onConfirm={() => {
+          const email = existing ?? "";
+          setExisting(null);
+          router.replace({ pathname: "/(auth)/sign-in", params: { email } });
+        }}
+      />
     </Screen>
   );
 }

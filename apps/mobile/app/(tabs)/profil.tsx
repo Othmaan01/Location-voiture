@@ -173,48 +173,45 @@ export default function ProfileScreen() {
         />
       </Card>
 
-      <Card style={styles.proCard}>
-        <View style={styles.proHeader}>
-          <Building2 size={22} color={theme.colors.accentTint} />
-          <Text variant="bodyStrong">Espace professionnel</Text>
-        </View>
-        {me.data && me.data.memberships.length > 0 ? (
-          <View style={styles.stack}>
-            {me.data.memberships.map((m) => (
-              <ListItem
-                key={m.organizationId}
-                title={m.organizationName}
-                subtitle={ROLE_LABEL[m.role]}
-                onPress={() => router.push(`/(pro)/organizations/${m.organizationId}`)}
-                last
+      {accountMode === "pro" || (me.data && me.data.memberships.length > 0) ? (
+        <Card style={styles.proCard}>
+          <View style={styles.proHeader}>
+            <Building2 size={22} color={theme.colors.accentTint} />
+            <Text variant="bodyStrong">Espace professionnel</Text>
+          </View>
+          {me.data && me.data.memberships.length > 0 ? (
+            <View style={styles.stack}>
+              {me.data.memberships.map((m) => (
+                <ListItem
+                  key={m.organizationId}
+                  title={m.organizationName}
+                  subtitle={ROLE_LABEL[m.role]}
+                  onPress={() => router.push(`/(pro)/organizations/${m.organizationId}`)}
+                  last
+                />
+              ))}
+              <Button
+                label="Créer une autre organisation"
+                variant="ghost"
+                size="sm"
+                onPress={() => router.push("/(pro)/onboarding")}
               />
-            ))}
-            <Button
-              label="Créer une autre organisation"
-              variant="ghost"
-              size="sm"
-              onPress={() => router.push("/(pro)/onboarding")}
-            />
-          </View>
-        ) : accountMode === "pro" ? (
-          <View style={styles.stack}>
-            <Text variant="sm" tone="muted">
-              Publiez votre flotte, recevez des demandes, gérez votre planning.
-            </Text>
-            <Button
-              label="Créer mon organisation"
-              size="sm"
-              onPress={() => router.push("/(pro)/onboarding")}
-              style={styles.proButton}
-            />
-          </View>
-        ) : (
-          <Text variant="sm" tone="muted">
-            Compte client. Pour publier des véhicules, créez un compte loueur avec une autre adresse
-            e-mail.
-          </Text>
-        )}
-      </Card>
+            </View>
+          ) : accountMode === "pro" ? (
+            <View style={styles.stack}>
+              <Text variant="sm" tone="muted">
+                Publiez votre flotte, recevez des demandes, gérez votre planning.
+              </Text>
+              <Button
+                label="Créer mon organisation"
+                size="sm"
+                onPress={() => router.push("/(pro)/onboarding")}
+                style={styles.proButton}
+              />
+            </View>
+          ) : null}
+        </Card>
+      ) : null}
 
       {me.data?.platformRole ? (
         <Card padded={false}>
