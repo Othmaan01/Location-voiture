@@ -87,10 +87,10 @@ export const PHOTO_CREDITS = [
   },
   {
     slug: "mercedes-classe-a",
-    title: "2019 Mercedes Benz A-Class Hatchback A 200 (18).jpg",
-    artist: "Bindydad123",
+    title: "Mercedes-Benz A 200, GIMS 2018, Le Grand-Saconnex (1X7A0529).jpg",
+    artist: "Matti Blume",
     license: "CC BY-SA 4.0",
-    page: "https://commons.wikimedia.org/wiki/File:2019_Mercedes_Benz_A-Class_Hatchback_A_200_(18).jpg",
+    page: "https://commons.wikimedia.org/wiki/File:Mercedes-Benz_A_200,_GIMS_2018,_Le_Grand-Saconnex_(1X7A0529).jpg",
   },
   {
     slug: "renault-captur",
