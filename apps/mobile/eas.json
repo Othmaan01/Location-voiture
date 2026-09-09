@@ -30,7 +30,12 @@
   "submit": {
     "production": {
       "ios": {
-        "language": "fr-FR"
+        "language": "fr-FR",
+        "ascAppId": "6810285123",
+        "appleTeamId": "N7L9C827XP",
+        "ascApiKeyPath": "/Users/othman/.appstoreconnect/private_keys/AuthKey_5GNSU7B7TG.p8",
+        "ascApiKeyIssuerId": "4b43fcd1-8820-4c8b-952a-f0a2cf09908b",
+        "ascApiKeyId": "5GNSU7B7TG"
       }
     }
   }

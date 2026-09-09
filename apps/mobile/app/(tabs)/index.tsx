@@ -14,7 +14,6 @@ import type { FeedTab } from "@lv/contracts";
 
 import { Button, EmptyState, Screen, Text } from "@/components/ui";
 import { LoueurCard } from "@/features/client/LoueurCard";
-import { StoriesRow } from "@/features/client/StoriesRow";
 import { useSearchState } from "@/features/client/search-state";
 import { useFeed } from "@/lib/queries-public";
 import { theme } from "@/theme";
@@ -63,6 +62,7 @@ export default function HomeScreen() {
       title="Loueurs"
       dock
       scroll={false}
+      bleed
       contentStyle={styles.content}
       headerRight={
         <Pressable
@@ -114,7 +114,6 @@ export default function HomeScreen() {
         }}
         scrollEventThrottle={200}
       >
-        <StoriesRow />
         {feed.isPending || locating ? (
           <ActivityIndicator color={theme.colors.accent} style={styles.spinner} />
         ) : null}

@@ -23,6 +23,8 @@ export interface ScreenProps extends PropsWithChildren {
   /** Laisse la place a la barre capsule (ecrans a onglets). */
   dock?: boolean;
   scroll?: boolean;
+  /** Le contenu file sous la capsule (liste interne qui gere sa propre marge basse) : pas de bande noire. */
+  bleed?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
 }
 
@@ -34,6 +36,7 @@ export function Screen({
   headerRight,
   dock = false,
   scroll = true,
+  bleed = false,
   contentStyle,
   children,
 }: ScreenProps) {
@@ -82,7 +85,14 @@ export function Screen({
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.content, styles.fill, { paddingBottom: bottomPad }, contentStyle]}>
+        <View
+          style={[
+            styles.content,
+            styles.fill,
+            { paddingBottom: bleed ? 0 : bottomPad },
+            contentStyle,
+          ]}
+        >
           {header}
           {children}
         </View>

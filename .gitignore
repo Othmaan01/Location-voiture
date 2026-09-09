@@ -32,3 +32,4 @@ android/
 # cles Apple (App Store Connect)
 *.p8
 AuthKey_*.p8
+docs/compte-demo-apple.md
