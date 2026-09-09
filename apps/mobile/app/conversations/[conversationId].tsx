@@ -116,10 +116,10 @@ export default function ConversationScreen() {
           ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={styles.list}
-          ListHeaderComponent={<View style={styles.topRule} />}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.topRule} />
           {detail.data.messages.map((m) => (
             <View key={m.id} style={[styles.bubbleRow, m.mine ? styles.rowMine : null]}>
               <View style={[styles.bubble, m.mine ? styles.bubbleMine : styles.bubbleOther]}>
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     borderBottomLeftRadius: 6,
   },
-  time: { alignSelf: "flex-end", opacity: 0.8 },
+  time: { alignSelf: "center", marginTop: 4, fontSize: 10, lineHeight: 12, opacity: 0.75 },
   empty: { textAlign: "center", marginTop: theme.space["6"] },
   composer: {
     flexDirection: "row",
