@@ -33,3 +33,4 @@ android/
 *.p8
 AuthKey_*.p8
 docs/compte-demo-apple.md
+docs/compte-admin.md
