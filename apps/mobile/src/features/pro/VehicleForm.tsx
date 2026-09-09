@@ -195,7 +195,6 @@ export function VehicleForm({
           }}
         />
       ) : null}
-      </View>
       <View style={styles.row}>
         <View style={styles.half}>
           <Controller
