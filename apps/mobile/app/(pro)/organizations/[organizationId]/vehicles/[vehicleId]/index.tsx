@@ -190,13 +190,19 @@ export default function VehicleScreen() {
               <ListItem
                 key={b}
                 title={BLOCKER_LABEL[b] ?? b}
-                subtitle={b === "quota_reached" ? undefined : "Appuyez pour corriger"}
-                right={
-                  b === "quota_reached" ? undefined : (
-                    <ChevronRight size={18} color={theme.colors.textDim} />
-                  )
+                subtitle={
+                  b === "quota_reached" ? "Changer de forfait en un geste" : "Appuyez pour corriger"
                 }
-                onPress={b === "quota_reached" ? undefined : () => resolveBlocker(b)}
+                right={<ChevronRight size={18} color={theme.colors.textDim} />}
+                onPress={
+                  b === "quota_reached"
+                    ? () =>
+                        router.push({
+                          pathname: "/(pro)/organizations/[organizationId]/plans",
+                          params: { organizationId, reason: "limit" },
+                        })
+                    : () => resolveBlocker(b)
+                }
                 last={i === blockers.length - 1}
               />
             ))}

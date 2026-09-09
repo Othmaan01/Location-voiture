@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BillingUrlSchema, PlansResponseSchema, SubscriptionOverviewSchema } from "@lv/contracts";
+import {
+  BillingUrlSchema,
+  ChoosePlanResponseSchema,
+  PlansResponseSchema,
+  SubscriptionOverviewSchema,
+} from "@lv/contracts";
 
 import { apiRequest } from "./api";
 
@@ -42,6 +47,23 @@ export function useBillingPortal(orgId: string) {
       }),
   });
 }
+/** Choix du forfait (ADR-0022) : paiement Stripe si configure, sinon enregistre avec l'essai. */
+export function useChoosePlan(orgId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (planCode: string) =>
+      apiRequest(`/v1/organizations/${orgId}/subscription/plan`, ChoosePlanResponseSchema, {
+        method: "POST",
+        body: { planCode },
+      }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["organizations", orgId] });
+      void client.invalidateQueries({ queryKey: ["organizations", orgId, "subscription"] });
+      void client.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
 export function useRefreshSubscription(orgId: string) {
   const client = useQueryClient();
   return () => client.invalidateQueries({ queryKey: subscriptionKeys.overview(orgId) });

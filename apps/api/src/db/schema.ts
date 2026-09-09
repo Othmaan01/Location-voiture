@@ -175,6 +175,7 @@ export const organizations = pgTable("organizations", {
   website: text("website"),
   accent: text("accent").notNull().default("red"),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  planChosenAt: timestamp("plan_chosen_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -52,7 +52,10 @@ export default function ProOnboardingScreen() {
         ...(values.legalName ? { legalName: values.legalName } : {}),
         ...(values.siren ? { siren: values.siren } : {}),
       });
-      router.replace(`/(pro)/organizations/${org.id}`);
+      router.replace({
+        pathname: "/(pro)/organizations/[organizationId]/plans",
+        params: { organizationId: org.id, required: "1" },
+      });
     } catch (error) {
       setServerError(
         error instanceof ApiRequestError && error.status < 500

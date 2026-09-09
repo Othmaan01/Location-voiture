@@ -65,7 +65,7 @@ export const BLOCKER_LABEL: Record<string, string> = {
   agency_incomplete: "Adresse et position de l'agence à compléter",
   no_photo: "Ajoutez au moins une photo",
   no_rate_plan: "Définissez un tarif",
-  quota_reached: "Quota de votre offre atteint",
+  quota_reached: "Limite de véhicules du forfait atteinte : passez au forfait suivant",
   subscription_required: "Abonnement résilié ou impayé : réactivez-le",
 };
 

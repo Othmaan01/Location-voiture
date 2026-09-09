@@ -104,6 +104,12 @@ Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discoun
 | ------- | ----------------- | ------ | ----------------------------------------------------------------------------------------------------- |
 | POST    | `/v1/auth/signup` | public | `{ email, password, firstName, lastName, preferredMode }` → compte confirmé ; 409 si l'adresse existe |
 
+### Choix du forfait (ADR-0022)
+
+| Méthode | Route                                     | Accès    | Rôle                                                                                                   |
+| ------- | ----------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| POST    | `/v1/organizations/:id/subscription/plan` | manager+ | `{ planCode }` → `{ checkoutUrl }` (Stripe) ou choix enregistré avec l'essai ; marque `plan_chosen_at` |
+
 ### Fiche véhicule et disponibilité (ADR-0021)
 
 | Méthode | Route                                   | Accès    | Rôle                                                                                                  |

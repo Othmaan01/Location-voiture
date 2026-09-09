@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   BillingUrlSchema,
   CheckoutBodySchema,
+  ChoosePlanBodySchema,
+  ChoosePlanResponseSchema,
   PlansResponseSchema,
   SubscriptionOverviewSchema,
   UuidSchema,
@@ -53,6 +55,28 @@ export const subscriptionsRoutes: FastifyPluginAsyncZod<{
     },
     async (request) =>
       service.checkout(
+        request.actor,
+        request.params.organizationId,
+        request.body.planCode,
+        request.identity?.email ?? null,
+        request.id,
+      ),
+  );
+
+  app.post(
+    "/v1/organizations/:organizationId/subscription/plan",
+    {
+      schema: {
+        tags,
+        params: orgParams,
+        body: ChoosePlanBodySchema,
+        response: { 200: ChoosePlanResponseSchema },
+      },
+      onRequest: [app.requireAuth],
+      config: { rateLimit: { max: 20, timeWindow: "1 hour" } },
+    },
+    async (request) =>
+      service.choosePlan(
         request.actor,
         request.params.organizationId,
         request.body.planCode,

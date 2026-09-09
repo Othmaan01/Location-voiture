@@ -22,6 +22,14 @@ import type { NotificationsService } from "../notifications/service.js";
 export interface SubscriptionsService {
   listPlans(): Promise<Plan[]>;
   overview(actor: Actor, organizationId: string): Promise<SubscriptionOverview>;
+  /** Choix du forfait (ADR-0022) : paiement Stripe si configure, sinon choix enregistre avec l'essai. */
+  choosePlan(
+    actor: Actor,
+    organizationId: string,
+    planCode: string,
+    email: string | null,
+    requestId: string,
+  ): Promise<{ checkoutUrl: string | null; planChosenAt: string | null }>;
   checkout(
     actor: Actor,
     organizationId: string,
@@ -145,6 +153,41 @@ export function createSubscriptionsService(
         hasBillingAccount: !!sub?.stripeCustomerId,
         plans: await activePlans(),
       };
+    },
+
+    async choosePlan(actor, organizationId, planCode, email, requestId) {
+      assertCanOrHide(actor, "organization.read", { organizationId }, "Organisation");
+      assertCan(actor, "organization.write", { organizationId });
+      const [planRow] = await db.select().from(plans).where(eq(plans.code, planCode)).limit(1);
+      if (!planRow || !planRow.isActive) throw notFound("Offre");
+      if (planRow.isQuote)
+        throw new DomainError(
+          "validation_failed",
+          "Cette offre se fait sur devis : contactez-nous.",
+        );
+      if (billing) {
+        const { url } = await this.checkout(actor, organizationId, planCode, email, requestId);
+        return { checkoutUrl: url, planChosenAt: null };
+      }
+      const now = new Date();
+      await db
+        .update(organizations)
+        .set({
+          planCode,
+          planChosenAt: now,
+        })
+        .where(eq(organizations.id, organizationId));
+      await audit(db, {
+        actorId: actor.userId,
+        actorType: "organization_member",
+        action: "subscription.plan_chosen",
+        subjectType: "organization",
+        subjectId: organizationId,
+        organizationId,
+        metadata: { planCode, billing: false },
+        requestId,
+      });
+      return { checkoutUrl: null, planChosenAt: now.toISOString() };
     },
 
     /** Session de paiement Stripe : cree le client et le prix a la volee si besoin. */
@@ -312,6 +355,11 @@ export function createSubscriptionsService(
         if (existing)
           await db.update(subscriptions).set(values).where(eq(subscriptions.id, existing.id));
         else await db.insert(subscriptions).values(values);
+        // Un abonnement Stripe cree ou mis a jour vaut choix du forfait (ADR-0022).
+        await db
+          .update(organizations)
+          .set({ planChosenAt: sql`coalesce(${organizations.planChosenAt}, now())` })
+          .where(eq(organizations.id, organizationId));
         if (status === "past_due" || status === "unpaid")
           void notify.notifyOrganization(organizationId, {
             kind: "subscription.past_due",

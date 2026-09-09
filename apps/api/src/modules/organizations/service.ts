@@ -94,6 +94,7 @@ function toDto(row: typeof organizations.$inferSelect, storage: StorageClient): 
     accent: row.accent as Accent,
     planCode: row.planCode,
     trialEndsAt: row.trialEndsAt?.toISOString() ?? null,
+    planChosenAt: row.planChosenAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }

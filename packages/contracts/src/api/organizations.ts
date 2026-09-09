@@ -58,6 +58,8 @@ export const OrganizationSchema = z
     accent: AccentSchema,
     planCode: z.string(),
     trialEndsAt: IsoDateTimeSchema.nullable(),
+    /** Null tant que le loueur n'a pas choisi son forfait (ADR-0022) : l'app impose l'ecran des forfaits. */
+    planChosenAt: IsoDateTimeSchema.nullable(),
     createdAt: IsoDateTimeSchema,
   })
   .strict();

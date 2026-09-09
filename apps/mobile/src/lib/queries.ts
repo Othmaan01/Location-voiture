@@ -57,6 +57,7 @@ export function useDeleteAccount() {
 
 export function useOrganization(id: string) {
   return useQuery({
+    enabled: !!id,
     queryKey: queryKeys.organization(id),
     queryFn: () => apiRequest(`/v1/organizations/${id}`, OrganizationSchema),
   });

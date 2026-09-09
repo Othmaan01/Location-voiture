@@ -2,6 +2,7 @@ import { Tabs, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 
 import { Dock } from "@/components/ui";
+import { PlanGate } from "@/features/pro/PlanGate";
 import { MODE_HOME, MODE_SCREENS, useMode } from "@/lib/mode";
 import { useMe } from "@/lib/queries";
 import { useSession } from "@/lib/session";
@@ -38,6 +39,7 @@ export default function TabsLayout() {
   return (
     <>
       <ModeGuard />
+      <PlanGate />
       <Tabs
         tabBar={(props) => <Dock {...props} />}
         backBehavior="history"

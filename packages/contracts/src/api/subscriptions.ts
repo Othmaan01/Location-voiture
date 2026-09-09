@@ -46,3 +46,13 @@ export const SubscriptionOverviewSchema = z
 export const CheckoutBodySchema = z.object({ planCode: z.string().min(1).max(40) }).strict();
 export const BillingUrlSchema = z.object({ url: z.url() }).strict();
 export type SubscriptionOverview = z.infer<typeof SubscriptionOverviewSchema>;
+
+/** Choix du forfait (ADR-0022) : sans paiement en ligne configure, le choix est enregistre avec l'essai. */
+export const ChoosePlanBodySchema = z.object({ planCode: z.string().min(1).max(40) }).strict();
+export const ChoosePlanResponseSchema = z
+  .object({
+    /** URL de paiement Stripe a ouvrir ; null quand le choix est enregistre directement. */
+    checkoutUrl: z.string().nullable(),
+    planChosenAt: IsoDateTimeSchema.nullable(),
+  })
+  .strict();

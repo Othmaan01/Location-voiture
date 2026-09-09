@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Alert, AppState, Linking, StyleSheet, View } from "react-native";
 import { Check } from "lucide-react-native";
@@ -20,6 +20,7 @@ export default function SubscriptionScreen() {
     organizationId: string;
     checkout?: string;
   }>();
+  const router = useRouter();
   const sub = useSubscription(organizationId);
   const checkout = useCheckout(organizationId);
   const portal = useBillingPortal(organizationId);
@@ -127,6 +128,17 @@ export default function SubscriptionScreen() {
         ) : null}
       </Card>
 
+      <Button
+        label="Changer de forfait"
+        variant="ghost"
+        size="sm"
+        onPress={() =>
+          router.push({
+            pathname: "/(pro)/organizations/[organizationId]/plans",
+            params: { organizationId },
+          })
+        }
+      />
       <Text variant="h2">Toutes les offres</Text>
       <Text variant="sm" tone="muted">
         Un seul critère : le nombre de véhicules publiés. Aucune commission sur vos locations.
