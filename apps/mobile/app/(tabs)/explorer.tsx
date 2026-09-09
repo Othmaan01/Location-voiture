@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
-import { Calendar, MapPin, SlidersHorizontal } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Calendar, MapPin, Search, SlidersHorizontal, X } from "lucide-react-native";
 import type { PublicVehicleCard } from "@lv/contracts";
 
 import { Button, EmptyState, Screen, Select, Sheet, Text } from "@/components/ui";
@@ -23,7 +23,7 @@ import {
   type SearchParams,
 } from "@/lib/queries-public";
 import { useSession } from "@/lib/session";
-import { theme } from "@/theme";
+import { fontFamily, theme } from "@/theme";
 
 type Sort = NonNullable<SearchParams["sort"]>;
 const SORT_OPTIONS = [
@@ -56,6 +56,14 @@ export default function ExploreScreen() {
   const favSet = new Set(favorites.data?.vehicles.map((v) => v.id) ?? []);
 
   const hasPlace = !!citySlug || !!origin;
+  // Loupe : marque ou modele, envoye au moteur apres une courte pause de frappe.
+  const [text, setText] = useState("");
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setQ(text.trim()), 300);
+    return () => clearTimeout(t);
+  }, [text]);
+  const canSearch = hasPlace || q.length >= 2;
   const search = useSearch(
     {
       citySlug: citySlug ?? undefined,
@@ -68,13 +76,38 @@ export default function ExploreScreen() {
       transmission: transmission ?? undefined,
       fuel: fuel ?? undefined,
       sort,
+      q: q.length >= 2 ? q : undefined,
     },
-    hasPlace,
+    canSearch,
   );
   const activeFilters = [category, transmission, fuel].filter(Boolean).length;
 
   return (
     <Screen title="Explorer" dock>
+      <View style={styles.search}>
+        <Search size={18} color={theme.colors.textDim} />
+        <TextInput
+          value={text}
+          onChangeText={setText}
+          placeholder="Marque ou modèle : Clio, Tesla, Classe A…"
+          placeholderTextColor={theme.colors.placeholder}
+          style={styles.searchInput}
+          autoCapitalize="words"
+          autoCorrect={false}
+          returnKeyType="search"
+          accessibilityLabel="Rechercher une marque ou un modèle"
+        />
+        {text ? (
+          <Pressable
+            onPress={() => setText("")}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Effacer"
+          >
+            <X size={16} color={theme.colors.textDim} />
+          </Pressable>
+        ) : null}
+      </View>
       <View style={styles.bar}>
         <Pressable
           accessibilityRole="button"
@@ -107,14 +140,14 @@ export default function ExploreScreen() {
         </Pressable>
       </View>
 
-      {!hasPlace ? (
+      {!canSearch ? (
         <EmptyState
           title="Où cherchez-vous ?"
           description="Choisissez une ville ou utilisez votre position, puis vos dates : chaque prix affiché sera un prix pour ces dates."
           action={<Button label="Choisir un lieu" onPress={() => setSheet("city")} />}
         />
       ) : null}
-      {hasPlace && search.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
+      {canSearch && search.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
       {search.isError ? (
         <EmptyState
           title="Recherche impossible"
@@ -241,6 +274,24 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
+  search: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space["2"],
+    minHeight: theme.touch.minTarget,
+    paddingHorizontal: theme.space["3"],
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    color: theme.colors.text,
+    fontFamily: fontFamily.medium,
+    fontSize: theme.font.size.sm,
+    paddingVertical: 8,
+  },
   bar: { flexDirection: "row", gap: theme.space["2"] },
   chip: {
     flexDirection: "row",

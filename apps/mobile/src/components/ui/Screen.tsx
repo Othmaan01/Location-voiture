@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 
 import { theme } from "@/theme";
 
@@ -41,10 +41,13 @@ export function Screen({
   children,
 }: ScreenProps) {
   const router = useRouter();
+  const navigation = useNavigation();
+  // Ecrans a onglets : une fleche apparait des qu'il y a une page precedente (retour fondateur).
+  const showBack = back || (dock && navigation.canGoBack());
   const header =
-    title || back || headerRight ? (
+    title || showBack || headerRight ? (
       <View style={styles.header}>
-        {back ? (
+        {showBack ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Retour"

@@ -40,6 +40,7 @@ export default function TabsLayout() {
       <ModeGuard />
       <Tabs
         tabBar={(props) => <Dock {...props} />}
+        backBehavior="history"
         screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: "transparent" } }}
       >
         <Tabs.Screen name="index" options={{ title: "Accueil" }} />
