@@ -116,6 +116,7 @@ export default function ConversationScreen() {
           ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={<View style={styles.topRule} />}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
           keyboardShouldPersistTaps="handled"
         >
@@ -174,6 +175,12 @@ const styles = StyleSheet.create({
   content: { flex: 1, gap: 0 },
   flex: { flex: 1 },
   list: { gap: theme.space["2"], paddingBottom: theme.space["3"] },
+  topRule: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginTop: theme.space["2"],
+    marginBottom: theme.space["4"],
+  },
   bubbleRow: { flexDirection: "row", justifyContent: "flex-start" },
   rowMine: { justifyContent: "flex-end" },
   bubble: {
