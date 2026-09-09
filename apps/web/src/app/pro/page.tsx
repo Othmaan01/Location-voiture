@@ -66,7 +66,11 @@ const BENEFITS = [
 const COMPARE = [
   ["Commission sur chaque location", "15 à 30 %", "0 %"],
   ["Frais facturés au client", "Oui, souvent cachés", "Aucun"],
-  ["Encaissement", "Par la plateforme, reversé plus tard", "Chez vous, immédiat, carte ou espèces"],
+  [
+    "Encaissement",
+    "Par la plateforme, reversé plus tard",
+    "Chez vous, immédiat, carte ou espèces (limite légale)",
+  ],
   ["Relation avec le client", "Via la plateforme", "Directe, dans l'app"],
   ["Visibilité web locale", "En option payante", "Page dédiée + référencement, offerts"],
   ["Coût", "Variable, imprévisible", "Abonnement fixe dès 29 € HT"],

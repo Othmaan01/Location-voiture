@@ -26,8 +26,8 @@ export default async function PricingPage() {
         <p className="mt-3 text-muted-foreground">
           Le prix dépend d&apos;une seule chose : le nombre de véhicules que vous publiez. Aucune
           commission, ni sur vous, ni sur vos clients. Vous encaissez directement, carte, virement
-          ou espèces. Page web et référencement local inclus. 14 jours d&apos;essai gratuit,
-          résiliable à tout moment. Prix hors taxes.
+          ou espèces, dans la limite légale. Page web et référencement local inclus. 14 jours
+          d&apos;essai gratuit, résiliable à tout moment. Prix hors taxes.
         </p>
       </div>
       <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -54,7 +54,7 @@ export default async function PricingPage() {
             <ul className="mt-5 space-y-2 text-sm text-ink-700">
               {[
                 "0 % de commission, des deux côtés",
-                "Encaissement direct, carte ou espèces",
+                "Encaissement direct, carte ou espèces (limite légale)",
                 "Page web dédiée + référencement local offerts",
                 "Profil et flotte dans l'application",
                 "Demandes, messages, calendrier, notifications",

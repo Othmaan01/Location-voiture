@@ -29,7 +29,7 @@ Pourquoi l'application
 
 - Des loueurs professionnels vérifiés : SIREN contrôlé, documents vérifiés par notre équipe.
 - Aucune commission, ni pour vous, ni pour le loueur. Le prix affiché est le prix payé.
-- Le paiement se fait auprès du loueur, y compris en espèces s'il l'accepte.
+- Le paiement se fait auprès du loueur, y compris en espèces s'il l'accepte, dans la limite légale.
 - Les offres du moment et les nouveautés des loueurs, en un coup d'œil.
 - Une messagerie directe avec l'agence, et vos réservations suivies de bout en bout.
 

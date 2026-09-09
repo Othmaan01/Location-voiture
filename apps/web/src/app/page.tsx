@@ -97,7 +97,7 @@ const MOMENTS = [
 const FAQ = [
   {
     q: "Est-ce que je paie quelque chose à la plateforme ?",
-    a: "Non. L'application est gratuite pour les clients et nous ne prenons aucune commission, ni sur vous, ni sur le loueur. Vous payez le loueur, au prix qu'il affiche, directement à l'agence, par carte, virement ou espèces selon ses conditions.",
+    a: "Non. L'application est gratuite pour les clients et nous ne prenons aucune commission, ni sur vous, ni sur le loueur. Vous payez le loueur, au prix qu'il affiche, directement à l'agence, par carte, virement ou espèces selon ses conditions, dans la limite légale.",
   },
   {
     q: "Louer chez un loueur professionnel, c'est plus cher qu'entre particuliers ?",
