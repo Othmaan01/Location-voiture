@@ -8,7 +8,7 @@ import type { z } from "zod";
 import { Button, Input, Screen, Text } from "@/components/ui";
 import { describeAuthError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
-import { NewPasswordSchema } from "@/lib/validation";
+import { PASSWORD_HINT, NewPasswordSchema } from "@/lib/validation";
 import { theme } from "@/theme";
 
 type Form = z.infer<typeof NewPasswordSchema>;
@@ -41,7 +41,7 @@ export default function NewPasswordScreen() {
           render={({ field, fieldState }) => (
             <Input
               label="Nouveau mot de passe"
-              hint="10 caractères minimum"
+              hint={PASSWORD_HINT}
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}

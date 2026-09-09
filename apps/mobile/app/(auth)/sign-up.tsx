@@ -9,7 +9,7 @@ import type { z } from "zod";
 import { Button, Input, Screen, Text } from "@/components/ui";
 import { describeAuthError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
-import { SignUpSchema } from "@/lib/validation";
+import { PASSWORD_HINT, SignUpSchema } from "@/lib/validation";
 import { theme } from "@/theme";
 
 type Form = z.infer<typeof SignUpSchema>;
@@ -28,13 +28,17 @@ export default function SignUpScreen() {
     setServerError(null);
     const normalized = email.trim().toLowerCase();
     // Le role n'est JAMAIS transmis ici : le serveur ne lit que prenom et nom (ADR-0007).
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: normalized,
       password,
       options: { data: { first_name: firstName, last_name: lastName, preferred_mode: intent } },
     });
     if (error) {
       setServerError(describeAuthError(error));
+      return;
+    }
+    if (data.session) {
+      router.replace("/(tabs)");
       return;
     }
     router.replace({ pathname: "/(auth)/verify", params: { email: normalized, type: "signup" } });
@@ -126,7 +130,7 @@ export default function SignUpScreen() {
           render={({ field, fieldState }) => (
             <Input
               label="Mot de passe"
-              hint="10 caractères minimum"
+              hint={PASSWORD_HINT}
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}

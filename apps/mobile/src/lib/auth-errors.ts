@@ -12,7 +12,7 @@ export function describeAuthError(error: AuthError | null | undefined): string {
     case "email_exists":
       return "Un compte existe déjà avec cette adresse.";
     case "weak_password":
-      return "Mot de passe trop faible : 10 caractères minimum, évitez les mots de passe connus.";
+      return "Mot de passe trop faible : 8 caractères minimum, avec au moins une lettre et un chiffre.";
     case "otp_expired":
       return "Ce code a expiré. Demandez-en un nouveau.";
     case "over_email_send_rate_limit":
