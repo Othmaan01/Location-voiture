@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 
 import { MODE_TABS, useMode } from "@/lib/mode";
+import { CountBadge } from "./CountBadge";
 import { useOrgBookings } from "@/lib/queries-bookings";
 import { useUnread } from "@/lib/queries-messaging";
 import { theme } from "@/theme";
@@ -65,10 +66,16 @@ export function Dock({ state, descriptors, navigation }: DockProps) {
     mode === "pro" && !!organizationId,
   );
   const pendingCount = pending.data?.bookings.length ?? 0;
-  const dotFor = (name: string) =>
-    (name === "messages" && (unread.data?.customer ?? 0) > 0) ||
-    ((name === "pro-messages" || name === "pro-bookings") && unreadOrg > 0) ||
-    (name === "pro-bookings" && pendingCount > 0);
+  // Compteur sur la bulle (retour fondateur, 2026-09-10) : messages non lus cote client ;
+  // messages non lus + demandes a traiter sur l'onglet Reservations du loueur.
+  const countFor = (name: string) =>
+    name === "messages"
+      ? (unread.data?.customer ?? 0)
+      : name === "pro-messages"
+        ? unreadOrg
+        : name === "pro-bookings"
+          ? unreadOrg + pendingCount
+          : 0;
   const content = (
     <View style={styles.items}>
       {[...state.routes]
@@ -104,7 +111,12 @@ export function Dock({ state, descriptors, navigation }: DockProps) {
                 color={focused ? "#ffffff" : theme.colors.textDim}
                 strokeWidth={focused ? 2.25 : 1.75}
               />
-              {dotFor(route.name) ? <View style={styles.dot} /> : null}
+              <CountBadge
+                count={countFor(route.name)}
+                inverted={focused}
+                ring={focused ? theme.colors.accent : theme.colors.surface}
+                style={styles.badge}
+              />
             </Pressable>
           );
         })}
@@ -162,17 +174,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dot: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.accentTint,
-    borderWidth: 1,
-    borderColor: theme.colors.background,
-  },
+  badge: { position: "absolute", top: 4, right: 2 },
   itemActive: {
     backgroundColor: theme.colors.accent,
     shadowColor: theme.shadow.red.color,

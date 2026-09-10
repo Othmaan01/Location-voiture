@@ -15,7 +15,16 @@ import {
   UserRound,
 } from "lucide-react-native";
 
-import { Avatar, Badge, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
+import {
+  Avatar,
+  Button,
+  Card,
+  CountBadge,
+  EmptyState,
+  ListItem,
+  Screen,
+  Text,
+} from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
 import { useAppLockSetting } from "@/lib/app-lock";
 import { MODE_HOME, MODE_LABEL, useMode, type AppMode } from "@/lib/mode";
@@ -186,14 +195,10 @@ export default function ProfileScreen() {
           subtitle={
             unreadNotifications > 0
               ? `${unreadNotifications} non lue${unreadNotifications > 1 ? "s" : ""}`
-              : "Réponses des loueurs, messages, rappels"
+              : "Réponses des loueurs, rappels"
           }
           onPress={() => router.push("/profil/notifications")}
-          right={
-            unreadNotifications > 0 ? (
-              <Badge label={String(unreadNotifications)} tone="accent" />
-            ) : undefined
-          }
+          right={unreadNotifications > 0 ? <CountBadge count={unreadNotifications} /> : undefined}
         />
         <ListItem
           icon={<KeyRound size={22} color={theme.colors.text} />}

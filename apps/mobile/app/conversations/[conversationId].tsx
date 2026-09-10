@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.border, marginTop: 6 },
   ruleMine: { backgroundColor: theme.colors.textInverse, opacity: 0.3 },
-  time: { alignSelf: "flex-end", marginTop: 3, fontSize: 10, lineHeight: 12, opacity: 0.8 },
+  time: { alignSelf: "center", marginTop: 3, fontSize: 10, lineHeight: 12, opacity: 0.8 },
   status: { marginTop: 3, marginRight: 4, fontSize: 10, lineHeight: 12 },
   empty: { textAlign: "center", marginTop: theme.space["6"] },
   composer: {

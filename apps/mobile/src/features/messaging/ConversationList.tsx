@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator } from "react-native";
 import type { Conversation } from "@lv/contracts";
 
-import { Avatar, Badge, Card, EmptyState, ListItem } from "@/components/ui";
+import { Avatar, Badge, Card, CountBadge, EmptyState, ListItem } from "@/components/ui";
 import { theme } from "@/theme";
 
 function when(iso: string | null): string {
@@ -52,7 +52,7 @@ export function ConversationList({
             subtitle={[context, c.lastMessagePreview].filter(Boolean).join(" — ")}
             right={
               c.unreadCount > 0 ? (
-                <Badge label={String(c.unreadCount)} tone="accent" />
+                <CountBadge count={c.unreadCount} />
               ) : (
                 <Badge label={when(c.lastMessageAt)} tone="neutral" />
               )

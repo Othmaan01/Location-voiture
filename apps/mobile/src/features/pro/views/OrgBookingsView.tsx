@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import { Car, Clock } from "lucide-react-native";
 import type { Booking } from "@lv/contracts";
 
-import { Badge, Button, Card, EmptyState, Screen, Text } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Screen, Text, CountBadge } from "@/components/ui";
 import { ConversationList } from "@/features/messaging/ConversationList";
 import { BOOKING_STATUS, formatDate, formatRemaining } from "@/features/client/booking-labels";
 import { formatEuros } from "@/features/pro/labels";
@@ -40,6 +40,8 @@ export function OrgBookingsView({
   const conversations = useOrgConversations(organizationId);
   const unread = useUnread();
   const unreadCount = unread.data?.organizations[organizationId] ?? 0;
+  const pendingRequests = useOrgBookings(organizationId, "upcoming", "requested");
+  const pendingCount = pendingRequests.data?.bookings.length ?? 0;
   const bookings = useOrgBookings(
     organizationId,
     tab === "past" ? "past" : "upcoming",
@@ -77,9 +79,10 @@ export function OrgBookingsView({
                 <Text variant="smStrong" tone={section === key ? "inverse" : "muted"}>
                   {label}
                 </Text>
-                {key === "messages" && unreadCount > 0 && section !== "messages" ? (
-                  <View style={styles.segmentDot} />
-                ) : null}
+                <CountBadge
+                  count={key === "messages" ? unreadCount : pendingCount}
+                  style={styles.segmentBadge}
+                />
               </Pressable>
             ))}
           </View>
@@ -199,19 +202,13 @@ const styles = StyleSheet.create({
   segmentItem: {
     paddingHorizontal: theme.space["3"],
     minHeight: 34,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
     borderRadius: theme.radius.full,
   },
   segmentOn: { backgroundColor: theme.colors.text },
-  segmentDot: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: theme.colors.accent,
-  },
+  segmentBadge: { marginLeft: 6 },
   chip: {
     height: 36,
     paddingHorizontal: theme.space["3"],

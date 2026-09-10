@@ -11,6 +11,8 @@ import { notifications } from "../../db/schema.js";
 
 /** Fenetre affichee dans le centre de notifications ; la purge garde 90 jours (ADR-0017). */
 export const NOTIFICATIONS_WINDOW_DAYS = 60;
+/** Les messages ne passent pas par le centre : ils se comptent sur la bulle Messages (retour fondateur). */
+const notInMessages = sql`${notifications.kind} not like 'message.%'`;
 
 function toDto(row: typeof notifications.$inferSelect): Notification {
   const payload = (row.payload ?? {}) as Record<string, unknown>;
@@ -44,13 +46,21 @@ export const notificationsRoutes: FastifyPluginAsyncZod = async (app) => {
         app.db
           .select()
           .from(notifications)
-          .where(and(eq(notifications.userId, userId), gte(notifications.createdAt, since)))
+          .where(
+            and(
+              eq(notifications.userId, userId),
+              gte(notifications.createdAt, since),
+              notInMessages,
+            ),
+          )
           .orderBy(desc(notifications.createdAt))
           .limit(100),
         app.db
           .select({ n: sql<number>`count(*)::int` })
           .from(notifications)
-          .where(and(eq(notifications.userId, userId), isNull(notifications.readAt))),
+          .where(
+            and(eq(notifications.userId, userId), isNull(notifications.readAt), notInMessages),
+          ),
       ]);
       return { notifications: rows.map(toDto), unreadCount: unread[0]?.n ?? 0 };
     },
