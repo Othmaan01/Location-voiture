@@ -9,7 +9,9 @@ import {
   View,
   type ColorValue,
 } from "react-native";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
+import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
+import { Car, ChevronLeft, ChevronRight, Lock, Plus } from "lucide-react-native";
 
 import {
   Button,
@@ -31,8 +33,16 @@ import { useVehicles } from "@/lib/queries-catalog";
 import { theme } from "@/theme";
 
 const DAY = 86_400_000;
-const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "narrow" });
+const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
 const rangeFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+const monthYearFmt = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+/** « 8 – 14 sept. 2026 » ou « 29 sept. – 5 oct. 2026 ». */
+function formatWeek(start: Date): string {
+  const end = new Date(start.getTime() + 6 * DAY);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const left = sameMonth ? String(start.getDate()) : rangeFmt.format(start);
+  return `${left} – ${rangeFmt.format(end)} ${end.getFullYear()}`;
+}
 const REASONS = [
   { value: "maintenance" as const, label: "Entretien / révision" },
   { value: "external_rental" as const, label: "Loué hors application" },
@@ -84,6 +94,12 @@ export function OrgCalendarView({
       new Date(b.to) > weekStart,
   );
   const today = new Date().toDateString();
+  const isCurrent =
+    view === "week"
+      ? weekStart.getTime() === startOfWeek(new Date()).getTime()
+      : month.getMonth() === new Date().getMonth() &&
+        month.getFullYear() === new Date().getFullYear();
+  const todayIndex = days.findIndex((d) => d.toDateString() === today);
 
   return (
     <Screen
@@ -100,25 +116,43 @@ export function OrgCalendarView({
       }
       contentStyle={styles.content}
     >
-      <View style={styles.viewToggle}>
-        {(
-          [
-            { key: "week", label: "Semaine" },
-            { key: "month", label: "Mois" },
-          ] as const
-        ).map(({ key, label }) => (
+      <View style={styles.toolbar}>
+        <View style={styles.viewToggle}>
+          {(
+            [
+              { key: "week", label: "Semaine" },
+              { key: "month", label: "Mois" },
+            ] as const
+          ).map(({ key, label }) => (
+            <Pressable
+              key={key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: view === key }}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                setView(key);
+              }}
+              style={[styles.viewItem, view === key ? styles.viewOn : null]}
+            >
+              <Text variant="smStrong" tone={view === key ? "inverse" : "muted"}>
+                {label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {!isCurrent ? (
           <Pressable
-            key={key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: view === key }}
-            onPress={() => setView(key)}
-            style={[styles.viewItem, view === key ? styles.viewOn : null]}
+            accessibilityRole="button"
+            onPress={() => {
+              void Haptics.selectionAsync();
+              setWeekStart(startOfWeek(new Date()));
+              setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+            }}
+            style={styles.todayChip}
           >
-            <Text variant="smStrong" tone={view === key ? "inverse" : "muted"}>
-              {label}
-            </Text>
+            <Text variant="smStrong">Aujourd'hui</Text>
           </Pressable>
-        ))}
+        ) : null}
       </View>
       {view === "month" ? (
         <MonthView
@@ -139,36 +173,50 @@ export function OrgCalendarView({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Semaine précédente"
-          onPress={() => setWeekStart(new Date(weekStart.getTime() - 7 * DAY))}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            setWeekStart(new Date(weekStart.getTime() - 7 * DAY));
+          }}
           style={styles.navBtn}
         >
-          <ChevronLeft size={20} color={theme.colors.textMuted} />
+          <ChevronLeft size={18} color={theme.colors.text} />
         </Pressable>
-        <Text variant="smStrong">
-          {rangeFmt.format(weekStart)} → {rangeFmt.format(new Date(weekEnd.getTime() - DAY))}
-        </Text>
+        <View style={styles.navTexts}>
+          <Text variant="bodyStrong">{formatWeek(weekStart)}</Text>
+          <Text variant="small" tone="muted">
+            {monthYearFmt.format(weekStart).replace(/^./, (c) => c.toUpperCase())}
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Semaine suivante"
-          onPress={() => setWeekStart(new Date(weekStart.getTime() + 7 * DAY))}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            setWeekStart(new Date(weekStart.getTime() + 7 * DAY));
+          }}
           style={styles.navBtn}
         >
-          <ChevronRight size={20} color={theme.colors.textMuted} />
+          <ChevronRight size={18} color={theme.colors.text} />
         </Pressable>
       </View>
       <View style={[styles.header, view === "month" ? styles.hidden : null]}>
         <View style={styles.label} />
         <View style={styles.grid}>
-          {days.map((d) => (
-            <View key={d.toISOString()} style={styles.dayHead}>
-              <Text variant="small" tone="muted">
-                {dayFmt.format(d)}
-              </Text>
-              <Text variant="smStrong" tone={d.toDateString() === today ? "accent" : "default"}>
-                {d.getDate()}
-              </Text>
-            </View>
-          ))}
+          {days.map((d) => {
+            const isToday = d.toDateString() === today;
+            return (
+              <View key={d.toISOString()} style={styles.dayHead}>
+                <Text variant="small" tone={isToday ? "default" : "dim"}>
+                  {dayFmt.format(d).replace(".", "")}
+                </Text>
+                <View style={[styles.dayNum, isToday ? styles.dayNumToday : null]}>
+                  <Text variant="smStrong" tone={isToday ? "inverse" : "default"}>
+                    {d.getDate()}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
       </View>
       {vehicles.isPending || bookings.isPending ? (
@@ -185,8 +233,11 @@ export function OrgCalendarView({
           <VehicleRow
             key={v.id}
             vehicleId={v.id}
-            name={`${v.brand} ${v.model}`}
+            brand={v.brand}
+            model={v.model}
+            photoUrl={v.photos[0]?.url ?? null}
             weekStart={weekStart}
+            todayIndex={todayIndex}
             bookings={firm.filter((b) => b.vehicle.id === v.id)}
             onBooking={(id) => router.push(`/(pro)/organizations/${organizationId}/bookings/${id}`)}
           />
@@ -215,14 +266,21 @@ export function OrgCalendarView({
 
 function VehicleRow({
   vehicleId,
-  name,
+  brand,
+  model,
+  photoUrl,
   weekStart,
+  todayIndex,
   bookings,
   onBooking,
 }: {
   vehicleId: string;
-  name: string;
+  brand: string;
+  model: string;
+  photoUrl: string | null;
   weekStart: Date;
+  /** Colonne du jour, -1 si la semaine affichee ne le contient pas. */
+  todayIndex: number;
   bookings: {
     id: string;
     from: string;
@@ -246,13 +304,33 @@ function VehicleRow({
   return (
     <View style={styles.row}>
       <View style={styles.label}>
-        <Text variant="smStrong" numberOfLines={1}>
-          {name}
-        </Text>
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={styles.thumb} contentFit="cover" />
+        ) : (
+          <View style={[styles.thumb, styles.thumbEmpty]}>
+            <Car size={14} color={theme.colors.textDim} />
+          </View>
+        )}
+        <View style={styles.labelTexts}>
+          <Text variant="smStrong" numberOfLines={1}>
+            {brand}
+          </Text>
+          <Text variant="small" tone="muted" numberOfLines={1}>
+            {model}
+          </Text>
+        </View>
       </View>
       <View style={styles.track}>
         {Array.from({ length: 7 }, (_, i) => (
-          <View key={i} style={[styles.cell, { left: `${(i / 7) * 100}%` }]} />
+          <View
+            key={i}
+            style={[
+              styles.cell,
+              { left: `${(i / 7) * 100}%`, width: `${100 / 7}%` },
+              i >= 5 ? styles.cellWeekend : null,
+              i === todayIndex ? styles.cellToday : null,
+            ]}
+          />
         ))}
         {(blocks.data?.blocks ?? [])
           .filter(
@@ -275,7 +353,8 @@ function VehicleRow({
                 }
                 style={[styles.bar, styles.barBlock, { left: `${s.left}%`, width: `${s.width}%` }]}
               >
-                <Text variant="small" tone="muted" numberOfLines={1}>
+                <Lock size={11} color={theme.colors.textMuted} />
+                <Text variant="small" tone="muted" numberOfLines={1} style={styles.barLabel}>
                   {k.note ?? "Bloqué"}
                 </Text>
               </Pressable>
@@ -299,9 +378,10 @@ function VehicleRow({
               <Text
                 variant="small"
                 numberOfLines={1}
-                style={pending ? styles.barPendingText : styles.barFirmText}
+                style={[styles.barLabel, pending ? styles.barPendingText : styles.barFirmText]}
               >
                 {b.customer?.firstName ?? "Client"}
+                {pending ? " · demande" : ""}
               </Text>
             </Pressable>
           );
@@ -462,10 +542,23 @@ function Legend({
 
 const styles = StyleSheet.create({
   content: { gap: theme.space["3"] },
+  toolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  todayChip: {
+    height: 34,
+    paddingHorizontal: theme.space["3"],
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
+    justifyContent: "center",
+  },
   nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  navTexts: { alignItems: "center", gap: 1 },
   navBtn: {
-    width: theme.touch.minTarget,
-    height: theme.touch.minTarget,
+    width: 38,
+    height: 38,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -473,34 +566,60 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    paddingBottom: 6,
+    paddingBottom: 8,
   },
-  label: { width: 96, paddingRight: theme.space["2"], justifyContent: "center" },
+  label: {
+    width: 118,
+    paddingRight: theme.space["2"],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  labelTexts: { flex: 1, gap: 0 },
+  thumb: { width: 36, height: 28, borderRadius: 7, backgroundColor: theme.colors.surfaceRaised },
+  thumbEmpty: { alignItems: "center", justifyContent: "center" },
   grid: { flex: 1, flexDirection: "row" },
-  dayHead: { flex: 1, alignItems: "center" },
+  dayHead: { flex: 1, alignItems: "center", gap: 3 },
+  dayNum: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayNumToday: { backgroundColor: theme.colors.accent },
   row: {
     flexDirection: "row",
-    minHeight: 52,
-    borderBottomWidth: 1,
+    minHeight: 58,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border,
   },
-  track: { flex: 1, position: "relative", height: 52 },
+  track: { flex: 1, position: "relative", height: 58 },
   cell: {
     position: "absolute",
     top: 0,
     bottom: 0,
-    borderLeftWidth: 1,
+    borderLeftWidth: StyleSheet.hairlineWidth,
     borderLeftColor: theme.colors.border,
   },
+  cellWeekend: { backgroundColor: theme.colors.surface },
+  cellToday: { backgroundColor: theme.colors.accentSoft },
   bar: {
     position: "absolute",
-    top: 10,
-    height: 32,
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    justifyContent: "center",
+    top: 12,
+    height: 34,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     overflow: "hidden",
+    shadowColor: theme.shadow.lift.color,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
+  barLabel: { flexShrink: 1 },
   barFirm: { backgroundColor: theme.colors.text },
   barFirmText: { color: theme.colors.textInverse, fontWeight: theme.font.weight.bold },
   barPending: {
