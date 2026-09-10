@@ -70,6 +70,10 @@ export function WheelPicker({
           nestedScrollEnabled
           contentOffset={{ x: 0, y: index * ITEM }}
           contentContainerStyle={styles.content}
+          // Position initiale garantie une fois le contenu mesure (contentOffset seul est parfois ignore).
+          onContentSizeChange={() =>
+            ref.current?.scrollTo({ y: settled.current * ITEM, animated: false })
+          }
           onMomentumScrollEnd={settle}
           accessibilityRole="adjustable"
           accessibilityLabel={label}

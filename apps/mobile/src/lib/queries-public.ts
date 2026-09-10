@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { z } from "zod";
 import {
   CitiesResponseSchema,
@@ -56,6 +62,8 @@ export function useLoueur(id: string, period: { from: string; to: string } | nul
         `/v1/loueurs/${id}?${qs({ from: period?.from, to: period?.to })}`,
         LoueurProfileSchema,
       ),
+    // Changement de dates : le profil reste affiche, seule la disponibilite se met a jour.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -99,6 +107,8 @@ export function useVehicle(id: string, period: { from: string; to: string } | nu
         PublicVehicleDetailSchema,
       ),
     staleTime: 60_000,
+    // Changement de dates : pas de rechargement de la fiche (retour fondateur, 2026-09-10).
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -235,8 +235,13 @@ export default function VehicleScreen() {
   const reviewW = Math.round(galleryW * 0.84);
   const reviewGap = theme.space["3"];
   const toggleTarif = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setTarifOpen((o) => !o);
+    // Animation de depliage quand la plateforme la permet ; jamais bloquante.
+    try {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    } catch {
+      // sans animation
+    }
   };
   const tarifSummary = [
     v.dailyCents !== null ? `${formatEuros(v.dailyCents)} / jour` : "Sur demande",
@@ -293,7 +298,8 @@ export default function VehicleScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Retour"
-                onPress={() => router.back()}
+                // Ouverte par un lien (notification, partage) : pas d'historique, on rentre a l'accueil.
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
                 style={styles.roundBtn}
               >
                 <ChevronLeft size={22} color="#ffffff" />
