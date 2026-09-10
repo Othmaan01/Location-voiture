@@ -51,7 +51,8 @@ export function LoueurProfile({
   const [report, setReport] = useState<{ type: "organization" | "review"; id: string } | null>(
     null,
   );
-  const reviews = useLoueurReviews(loueurId, tab === "reviews");
+  // Charges avec le profil (pas d'attente au clic sur l'onglet).
+  const reviews = useLoueurReviews(loueurId);
 
   if (loueur.isPending) {
     return (
@@ -213,6 +214,15 @@ export function LoueurProfile({
       ) : tab === "reviews" ? (
         <View style={styles.info}>
           {reviews.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
+          {reviews.isError ? (
+            <EmptyState
+              title="Avis indisponibles pour le moment"
+              description="Vérifiez votre connexion, puis réessayez."
+              action={
+                <Button label="Réessayer" variant="ghost" onPress={() => void reviews.refetch()} />
+              }
+            />
+          ) : null}
           {reviews.data && reviews.data.reviews.length === 0 ? (
             <EmptyState
               title="Pas encore d'avis"

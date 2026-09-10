@@ -67,7 +67,13 @@ export function Screen({
             </Text>
           ) : null}
           {title ? (
-            <Text variant="h1" accessibilityRole="header">
+            <Text
+              variant="h1"
+              accessibilityRole="header"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
               {title}
             </Text>
           ) : null}

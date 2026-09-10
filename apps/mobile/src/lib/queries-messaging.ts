@@ -67,19 +67,52 @@ export function useStartConversation() {
     },
   });
 }
+type Detail = z.infer<typeof ConversationDetailSchema>;
+
+/** Envoi optimiste : le message apparait tout de suite, remplace par la version serveur, retire en cas d'echec. */
 export function useSendMessage(conversationId: string) {
   const client = useQueryClient();
+  const key = messagingKeys.one(conversationId);
   return useMutation({
     mutationFn: (body: string) =>
       apiRequest(`/v1/conversations/${conversationId}/messages`, MessageSchema, {
         method: "POST",
         body: { body },
       }),
-    onSuccess: (m) => {
-      client.setQueryData(
-        messagingKeys.one(conversationId),
-        (prev: z.infer<typeof ConversationDetailSchema> | undefined) =>
-          prev ? { ...prev, messages: [...prev.messages, m] } : prev,
+    onMutate: async (body) => {
+      await client.cancelQueries({ queryKey: key });
+      const tempId = `tmp-${Date.now()}`;
+      client.setQueryData(key, (prev: Detail | undefined) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  id: tempId,
+                  conversationId,
+                  senderSide: "customer" as const,
+                  senderName: "",
+                  mine: true,
+                  body,
+                  createdAt: new Date().toISOString(),
+                },
+              ],
+            }
+          : prev,
+      );
+      return { tempId };
+    },
+    onError: (_e, _body, ctx) => {
+      client.setQueryData(key, (prev: Detail | undefined) =>
+        prev ? { ...prev, messages: prev.messages.filter((m) => m.id !== ctx?.tempId) } : prev,
+      );
+    },
+    onSuccess: (m, _body, ctx) => {
+      client.setQueryData(key, (prev: Detail | undefined) =>
+        prev
+          ? { ...prev, messages: [...prev.messages.filter((x) => x.id !== ctx?.tempId), m] }
+          : prev,
       );
       void client.invalidateQueries({ queryKey: ["conversations"] });
     },

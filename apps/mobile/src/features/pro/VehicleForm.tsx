@@ -11,6 +11,8 @@ import {
   type Agency,
   type Vehicle,
   type VehicleInput,
+  LicensePlateSchema,
+  formatLicensePlate,
 } from "@lv/contracts";
 
 import { Button, Input, Select, Text } from "@/components/ui";
@@ -32,7 +34,7 @@ const Schema = z.object({
   transmission: z.enum(["manuelle", "automatique"]),
   fuel: z.enum(FUEL_OPTIONS.map((o) => o.value) as [string, ...string[]]),
   seats: z.string().regex(/^[1-9]\d?$/, "1 à 60"),
-  licensePlate: z.string().trim().max(20),
+  licensePlate: z.union([z.literal(""), LicensePlateSchema]),
   description: z.string().trim().max(4000),
   minDriverAge: z.string().regex(/^(1[6-9]|[2-9]\d)$/, "16 à 99"),
   minLicenseYears: z.string().regex(/^\d{1,2}$/, "0 à 50"),
@@ -297,12 +299,14 @@ export function VehicleForm({
             render={({ field, fieldState }) => (
               <Input
                 label="Immatriculation"
-                hint="Jamais montrée aux clients"
+                hint="Format AA-123-AA, jamais montrée aux clients"
                 value={field.value}
-                onChangeText={(t) => field.onChange(t.toUpperCase())}
+                onChangeText={(t) => field.onChange(formatLicensePlate(t))}
                 onBlur={field.onBlur}
                 error={fieldState.error?.message}
                 autoCapitalize="characters"
+                placeholder="AA-123-AA"
+                maxLength={9}
               />
             )}
           />

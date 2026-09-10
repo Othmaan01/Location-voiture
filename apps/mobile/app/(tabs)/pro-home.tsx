@@ -70,14 +70,30 @@ function Dashboard({ organizationId }: { organizationId: string }) {
   const returns = all.filter((b) => b.status === "active" && isToday(b.to)).length;
   const vehicles = fleet.data?.vehicles ?? [];
   const drafts = vehicles.filter((v) => v.status === "draft").length;
-  const available = vehicles.filter((v) => v.status === "published").length - rented;
+  const published = vehicles.filter((v) => v.status === "published").length;
   const sub = subscription.data;
   const trialDays = sub?.trialEndsAt
     ? Math.max(0, Math.ceil((new Date(sub.trialEndsAt).getTime() - Date.now()) / 86_400_000))
     : null;
 
   return (
-    <Screen eyebrow="Espace loueur" title="Tableau de bord" dock>
+    <Screen
+      eyebrow="Espace loueur"
+      title="Tableau de bord"
+      dock
+      headerRight={
+        sub ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Forfait ${sub.plan.name}, voir l'abonnement`}
+            onPress={() => router.push(`/(pro)/organizations/${organizationId}/subscription`)}
+            hitSlop={8}
+          >
+            <Badge label={`Forfait ${sub.plan.name}`} tone="accent" />
+          </Pressable>
+        ) : undefined
+      }
+    >
       {memberships.length > 1 ? (
         <Select
           label="Organisation"
@@ -137,7 +153,7 @@ function Dashboard({ organizationId }: { organizationId: string }) {
         />
         <Kpi
           value={String(drafts)}
-          label={drafts > 1 ? "véhicules à publier" : "véhicule à publier"}
+          label={drafts > 1 ? "véhicules en brouillon" : "véhicule en brouillon"}
           onPress={() => router.push("/(tabs)/pro-vehicles")}
           accent={drafts > 0}
         />
@@ -169,8 +185,8 @@ function Dashboard({ organizationId }: { organizationId: string }) {
           accent={returns > 0}
         />
         <Kpi
-          value={`${rented} / ${Math.max(0, available) + rented}`}
-          label="en location"
+          value={`${rented} / ${published}`}
+          label="en location / en ligne"
           onPress={() => router.push("/(tabs)/pro-vehicles")}
         />
       </View>

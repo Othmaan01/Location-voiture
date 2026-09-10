@@ -132,9 +132,12 @@ function invalidateVehicle(
   vehicleId?: string,
 ) {
   void client.invalidateQueries({ queryKey: catalogKeys.vehicles(orgId) });
+  // La vitrine (profil public) et le catalogue client reflètent le changement sans fermer l'ecran.
+  void client.invalidateQueries({ queryKey: ["loueurs", orgId] });
   if (vehicleId) {
     void client.invalidateQueries({ queryKey: catalogKeys.vehicle(vehicleId) });
     void client.invalidateQueries({ queryKey: catalogKeys.publishCheck(vehicleId) });
+    void client.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
   }
 }
 export function useCreateVehicle(orgId: string) {

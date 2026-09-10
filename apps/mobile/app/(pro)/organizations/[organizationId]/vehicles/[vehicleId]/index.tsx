@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Camera, ChevronRight, Pencil, Tag, Trash2 } from "lucide-react-native";
+import { Camera, ChevronRight, Pencil, Tag, Trash2, CalendarDays } from "lucide-react-native";
 
 import { Badge, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
@@ -178,6 +178,12 @@ export default function VehicleScreen() {
           onPress={() =>
             router.push(`/(pro)/organizations/${organizationId}/vehicles/${vehicleId}/edit`)
           }
+        />
+        <ListItem
+          icon={<CalendarDays size={22} color={theme.colors.text} />}
+          title="Calendrier"
+          subtitle="Réservations et blocages de ce véhicule"
+          onPress={() => router.push({ pathname: "/(tabs)/pro-calendar", params: { vehicleId } })}
           last
         />
       </Card>

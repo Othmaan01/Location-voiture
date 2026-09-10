@@ -49,6 +49,7 @@ export default function OrgBookingScreen() {
   const [paperFor, setPaperFor] = useState<"start" | "complete" | null>(null);
   const [inspectionChecked, setInspectionChecked] = useState(false);
   const [contractChecked, setContractChecked] = useState(false);
+  const [returnChecked, setReturnChecked] = useState(false);
   const inspections = useInspections(bookingId);
   const hasDeparture = !!inspections.data?.inspections.some((i) => i.kind === "departure");
   const hasReturn = !!inspections.data?.inspections.some((i) => i.kind === "return");
@@ -206,11 +207,38 @@ export default function OrgBookingScreen() {
         </Text>
       ) : null}
       {b.status === "active" ? (
-        <Button
-          label="Véhicule rendu"
-          loading={act.isPending}
-          onPress={() => (hasReturn ? run("complete") : setPaperFor("complete"))}
-        />
+        <Card style={styles.handover}>
+          <Text variant="bodyStrong">Retour du véhicule</Text>
+          <Text variant="small" tone="muted">
+            D'abord l'état des lieux de retour, puis la confirmation : le client est prévenu et la
+            location se termine.
+          </Text>
+          <CheckRow
+            label="1 · État des lieux de retour effectué"
+            hint={hasReturn ? "Signé dans l'application" : "Dans l'application ou sur papier"}
+            checked={hasReturn || returnChecked}
+            locked={hasReturn}
+            onToggle={() => setReturnChecked((v) => !v)}
+          />
+          {!hasReturn ? (
+            <Button
+              label="Faire l'état des lieux de retour dans l'application"
+              variant="ghost"
+              size="sm"
+              onPress={() =>
+                router.push(
+                  `/(pro)/organizations/${organizationId}/bookings/${bookingId}/inspection`,
+                )
+              }
+            />
+          ) : null}
+          <Button
+            label="2 · Véhicule rendu"
+            disabled={!(hasReturn || returnChecked)}
+            loading={act.isPending}
+            onPress={() => run("complete")}
+          />
+        </Card>
       ) : null}
 
       {b.status === "completed" && b.customer ? (

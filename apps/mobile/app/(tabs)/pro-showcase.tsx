@@ -1,4 +1,7 @@
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { ActivityIndicator } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { EmptyState, Screen } from "@/components/ui";
 import { LoueurProfile } from "@/features/client/LoueurProfile";
@@ -16,6 +19,14 @@ export default function ProShowcaseTab() {
 
 function Showcase({ organizationId }: { organizationId: string }) {
   const org = useOrganization(organizationId);
+  const client = useQueryClient();
+  // A chaque ouverture de l'onglet, la vitrine se relit (vehicule ajoute, avis recu…).
+  useFocusEffect(
+    useCallback(() => {
+      void client.invalidateQueries({ queryKey: ["loueurs", organizationId] });
+      void client.invalidateQueries({ queryKey: ["reviews", "loueur", organizationId] });
+    }, [client, organizationId]),
+  );
   if (org.isPending) {
     return (
       <Screen eyebrow="Vue client" title="Vitrine" dock scroll={false}>

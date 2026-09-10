@@ -13,6 +13,24 @@ import { SiretSchema } from "./organizations.js";
 // ---------------------------------------------------------------------
 // Agences (points de retrait)
 // ---------------------------------------------------------------------
+/** Plaque francaise SIV : deux lettres, trois chiffres, deux lettres (retour, 2026-09-10). */
+export const LICENSE_PLATE_PATTERN = /^[A-Z]{2}-\d{3}-[A-Z]{2}$/;
+export const LicensePlateSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(LICENSE_PLATE_PATTERN, "Format attendu : AA-123-AA");
+
+/** Met en forme au fil de la saisie : « ab123cd » -> « AB-123-CD ». */
+export function formatLicensePlate(raw: string): string {
+  const chars = raw
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 7);
+  const parts = [chars.slice(0, 2), chars.slice(2, 5), chars.slice(5, 7)].filter(Boolean);
+  return parts.join("-");
+}
+
 export const AgencyStatusSchema = z.enum(["draft", "published", "suspended"]);
 
 const OpeningHoursSchema = z.partialRecord(
@@ -191,7 +209,7 @@ export const VehicleInputSchema = z
     doors: z.number().int().min(2).max(6).default(5),
     luggage: z.number().int().min(0).max(20).default(2),
     color: z.string().trim().max(40).nullable().optional(),
-    licensePlate: z.string().trim().max(20).nullable().optional(),
+    licensePlate: LicensePlateSchema.nullable().optional(),
     options: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
     description: z.string().trim().max(4000).nullable().optional(),
     minDriverAge: z.number().int().min(16).max(99).default(21),

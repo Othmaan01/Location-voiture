@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -50,15 +50,23 @@ function startOfWeek(d: Date): Date {
 export function OrgCalendarView({
   organizationId,
   embedded = false,
+  initialVehicleId,
 }: {
   organizationId: string;
   embedded?: boolean;
+  /** Ouvert depuis la fiche d'un vehicule : vue mois sur ce vehicule. */
+  initialVehicleId?: string;
 }) {
   const router = useRouter();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [blockFor, setBlockFor] = useState<string | null>(null);
-  const [view, setView] = useState<"week" | "month">("week");
-  const [monthVehicle, setMonthVehicle] = useState<string | null>(null);
+  const [view, setView] = useState<"week" | "month">(initialVehicleId ? "month" : "week");
+  const [monthVehicle, setMonthVehicle] = useState<string | null>(initialVehicleId ?? null);
+  useEffect(() => {
+    if (!initialVehicleId) return;
+    setMonthVehicle(initialVehicleId);
+    setView("month");
+  }, [initialVehicleId]);
   const [month, setMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
