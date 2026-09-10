@@ -19,7 +19,8 @@ export const MODE_LABEL: Record<AppMode, string> = {
 /** Onglets de la capsule par mode ; « profil » est commun. L'ordre est celui de la capsule. */
 export const MODE_TABS: Record<AppMode, readonly string[]> = {
   client: ["locations", "favoris", "index", "messages", "profil"],
-  pro: ["pro-home", "pro-bookings", "pro-vehicles", "pro-showcase", "profil"],
+  // Ordre voulu par le fondateur (2026-09-10) : Vitrine, Vehicules, Tableau de bord, Messages, Profil.
+  pro: ["pro-showcase", "pro-vehicles", "pro-home", "pro-bookings", "profil"],
   admin: ["admin-verifications", "admin-loueurs", "admin-reports", "profil"],
 };
 
