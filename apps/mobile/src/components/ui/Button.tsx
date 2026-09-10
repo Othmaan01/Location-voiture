@@ -4,6 +4,7 @@ import {
   Pressable,
   StyleSheet,
   View,
+  type ColorValue,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
@@ -25,13 +26,13 @@ export interface ButtonProps extends Omit<PressableProps, "style" | "children"> 
   style?: StyleProp<ViewStyle>;
 }
 
-const BACKGROUND: Record<ButtonVariant, string> = {
+const BACKGROUND: Record<ButtonVariant, ColorValue> = {
   accent: theme.colors.accent,
   primary: theme.colors.text,
   ghost: theme.colors.surfaceRaised,
   danger: theme.colors.dangerSoft,
 };
-const FOREGROUND: Record<ButtonVariant, string> = {
+const FOREGROUND: Record<ButtonVariant, ColorValue> = {
   accent: "#ffffff",
   primary: theme.colors.textInverse,
   ghost: theme.colors.text,

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, type ColorValue } from "react-native";
 
 import { theme } from "@/theme";
 
@@ -7,7 +7,7 @@ import { Text } from "./Text";
 
 export type BadgeTone = "accent" | "success" | "warning" | "neutral";
 
-const TONES: Record<BadgeTone, { bg: string; fg: string }> = {
+const TONES: Record<BadgeTone, { bg: ColorValue; fg: ColorValue }> = {
   accent: { bg: theme.colors.accentSoft, fg: theme.colors.accentTint },
   success: { bg: theme.colors.successSoft, fg: theme.colors.success },
   warning: { bg: theme.colors.warningSoft, fg: theme.colors.warning },

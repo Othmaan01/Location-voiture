@@ -396,6 +396,7 @@ export function createPublicCatalogService(
           latitude: agency.latitude,
           longitude: agency.longitude,
           phone: agency.phone,
+          timezone: agency.timezone,
         },
         loueur: {
           id: org.id,

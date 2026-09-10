@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, View, useColorScheme } from "react-native";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Check } from "lucide-react-native";
@@ -28,6 +28,7 @@ export function Celebration() {
 
 function Moment({ title, subtitle }: { title: string; subtitle?: string }) {
   const hide = useCelebration((s) => s.hide);
+  const scheme = useColorScheme();
   const veil = useRef(new Animated.Value(0)).current;
   const card = useRef(new Animated.Value(0)).current;
   const ring = useRef(new Animated.Value(0)).current;
@@ -81,7 +82,11 @@ function Moment({ title, subtitle }: { title: string; subtitle?: string }) {
 
   return (
     <Animated.View style={[styles.root, { opacity: veil }]}>
-      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView
+        intensity={30}
+        tint={scheme === "light" ? "light" : "dark"}
+        style={StyleSheet.absoluteFill}
+      />
       <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} accessibilityLabel="Fermer" />
       <Animated.View
         style={[
@@ -188,7 +193,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.space["7"],
     paddingHorizontal: theme.space["5"],
     borderRadius: 28,
-    backgroundColor: "rgba(22,22,26,0.96)",
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.glassBorder,
     alignItems: "center",

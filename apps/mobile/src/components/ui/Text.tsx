@@ -1,4 +1,9 @@
-import { Text as RNText, StyleSheet, type TextProps as RNTextProps } from "react-native";
+import {
+  Text as RNText,
+  StyleSheet,
+  type ColorValue,
+  type TextProps as RNTextProps,
+} from "react-native";
 
 import { fontFamily, theme } from "@/theme";
 
@@ -12,7 +17,7 @@ export interface TextProps extends RNTextProps {
   tone?: TextTone;
 }
 
-const TONES: Record<TextTone, string> = {
+const TONES: Record<TextTone, ColorValue> = {
   default: theme.colors.text,
   muted: theme.colors.textMuted,
   dim: theme.colors.textDim,

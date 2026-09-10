@@ -59,6 +59,9 @@ export default function ConversationScreen() {
   }
   const c = detail.data.conversation;
   const isCustomer = me.data?.userId === c.customerId;
+  // Statut facon iMessage sous le dernier message envoye : « Lu » si l'autre partie a ouvert le fil apres.
+  const lastMineIndex = detail.data.messages.map((m) => m.mine).lastIndexOf(true);
+  const otherReadAt = c.otherReadAt ? new Date(c.otherReadAt) : null;
   const title = isCustomer ? c.organizationName : c.customerName;
   const context = [c.vehicleLabel, c.bookingReference ? `Réf. ${c.bookingReference}` : null]
     .filter(Boolean)
@@ -120,21 +123,28 @@ export default function ConversationScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.topRule} />
-          {detail.data.messages.map((m) => (
-            <View key={m.id} style={[styles.bubbleRow, m.mine ? styles.rowMine : null]}>
-              <View style={[styles.bubble, m.mine ? styles.bubbleMine : styles.bubbleOther]}>
-                <Text variant="sm" tone={m.mine ? "inverse" : "default"}>
-                  {m.body}
-                </Text>
-                <Text variant="small" tone={m.mine ? "inverse" : "dim"} style={styles.time}>
-                  {new Date(m.createdAt).toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
+          {detail.data.messages.map((m, i) => {
+            const lastMine = m.mine && i === lastMineIndex;
+            const read = lastMine && otherReadAt !== null && otherReadAt >= new Date(m.createdAt);
+            return (
+              <View key={m.id} style={[styles.bubbleRow, m.mine ? styles.rowMine : null]}>
+                <View style={[styles.bubble, m.mine ? styles.bubbleMine : styles.bubbleOther]}>
+                  <Text variant="sm" tone={m.mine ? "inverse" : "default"}>
+                    {m.body}
+                  </Text>
+                  <View style={[styles.rule, m.mine ? styles.ruleMine : null]} />
+                  <Text variant="small" tone={m.mine ? "inverse" : "dim"} style={styles.time}>
+                    {formatStamp(m.createdAt)}
+                  </Text>
+                </View>
+                {lastMine ? (
+                  <Text variant="small" tone="dim" style={styles.status}>
+                    {read ? `Lu · ${formatStamp(otherReadAt!.toISOString())}` : "Distribué"}
+                  </Text>
+                ) : null}
               </View>
-            </View>
-          ))}
+            );
+          })}
           {detail.data.messages.length === 0 ? (
             <Text variant="sm" tone="muted" style={styles.empty}>
               Écrivez votre premier message.
@@ -171,6 +181,21 @@ export default function ConversationScreen() {
   );
 }
 
+/** « Aujourd'hui · 14:32 », « Hier · 09:10 », sinon « 10 sept. · 18:05 ». */
+function formatStamp(iso: string): string {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  const yesterday = new Date(today.getTime() - 86_400_000);
+  const day = sameDay(d, today)
+    ? "Aujourd'hui"
+    : sameDay(d, yesterday)
+      ? "Hier"
+      : d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return `${day} · ${time}`;
+}
+
 const styles = StyleSheet.create({
   content: { flex: 1, gap: 0 },
   flex: { flex: 1 },
@@ -181,8 +206,8 @@ const styles = StyleSheet.create({
     marginTop: theme.space["2"],
     marginBottom: theme.space["4"],
   },
-  bubbleRow: { flexDirection: "row", justifyContent: "flex-start" },
-  rowMine: { justifyContent: "flex-end" },
+  bubbleRow: { alignItems: "flex-start" },
+  rowMine: { alignItems: "flex-end" },
   bubble: {
     maxWidth: "82%",
     paddingHorizontal: theme.space["3"],
@@ -197,7 +222,10 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     borderBottomLeftRadius: 6,
   },
-  time: { alignSelf: "center", marginTop: 4, fontSize: 10, lineHeight: 12, opacity: 0.75 },
+  rule: { height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.border, marginTop: 6 },
+  ruleMine: { backgroundColor: theme.colors.textInverse, opacity: 0.3 },
+  time: { alignSelf: "flex-end", marginTop: 3, fontSize: 10, lineHeight: 12, opacity: 0.8 },
+  status: { marginTop: 3, marginRight: 4, fontSize: 10, lineHeight: 12 },
   empty: { textAlign: "center", marginTop: theme.space["6"] },
   composer: {
     flexDirection: "row",

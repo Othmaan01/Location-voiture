@@ -42,7 +42,6 @@ export default function TabsLayout() {
       <PlanGate />
       <Tabs
         tabBar={(props) => <Dock {...props} />}
-        backBehavior="history"
         screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: "transparent" } }}
       >
         <Tabs.Screen name="index" options={{ title: "Accueil" }} />

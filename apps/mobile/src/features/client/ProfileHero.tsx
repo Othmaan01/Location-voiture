@@ -82,11 +82,7 @@ export function ProfileHero({ me, email }: { me: MeResponse; email: string | nul
               ? `${me.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`
               : "—"
           }
-          label={
-            me.ratingCount > 0
-              ? `${me.ratingCount} évaluation${me.ratingCount > 1 ? "s" : ""}`
-              : "évaluation"
-          }
+          label={`${me.ratingCount} évaluation${me.ratingCount > 1 ? "s" : ""}`}
           star={me.ratingAverage !== null}
         />
         <View style={styles.divider} />

@@ -17,8 +17,17 @@ import { useLoueurReviews } from "@/lib/queries-reviews";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
 
+/** Delai de reponse moyen du loueur, en mots simples : « 45 min », « 3 h », « 2 j ». */
+export function formatResponseDelay(hours: number | null): string {
+  if (hours === null) return "—";
+  if (hours < 1) return `${Math.max(5, Math.round(hours * 60))} min`;
+  if (hours < 24) return `${Math.max(1, Math.round(hours))} h`;
+  return `${Math.max(1, Math.round(hours / 24))} j`;
+}
+
 /**
- * Profil public d'un loueur : en-tete, contact, itineraire, grille des vehicules avec bouton d'action (ADR-0009).
+ * Profil public d'un loueur : en-tete (sans banniere, retour fondateur 2026-09-10), contact,
+ * itineraire, grille des vehicules avec bouton d'action (ADR-0009).
  * `embedded` : affiche dans un onglet de la capsule (vitrine vue par le loueur lui-meme, telle qu'un client la voit).
  */
 export function LoueurProfile({
@@ -92,11 +101,6 @@ export function LoueurProfile({
 
   return (
     <Screen {...frame}>
-      {l.bannerUrl ? (
-        <Image source={{ uri: l.bannerUrl }} style={styles.banner} contentFit="cover" />
-      ) : (
-        <View style={[styles.banner, styles.bannerEmpty, { borderColor: accent }]} />
-      )}
       <View style={styles.head}>
         <View style={[styles.logoRing, { borderColor: accent }]}>
           <Avatar name={l.name} uri={l.logoUrl} size={64} />
@@ -137,12 +141,9 @@ export function LoueurProfile({
               ? `${l.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`
               : "—"
           }
-          label={l.ratingCount > 0 ? `${l.ratingCount} avis` : "pas encore d'avis"}
+          label={`${l.ratingCount} avis`}
         />
-        <Stat
-          value={l.responseRate != null ? `${Math.round(l.responseRate * 100)} %` : "—"}
-          label="réponses"
-        />
+        <Stat value={formatResponseDelay(l.responseTimeHours)} label="délai de réponse" />
         <Stat value={new Date(l.memberSince).getFullYear().toString()} label="membre depuis" />
       </View>
       <View style={styles.actions}>
@@ -182,7 +183,7 @@ export function LoueurProfile({
               {t === "vehicles"
                 ? "Véhicules"
                 : t === "reviews"
-                  ? `Avis${l.ratingCount > 0 ? ` (${l.ratingCount})` : ""}`
+                  ? `Avis (${l.ratingCount})`
                   : "Infos"}
             </Text>
           </Pressable>
@@ -364,8 +365,6 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   ratingOutOf: { marginLeft: 6 },
-  banner: { height: 120, borderRadius: theme.radius.card, backgroundColor: theme.colors.surface },
-  bannerEmpty: { borderWidth: 1, opacity: 0.6 },
   logoRing: { borderWidth: 2, borderRadius: 20, padding: 2 },
   website: { flexDirection: "row", alignItems: "center", gap: theme.space["2"], minHeight: 40 },
   agencyPhoto: { height: 110, borderRadius: 10, marginBottom: theme.space["2"] },

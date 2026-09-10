@@ -2,8 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
-import { Image } from "expo-image";
+import { Alert, Pressable, StyleSheet, View, type ColorValue } from "react-native";
 import { Camera } from "lucide-react-native";
 import { z } from "zod";
 import { AccentSchema, type Accent } from "@lv/contracts";
@@ -34,14 +33,17 @@ const Schema = z.object({
 type Form = z.infer<typeof Schema>;
 
 /** Accents autorises (ADR-0011) : quelques teintes, jamais une palette libre, pour garder le mode nuit premium. */
-const ACCENTS: { value: Accent; label: string; color: string }[] = [
+const ACCENTS: { value: Accent; label: string; color: ColorValue }[] = [
   { value: "red", label: "Rouge", color: ACCENT_COLOR.red },
   { value: "gold", label: "Or", color: ACCENT_COLOR.gold },
   { value: "blue", label: "Bleu", color: ACCENT_COLOR.blue },
   { value: "green", label: "Vert", color: ACCENT_COLOR.green },
 ];
 
-/** Apparence de l'espace pro : logo, banniere, presentation, site, accent. Visible sur le profil public. */
+/**
+ * Apparence de l'espace pro : logo, presentation, site, accent. Visible sur le profil public.
+ * Plus de banniere : le profil ne l'affiche plus (retour fondateur, 2026-09-10) ; l'API la conserve.
+ */
 export default function BrandingScreen() {
   const { organizationId } = useLocalSearchParams<{ organizationId: string }>();
   const router = useRouter();
@@ -49,7 +51,7 @@ export default function BrandingScreen() {
   const update = useUpdateOrganization(organizationId);
   const uploadUrl = useBrandingUploadUrl(organizationId);
   const confirm = useConfirmBranding(organizationId);
-  const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const { control, handleSubmit, reset, formState } = useForm<Form>({
     resolver: zodResolver(Schema),
@@ -65,11 +67,12 @@ export default function BrandingScreen() {
       });
   }, [org.data, reset]);
 
-  const pick = async (kind: "logo" | "banner") => {
+  const pick = async () => {
+    const kind = "logo" as const;
     try {
       const picked = await pickAndPrepareImage();
       if (!picked) return;
-      setUploading(kind);
+      setUploading(true);
       const signed = await uploadUrl.mutateAsync({
         kind,
         mimeType: picked.mimeType,
@@ -85,7 +88,7 @@ export default function BrandingScreen() {
           : "Vérifiez votre connexion et réessayez.",
       );
     } finally {
-      setUploading(null);
+      setUploading(false);
     }
   };
 
@@ -109,46 +112,24 @@ export default function BrandingScreen() {
         Ce que les clients voient sur votre profil : votre image, votre présentation, votre couleur.
       </Text>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Changer la bannière"
-        onPress={() => void pick("banner")}
-        style={styles.banner}
-      >
-        {org.data?.bannerUrl ? (
-          <Image
-            source={{ uri: org.data.bannerUrl }}
-            style={styles.bannerImage}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={styles.bannerEmpty}>
-            <Camera size={24} color={theme.colors.textDim} />
-            <Text variant="small" tone="muted">
-              Bannière (format large)
-            </Text>
+      <View style={styles.logoBlock}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Changer le logo"
+          onPress={() => void pick()}
+          style={styles.logoWrap}
+        >
+          <Avatar name={org.data?.name ?? ""} uri={org.data?.logoUrl ?? null} size={96} />
+          <View style={styles.camera}>
+            <Camera size={16} color="#ffffff" strokeWidth={2.5} />
           </View>
-        )}
-        <View style={styles.logoWrap}>
-          <Avatar name={org.data?.name ?? ""} uri={org.data?.logoUrl ?? null} size={72} />
-        </View>
-      </Pressable>
-      <View style={styles.imageActions}>
+        </Pressable>
         <Button
           label="Changer le logo"
           variant="ghost"
           size="sm"
-          loading={uploading === "logo"}
-          onPress={() => void pick("logo")}
-          style={styles.flex}
-        />
-        <Button
-          label="Changer la bannière"
-          variant="ghost"
-          size="sm"
-          loading={uploading === "banner"}
-          onPress={() => void pick("banner")}
-          style={styles.flex}
+          loading={uploading}
+          onPress={() => void pick()}
         />
       </View>
 
@@ -226,26 +207,21 @@ export default function BrandingScreen() {
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    height: 150,
-    borderRadius: theme.radius.card,
-    overflow: "visible",
-    marginBottom: 36,
-  },
-  bannerImage: { width: "100%", height: "100%", borderRadius: theme.radius.card },
-  bannerEmpty: {
-    flex: 1,
-    borderRadius: theme.radius.card,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+  logoBlock: { alignItems: "center", gap: theme.space["3"] },
+  logoWrap: { alignSelf: "center" },
+  camera: {
+    position: "absolute",
+    right: -2,
+    bottom: -2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.accent,
+    borderWidth: 3,
+    borderColor: theme.colors.background,
     alignItems: "center",
     justifyContent: "center",
-    gap: theme.space["1"],
   },
-  logoWrap: { position: "absolute", left: theme.space["4"], bottom: -32 },
-  imageActions: { flexDirection: "row", gap: theme.space["2"] },
-  flex: { flex: 1 },
   form: { gap: theme.space["4"] },
   accents: { gap: theme.space["3"] },
   swatches: { flexDirection: "row", gap: theme.space["3"] },

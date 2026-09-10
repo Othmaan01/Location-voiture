@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
-import { useNavigation, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 import { theme } from "@/theme";
 
@@ -44,9 +44,8 @@ export function Screen({
   children,
 }: ScreenProps) {
   const router = useRouter();
-  const navigation = useNavigation();
-  // Ecrans a onglets : une fleche apparait des qu'il y a une page precedente (retour fondateur).
-  const showBack = back || (dock && navigation.canGoBack());
+  // Les ecrans a onglets n'ont pas de fleche : la capsule suffit (retour fondateur, 2026-09-10).
+  const showBack = back;
   const header =
     title || showBack || headerRight ? (
       <View style={styles.header}>

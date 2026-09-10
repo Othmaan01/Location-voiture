@@ -11,19 +11,31 @@ import { useMyBookings } from "@/lib/queries-bookings";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
 
+type Scope = "current" | "upcoming" | "past";
+const SCOPE_LABEL: Record<Scope, string> = {
+  current: "En cours",
+  upcoming: "À venir",
+  past: "Passées",
+};
+
 export default function RentalsScreen() {
   const { session } = useSession();
   const router = useRouter();
-  const [scope, setScope] = useState<"upcoming" | "past">("upcoming");
-  const bookings = useMyBookings(scope);
+  // Trois vues (retour fondateur, 2026-09-10) : en cours, a venir, passees.
+  const [scope, setScope] = useState<Scope>("current");
+  const bookings = useMyBookings(scope === "past" ? "past" : "upcoming");
   const [showOlder, setShowOlder] = useState(false);
   const all = bookings.data?.bookings ?? [];
   // Passees : 30 jours par defaut (ADR-0017), l'historique complet sur demande.
   const cutoff = Date.now() - 30 * 86_400_000;
   const items =
-    scope === "past" && !showOlder ? all.filter((b) => new Date(b.to).getTime() >= cutoff) : all;
+    scope === "past"
+      ? showOlder
+        ? all
+        : all.filter((b) => new Date(b.to).getTime() >= cutoff)
+      : all.filter((b) => (b.status === "active") === (scope === "current"));
   const hiddenOlder = scope === "past" && !showOlder ? all.length - items.length : 0;
-  const active = items.find((b) => b.status === "active");
+  const active = scope === "current" ? items[0] : undefined;
 
   return (
     <Screen title="Locations" dock>
@@ -36,7 +48,7 @@ export default function RentalsScreen() {
       ) : null}
       {session ? (
         <View style={styles.tabs}>
-          {(["upcoming", "past"] as const).map((s) => (
+          {(["current", "upcoming", "past"] as const).map((s) => (
             <Pressable
               key={s}
               accessibilityRole="tab"
@@ -45,7 +57,7 @@ export default function RentalsScreen() {
               style={[styles.chip, scope === s ? styles.chipOn : null]}
             >
               <Text variant="smStrong" tone={scope === s ? "inverse" : "default"}>
-                {s === "upcoming" ? "En cours et à venir" : "Passées"}
+                {SCOPE_LABEL[s]}
               </Text>
             </Pressable>
           ))}
@@ -69,11 +81,19 @@ export default function RentalsScreen() {
       ) : null}
       {session && bookings.data && items.length === 0 ? (
         <EmptyState
-          title={scope === "upcoming" ? "Aucune location à venir" : "Aucune location passée"}
+          title={
+            scope === "current"
+              ? "Aucune location en cours"
+              : scope === "upcoming"
+                ? "Aucune location à venir"
+                : "Aucune location passée"
+          }
           description={
-            scope === "upcoming"
-              ? "Trouvez un loueur près de chez vous et envoyez votre première demande."
-              : "Vos locations terminées apparaîtront ici."
+            scope === "current"
+              ? "Votre location apparaît ici dès que le loueur vous remet le véhicule."
+              : scope === "upcoming"
+                ? "Trouvez un loueur près de chez vous et envoyez votre première demande."
+                : "Vos locations terminées apparaîtront ici."
           }
           action={
             <Button

@@ -1,8 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
+  LayoutAnimation,
   Linking,
   Modal,
   Pressable,
@@ -18,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Briefcase,
   Car,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   DoorOpen,
@@ -33,18 +36,19 @@ import {
   Users,
   X,
 } from "lucide-react-native";
-import type { PublicVehicleDetail } from "@lv/contracts";
+import type { Review } from "@lv/contracts";
+import { QuoteError, quote as computeQuote } from "@lv/pricing";
 
 import {
   Avatar,
   Badge,
-  Button,
   CalendarLegend,
   Card,
   EmptyState,
   MonthCalendar,
   Screen,
   Text,
+  WheelPicker,
   dayKey,
   markRange,
   type DayState,
@@ -52,6 +56,14 @@ import {
 import { ACCENT_COLOR } from "@/features/client/accent";
 import { CATEGORY_LABEL, FUEL_LABEL, TRANSMISSION_LABEL, formatEuros } from "@/features/pro/labels";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
+import {
+  SLOTS,
+  formatSlot,
+  slotOf,
+  startOfDay,
+  withSlot,
+  type Slot,
+} from "@/features/client/slots";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { formatOffer } from "@/lib/queries-offers";
 import {
@@ -60,16 +72,23 @@ import {
   useVehicle,
   useVehicleAvailability,
 } from "@/lib/queries-public";
-import { startOfDay, withSlot } from "@/features/client/slots";
-import { useMemo } from "react";
+import { useLoueurReviews } from "@/lib/queries-reviews";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
 
 const GALLERY_RATIO = 4 / 3;
+const NINE: Slot = { hour: 9, minute: 0 };
+const SLOT_LABELS = SLOTS.map(formatSlot);
+const slotIndex = (s: Slot) =>
+  Math.max(
+    0,
+    SLOTS.findIndex((x) => x.hour === s.hour && x.minute === s.minute),
+  );
 
 /**
- * Fiche vehicule (retour fondateur, 2026-09-09) : galerie plein ecran, caracteristiques,
- * tarif, agence, loueur, et un seul bouton d'action fixe en bas. Meme DA nuit que le reste.
+ * Fiche vehicule (retour fondateur, 2026-09-09 et 2026-09-10) : galerie, caracteristiques,
+ * disponibilites avec heures en roulette, tarif repliable, agence, loueur, avis en carrousel,
+ * et un seul bouton d'action fixe en bas dont le prix est celui du devis (meme calcul, ADR-0023).
  */
 export default function VehicleScreen() {
   const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
@@ -82,9 +101,13 @@ export default function VehicleScreen() {
   const vehicle = useVehicle(vehicleId, period);
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
+  const reviews = useLoueurReviews(vehicle.data?.loueur.id ?? "", !!vehicle.data);
   const [index, setIndex] = useState(0);
   const [contact, setContact] = useState(false);
   const [viewer, setViewer] = useState<number | null>(null);
+  const [tarifOpen, setTarifOpen] = useState(false);
+  const [reviewScope, setReviewScope] = useState<"vehicle" | "agency">("vehicle");
+  const [reviewIndex, setReviewIndex] = useState(0);
   const listRef = useRef<FlatList<string>>(null);
   // Disponibilites sur trois mois : la meme source que le calendrier de reservation.
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -106,6 +129,10 @@ export default function VehicleScreen() {
   const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [pickStart, setPickStart] = useState<Date | null>(from ? startOfDay(new Date(from)) : null);
   const [pickEnd, setPickEnd] = useState<Date | null>(to ? startOfDay(new Date(to)) : null);
+  const [startSlot, setStartSlot] = useState<Slot>(from ? slotOf(new Date(from)) : NINE);
+  const [endSlot, setEndSlot] = useState<Slot>(to ? slotOf(new Date(to)) : NINE);
+  const commit = (start: Date, end: Date, s1: Slot, s2: Slot) =>
+    setPeriod(withSlot(start, s1).toISOString(), withSlot(end, s2).toISOString());
   const pickDay = (day: Date) => {
     const crosses = (a: Date, b: Date) => {
       for (let d = new Date(a); d.getTime() <= b.getTime(); d.setDate(d.getDate() + 1))
@@ -114,15 +141,67 @@ export default function VehicleScreen() {
     };
     if (pickStart && !pickEnd && day.getTime() > pickStart.getTime() && !crosses(pickStart, day)) {
       setPickEnd(day);
-      setPeriod(
-        withSlot(pickStart, { hour: 9, minute: 0 }).toISOString(),
-        withSlot(day, { hour: 9, minute: 0 }).toISOString(),
-      );
+      commit(pickStart, day, startSlot, endSlot);
       return;
     }
     setPickStart(day);
     setPickEnd(null);
   };
+  const changeSlot = (which: "start" | "end", i: number) => {
+    const s = SLOTS[i] ?? NINE;
+    if (which === "start") setStartSlot(s);
+    else setEndSlot(s);
+    if (pickStart && pickEnd)
+      commit(pickStart, pickEnd, which === "start" ? s : startSlot, which === "end" ? s : endSlot);
+  };
+
+  // Estimation = le calcul du devis lui-meme (@lv/pricing), avec les dates ET les heures choisies.
+  const estimate = useMemo(() => {
+    const d = vehicle.data;
+    if (!d || !pickStart || !pickEnd || d.dailyCents === null) return null;
+    const start = withSlot(pickStart, startSlot);
+    const end = withSlot(pickEnd, endSlot);
+    if (end.getTime() <= start.getTime())
+      return { total: null, days: null, note: "Retour avant le retrait" };
+    try {
+      const q = computeQuote({
+        ratePlan: {
+          currency: d.currency,
+          dailyCents: d.dailyCents,
+          weekendDailyCents: d.ratePlan?.weekendDailyCents ?? null,
+          weeklyCents: d.ratePlan?.weeklyCents ?? null,
+          monthlyCents: d.ratePlan?.monthlyCents ?? null,
+          depositCents: d.depositCents ?? 0,
+          kmIncludedPerDay: d.ratePlan?.kmIncludedPerDay ?? null,
+          extraKmCents: d.ratePlan?.extraKmCents ?? null,
+          minDays: d.ratePlan?.minDays ?? 1,
+          maxDays: d.ratePlan?.maxDays ?? null,
+        },
+        period: { start: start.toISOString(), end: end.toISOString() },
+        agencyTimeZone: d.agency.timezone,
+        discount: d.offer
+          ? {
+              label: `Offre : ${d.offer.title}`,
+              type: d.offer.discountType,
+              value: d.offer.discountValue,
+            }
+          : null,
+      });
+      return { total: q.total.cents, days: q.days, note: null };
+    } catch (e) {
+      return {
+        total: null,
+        days: null,
+        note: e instanceof QuoteError ? e.message : "Période invalide",
+      };
+    }
+  }, [vehicle.data, pickStart, pickEnd, startSlot, endSlot]);
+  // Petite animation d'actualisation du prix a chaque changement (pas de rechargement).
+  const priceFade = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    priceFade.setValue(0.25);
+    Animated.timing(priceFade, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+  }, [estimate?.total, estimate?.note, priceFade]);
 
   if (vehicle.isPending) {
     return (
@@ -147,15 +226,24 @@ export default function VehicleScreen() {
   const photos = v.photos.length > 0 ? v.photos : [];
   const galleryW = width - 2 * theme.space["4"];
   const galleryH = Math.round(galleryW / GALLERY_RATIO);
-  // Estimation sur les dates choisies : nombre de jours x prix du jour (le devis exact vient a l'etape suivante).
-  const days =
-    from && to
-      ? Math.max(1, Math.ceil((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000))
-      : null;
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setIndex(Math.round(e.nativeEvent.contentOffset.x / galleryW));
   const price = v.discountedDailyCents ?? v.dailyCents;
-  const estimate = price !== null && days !== null ? price * days : null;
+  const allReviews = reviews.data?.reviews ?? [];
+  const vehicleReviews = allReviews.filter((r) => r.vehicleId === v.id);
+  const shownReviews = reviewScope === "vehicle" ? vehicleReviews : allReviews;
+  const reviewW = Math.round(galleryW * 0.84);
+  const reviewGap = theme.space["3"];
+  const toggleTarif = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setTarifOpen((o) => !o);
+  };
+  const tarifSummary = [
+    v.dailyCents !== null ? `${formatEuros(v.dailyCents)} / jour` : "Sur demande",
+    v.depositCents !== null ? `caution ${formatEuros(v.depositCents)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const specs: { icon: typeof Car; label: string }[] = [
     { icon: Settings2, label: TRANSMISSION_LABEL[v.transmission] ?? v.transmission },
@@ -334,7 +422,25 @@ export default function VehicleScreen() {
           </Section>
         ) : null}
 
-        <Section title="Disponibilités">
+        <Section
+          title="Disponibilités"
+          right={
+            <View style={styles.wheels}>
+              <WheelPicker
+                label="Retrait"
+                items={SLOT_LABELS}
+                index={slotIndex(startSlot)}
+                onChange={(i) => changeSlot("start", i)}
+              />
+              <WheelPicker
+                label="Retour"
+                items={SLOT_LABELS}
+                index={slotIndex(endSlot)}
+                onChange={(i) => changeSlot("end", i)}
+              />
+            </View>
+          }
+        >
           <Card>
             <MonthCalendar
               month={month}
@@ -349,7 +455,7 @@ export default function VehicleScreen() {
             <CalendarLegend states={dayStates.size > 0 ? ["unavailable"] : []} />
             <Text variant="small" tone="dim">
               {pickStart && pickEnd
-                ? `Vos dates : ${formatPeriod(withSlot(pickStart, { hour: 9, minute: 0 }).toISOString(), withSlot(pickEnd, { hour: 9, minute: 0 }).toISOString())}. Les heures se précisent à l'étape suivante.`
+                ? `Vos dates : ${formatPeriod(withSlot(pickStart, startSlot).toISOString(), withSlot(pickEnd, endSlot).toISOString())} · ${formatSlot(startSlot)} → ${formatSlot(endSlot)}${estimate?.days ? ` · ${estimate.days} jour${estimate.days > 1 ? "s" : ""}` : ""}`
                 : pickStart
                   ? "Touchez maintenant le jour de retour."
                   : "Touchez le jour de retrait, puis le jour de retour. Les jours barrés sont déjà pris."}
@@ -357,48 +463,74 @@ export default function VehicleScreen() {
           </Card>
         </Section>
 
-        <Section title="Tarif">
-          <Card padded={false}>
-            <Row label="Par jour" value={v.dailyCents !== null ? formatEuros(v.dailyCents) : "—"} />
-            {v.ratePlan?.weekendDailyCents ? (
-              <Row label="Jour de week-end" value={formatEuros(v.ratePlan.weekendDailyCents)} />
-            ) : null}
-            {v.ratePlan?.weeklyCents ? (
-              <Row label="La semaine" value={formatEuros(v.ratePlan.weeklyCents)} />
-            ) : null}
-            {v.ratePlan?.monthlyCents ? (
-              <Row label="Le mois" value={formatEuros(v.ratePlan.monthlyCents)} />
-            ) : null}
-            {v.ratePlan?.kmIncludedPerDay ? (
-              <Row
-                label="Kilomètres inclus"
-                value={`${v.ratePlan.kmIncludedPerDay} km / jour${v.ratePlan.extraKmCents ? ` · ${formatEuros(v.ratePlan.extraKmCents)} le km en plus` : ""}`}
-              />
-            ) : null}
-            <Row
-              label="Caution"
-              value={v.depositCents !== null ? formatEuros(v.depositCents) : "—"}
-              last={!v.minDriverAge && !v.minLicenseYears}
-            />
-            {v.minDriverAge || v.minLicenseYears ? (
-              <Row
-                label="Conditions"
-                value={[
-                  v.minDriverAge ? `${v.minDriverAge} ans minimum` : null,
-                  v.minLicenseYears
-                    ? `${v.minLicenseYears} an${v.minLicenseYears > 1 ? "s" : ""} de permis`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                last
-              />
-            ) : null}
-          </Card>
-          <Text variant="small" tone="dim">
-            Paiement à l'agence, au prix affiché. Aucune commission.
-          </Text>
-        </Section>
+        <View style={styles.section}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: tarifOpen }}
+            accessibilityLabel={tarifOpen ? "Replier le tarif" : "Voir le tarif détaillé"}
+            onPress={toggleTarif}
+            style={styles.accordionHead}
+          >
+            <View style={styles.flex}>
+              <Text variant="h2">Tarif</Text>
+              {!tarifOpen ? (
+                <Text variant="sm" tone="muted">
+                  {tarifSummary}
+                </Text>
+              ) : null}
+            </View>
+            <View style={[styles.chevron, tarifOpen ? styles.chevronOpen : null]}>
+              <ChevronDown size={18} color={theme.colors.text} />
+            </View>
+          </Pressable>
+          {tarifOpen ? (
+            <>
+              <Card padded={false}>
+                <Row
+                  label="Par jour"
+                  value={v.dailyCents !== null ? formatEuros(v.dailyCents) : "—"}
+                />
+                {v.ratePlan?.weekendDailyCents ? (
+                  <Row label="Jour de week-end" value={formatEuros(v.ratePlan.weekendDailyCents)} />
+                ) : null}
+                {v.ratePlan?.weeklyCents ? (
+                  <Row label="La semaine" value={formatEuros(v.ratePlan.weeklyCents)} />
+                ) : null}
+                {v.ratePlan?.monthlyCents ? (
+                  <Row label="Le mois" value={formatEuros(v.ratePlan.monthlyCents)} />
+                ) : null}
+                {v.ratePlan?.kmIncludedPerDay ? (
+                  <Row
+                    label="Kilomètres inclus"
+                    value={`${v.ratePlan.kmIncludedPerDay} km / jour${v.ratePlan.extraKmCents ? ` · ${formatEuros(v.ratePlan.extraKmCents)} le km en plus` : ""}`}
+                  />
+                ) : null}
+                <Row
+                  label="Caution"
+                  value={v.depositCents !== null ? formatEuros(v.depositCents) : "—"}
+                  last={!v.minDriverAge && !v.minLicenseYears}
+                />
+                {v.minDriverAge || v.minLicenseYears ? (
+                  <Row
+                    label="Conditions"
+                    value={[
+                      v.minDriverAge ? `${v.minDriverAge} ans minimum` : null,
+                      v.minLicenseYears
+                        ? `${v.minLicenseYears} an${v.minLicenseYears > 1 ? "s" : ""} de permis`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    last
+                  />
+                ) : null}
+              </Card>
+              <Text variant="small" tone="dim">
+                Paiement à l'agence, au prix affiché. Aucune commission.
+              </Text>
+            </>
+          ) : null}
+        </View>
 
         <Section title="Retrait">
           <Card>
@@ -454,12 +586,79 @@ export default function VehicleScreen() {
               <Text variant="small" tone="muted">
                 {v.loueur.vehicleCount} véhicule{v.loueur.vehicleCount > 1 ? "s" : ""}
                 {v.loueur.ratingAverage !== null
-                  ? ` · ${v.loueur.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} ★ (${v.loueur.ratingCount})`
-                  : ""}
+                  ? ` · ${v.loueur.ratingAverage.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5 (${v.loueur.ratingCount})`
+                  : ` · ${v.loueur.ratingCount} avis`}
               </Text>
             </View>
             <ChevronRight size={20} color={theme.colors.textDim} />
           </Pressable>
+        </Section>
+
+        <Section
+          title="Avis"
+          right={
+            <View style={styles.segment}>
+              {(["vehicle", "agency"] as const).map((s) => (
+                <Pressable
+                  key={s}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: reviewScope === s }}
+                  onPress={() => {
+                    setReviewScope(s);
+                    setReviewIndex(0);
+                  }}
+                  style={[styles.segmentItem, reviewScope === s ? styles.segmentOn : null]}
+                >
+                  <Text variant="small" tone={reviewScope === s ? "inverse" : "muted"}>
+                    {s === "vehicle"
+                      ? `Ce véhicule (${vehicleReviews.length})`
+                      : `L'agence (${allReviews.length})`}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          }
+        >
+          {reviews.isPending ? (
+            <ActivityIndicator color={theme.colors.accent} />
+          ) : shownReviews.length === 0 ? (
+            <Text variant="sm" tone="muted">
+              Pas encore d'avis pour {reviewScope === "vehicle" ? "ce véhicule" : "cette agence"}.
+            </Text>
+          ) : (
+            <>
+              <FlatList
+                key={reviewScope}
+                data={shownReviews}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={reviewW + reviewGap}
+                decelerationRate="fast"
+                keyExtractor={(r) => r.id}
+                ItemSeparatorComponent={() => <View style={{ width: reviewGap }} />}
+                onMomentumScrollEnd={(e) =>
+                  setReviewIndex(Math.round(e.nativeEvent.contentOffset.x / (reviewW + reviewGap)))
+                }
+                renderItem={({ item }) => (
+                  <ReviewCard
+                    review={item}
+                    width={reviewW}
+                    showVehicle={reviewScope === "agency"}
+                  />
+                )}
+              />
+              {shownReviews.length > 1 ? (
+                <View style={styles.dots}>
+                  {shownReviews.map((r, i) => (
+                    <View
+                      key={r.id}
+                      style={[styles.dot, i === reviewIndex ? styles.dotOn : null]}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </>
+          )}
         </Section>
         <View style={{ height: 96 + insets.bottom }} />
       </Screen>
@@ -481,12 +680,18 @@ export default function VehicleScreen() {
           <Text variant="bodyStrong" style={styles.ctaText}>
             {v.available === false ? "Choisir d'autres dates" : "Réserver ce véhicule"}
           </Text>
-          {estimate !== null && v.available !== false ? (
+          {estimate && v.available !== false ? (
             <>
               <View style={styles.ctaDivider} />
-              <Text variant="bodyStrong" style={styles.ctaText}>
-                {formatEuros(estimate)}
-              </Text>
+              <Animated.View style={{ opacity: priceFade }}>
+                <Text
+                  variant={estimate.total !== null ? "bodyStrong" : "small"}
+                  style={styles.ctaText}
+                  numberOfLines={1}
+                >
+                  {estimate.total !== null ? formatEuros(estimate.total) : estimate.note}
+                </Text>
+              </Animated.View>
             </>
           ) : null}
         </Pressable>
@@ -501,6 +706,61 @@ export default function VehicleScreen() {
         organizationName={v.loueur.name}
         vehicleId={v.id}
       />
+    </View>
+  );
+}
+
+/** Carte d'avis du carrousel : etoiles et note sur 5, auteur, date, vehicule si filtre agence. */
+function ReviewCard({
+  review,
+  width,
+  showVehicle,
+}: {
+  review: Review;
+  width: number;
+  showVehicle: boolean;
+}) {
+  return (
+    <View style={[styles.review, { width }]}>
+      <View style={styles.reviewHead}>
+        <View style={styles.stars}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star
+              key={n}
+              size={13}
+              color={theme.colors.text}
+              fill={n <= review.rating ? theme.colors.text : "transparent"}
+            />
+          ))}
+          <Text variant="smStrong" style={styles.ratingOutOf}>
+            {review.rating}/5
+          </Text>
+        </View>
+        <Text variant="small" tone="muted">
+          {review.customerName} · {new Date(review.createdAt).toLocaleDateString("fr-FR")}
+        </Text>
+      </View>
+      {showVehicle && review.vehicleLabel ? (
+        <Text variant="small" tone="dim">
+          {review.vehicleLabel}
+        </Text>
+      ) : null}
+      {review.comment ? (
+        <Text variant="sm" numberOfLines={4}>
+          {review.comment}
+        </Text>
+      ) : (
+        <Text variant="sm" tone="dim">
+          Sans commentaire.
+        </Text>
+      )}
+      {review.reply ? (
+        <View style={styles.reply}>
+          <Text variant="small" tone="muted" numberOfLines={2}>
+            Réponse du loueur : {review.reply}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -568,10 +828,27 @@ function PhotoViewer({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  right,
+  children,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <View style={styles.section}>
-      <Text variant="h2">{title}</Text>
+      {right ? (
+        <View style={styles.sectionHead}>
+          <Text variant="h2" style={styles.flex}>
+            {title}
+          </Text>
+          {right}
+        </View>
+      ) : (
+        <Text variant="h2">{title}</Text>
+      )}
       {children}
     </View>
   );
@@ -656,18 +933,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dots: {
-    position: "absolute",
-    bottom: 10,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 5,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.45)" },
-  dotOn: { backgroundColor: "#ffffff", width: 16 },
   counter: {
     position: "absolute",
     right: theme.space["3"],
@@ -701,6 +966,57 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   section: { gap: theme.space["3"] },
+  sectionHead: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
+  wheels: { flexDirection: "row", gap: theme.space["2"] },
+  accordionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space["3"],
+    minHeight: theme.touch.minTarget,
+  },
+  chevron: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chevronOpen: { transform: [{ rotate: "180deg" }] },
+  segment: {
+    flexDirection: "row",
+    padding: 3,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  segmentItem: {
+    paddingHorizontal: 10,
+    height: 28,
+    borderRadius: theme.radius.full,
+    justifyContent: "center",
+  },
+  segmentOn: { backgroundColor: theme.colors.text },
+  review: {
+    gap: theme.space["2"],
+    padding: theme.space["3"],
+    borderRadius: theme.radius.card,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  reviewHead: { gap: 2 },
+  stars: { flexDirection: "row", alignItems: "center", gap: 2 },
+  ratingOutOf: { marginLeft: 6 },
+  reply: {
+    paddingLeft: theme.space["3"],
+    borderLeftWidth: 2,
+    borderLeftColor: theme.colors.border,
+  },
+  dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 5 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.border },
+  dotOn: { backgroundColor: theme.colors.text, width: 16 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: theme.space["2"] },
   chip: {
     paddingHorizontal: theme.space["3"],
@@ -744,7 +1060,7 @@ const styles = StyleSheet.create({
     gap: theme.space["3"],
     paddingHorizontal: theme.space["4"],
     paddingTop: theme.space["3"],
-    backgroundColor: "rgba(14,14,17,0.96)",
+    backgroundColor: theme.colors.background,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },

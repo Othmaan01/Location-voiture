@@ -10,6 +10,7 @@ export { Screen } from "./Screen";
 export { Select } from "./Select";
 export { Sheet } from "./Sheet";
 export { Text } from "./Text";
+export { WheelPicker } from "./WheelPicker";
 export { ConfirmSheet } from "./ConfirmSheet";
 export {
   CalendarLegend,

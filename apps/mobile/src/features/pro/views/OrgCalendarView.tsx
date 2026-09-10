@@ -1,6 +1,14 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ColorValue,
+} from "react-native";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
 
 import {
@@ -425,7 +433,15 @@ function BlockSheet({
   );
 }
 
-function Legend({ color, border, label }: { color: string; border?: string; label: string }) {
+function Legend({
+  color,
+  border,
+  label,
+}: {
+  color: ColorValue;
+  border?: ColorValue;
+  label: string;
+}) {
   return (
     <View style={styles.legendItem}>
       <View style={[styles.swatch, { backgroundColor: color, borderColor: border ?? color }]} />

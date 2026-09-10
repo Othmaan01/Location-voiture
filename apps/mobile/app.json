@@ -5,14 +5,13 @@
     "scheme": "lv",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "fr.locationvoiture.app",
       "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement a trouver des vehicules autour de vous lorsque vous le demandez.",
-        "UIUserInterfaceStyle": "Dark",
         "NSFaceIDUsageDescription": "Face ID sert uniquement à déverrouiller l'application sur cet appareil.",
         "NSCameraUsageDescription": "La caméra sert à filmer ou photographier une story en direct.",
         "NSMicrophoneUsageDescription": "Le micro enregistre le son de vos stories vidéo.",

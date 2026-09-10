@@ -52,7 +52,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" />
+          <StatusBar style="auto" />
           <PushListener />
           <AppLockGate>
             <Stack

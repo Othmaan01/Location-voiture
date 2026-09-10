@@ -96,6 +96,7 @@ export function createReviewsService(db: Database, notify: NotificationsService)
         id: r.id,
         bookingId: r.bookingId,
         organizationId: r.organizationId,
+        vehicleId: r.vehicleId,
         vehicleLabel: r.vehicleId ? (vehicleMap.get(r.vehicleId) ?? null) : null,
         customerName: displayName(c?.firstName ?? null, c?.lastName ?? null),
         rating: r.rating,

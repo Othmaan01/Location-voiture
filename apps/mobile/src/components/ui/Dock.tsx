@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View, useColorScheme } from "react-native";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import type { Tabs } from "expo-router";
@@ -52,6 +52,7 @@ type DockProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[
 
 export function Dock({ state, descriptors, navigation }: DockProps) {
   const mode = useMode((s) => s.mode);
+  const scheme = useColorScheme();
   const allowed = MODE_TABS[mode];
   const organizationId = useMode((s) => s.organizationId);
   const unread = useUnread();
@@ -112,7 +113,11 @@ export function Dock({ state, descriptors, navigation }: DockProps) {
   return (
     <View pointerEvents="box-none" style={styles.wrapper}>
       {Platform.OS === "ios" ? (
-        <BlurView intensity={40} tint="dark" style={styles.capsule}>
+        <BlurView
+          intensity={40}
+          tint={scheme === "light" ? "light" : "dark"}
+          style={styles.capsule}
+        >
           {content}
         </BlurView>
       ) : (
@@ -142,7 +147,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: theme.shadow.lift.offsetY },
     elevation: 12,
   },
-  capsuleSolid: { backgroundColor: "rgba(22,22,26,0.94)" },
+  capsuleSolid: { backgroundColor: theme.colors.surface },
   items: {
     flex: 1,
     flexDirection: "row",

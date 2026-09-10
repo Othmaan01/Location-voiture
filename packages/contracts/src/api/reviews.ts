@@ -8,6 +8,8 @@ export const ReviewSchema = z
     id: UuidSchema,
     bookingId: UuidSchema,
     organizationId: UuidSchema,
+    /** Vehicule loue lors de la reservation notee (filtre « ce vehicule » sur la fiche). */
+    vehicleId: UuidSchema.nullable(),
     vehicleLabel: z.string().nullable(),
     customerName: z.string(),
     rating: z.number().int().min(1).max(5),

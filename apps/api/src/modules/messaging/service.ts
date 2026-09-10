@@ -149,6 +149,12 @@ export function createMessagingService(
         lastMessageAt: r.lastMessageAt?.toISOString() ?? null,
         lastMessagePreview: r.lastMessagePreview,
         unreadCount: viewerSide === "staff" ? 0 : (unreadMap.get(r.id) ?? 0),
+        otherReadAt:
+          viewerSide === "customer"
+            ? (r.organizationReadAt?.toISOString() ?? null)
+            : viewerSide === "organization"
+              ? (r.customerReadAt?.toISOString() ?? null)
+              : null,
         createdAt: r.createdAt.toISOString(),
       };
     });

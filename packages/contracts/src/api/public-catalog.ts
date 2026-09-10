@@ -139,6 +139,8 @@ export const PublicVehicleDetailSchema = PublicVehicleCardSchema.omit({ photoUrl
         latitude: z.number().nullable(),
         longitude: z.number().nullable(),
         phone: z.string().nullable(),
+        /** Fuseau IANA de l'agence : l'estimation sur la fiche utilise le meme calcul que le devis. */
+        timezone: z.string(),
       })
       .strict(),
     loueur: z

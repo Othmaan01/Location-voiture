@@ -114,7 +114,7 @@ Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discoun
 
 | Méthode | Route                                   | Accès    | Rôle                                                                                                  |
 | ------- | --------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
-| GET     | `/v1/catalog/vehicles/:id`              | public   | fiche complète : photos, caractéristiques, tarif, agence, loueur ; `from`/`to` → `available`          |
+| GET     | `/v1/catalog/vehicles/:id`              | public   | fiche complète : photos, caractéristiques, tarif, agence (avec `timezone`), loueur ; `from`/`to` → `available` |
 | GET     | `/v1/catalog/vehicles/:id/availability` | public   | `from`, `to` → intervalles occupés (réservations fermes, blocages), sans détail                       |
 | POST    | `/v1/bookings/:id/start`                | manager+ | `{ inspectionDone: true, contractSigned: true }` obligatoires ; horodate la remise, notifie le client |
 
@@ -163,11 +163,11 @@ Le feed accepte `tab=offers` ; les cartes véhicule exposent `offer` et `discoun
 | GET     | `/v1/me/conversations`                | connecté            | fils du client, non-lus inclus                                                                                         |
 | GET     | `/v1/me/unread`                       | connecté            | non-lus : client et par organisation                                                                                   |
 | GET     | `/v1/organizations/:id/conversations` | membre              | fils du loueur                                                                                                         |
-| GET     | `/v1/conversations/:id?after=`        | participant / staff | fil et messages (`after` pour un rafraîchissement léger) ; étranger → `404`                                            |
+| GET     | `/v1/conversations/:id?after=`        | participant / staff | fil et messages (`after` pour un rafraîchissement léger) ; `otherReadAt` = dernière lecture de l'autre partie ; étranger → `404` |
 | POST    | `/v1/conversations/:id/messages`      | participant         | envoie (`{ body }`, 2000 caractères, 30/min), notifie l'autre côté                                                     |
 | POST    | `/v1/conversations/:id/read`          | participant         | marque lu                                                                                                              |
 | POST    | `/v1/bookings/:id/review`             | client              | avis (`{ rating 1-5, comment? }`) : réservation terminée, < 30 jours, une seule fois (`409` sinon)                     |
-| GET     | `/v1/loueurs/:id/reviews`             | public              | avis publiés, moyenne et nombre                                                                                        |
+| GET     | `/v1/loueurs/:id/reviews`             | public              | avis publiés (avec `vehicleId` pour filtrer par véhicule), moyenne et nombre                                           |
 | POST    | `/v1/reviews/:id/reply`               | manager+            | réponse publique du loueur                                                                                             |
 | POST    | `/v1/admin/reviews/:id/moderation`    | admin+              | masque ou republie (`{ hidden, reason? }`)                                                                             |
 

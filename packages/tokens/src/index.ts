@@ -2,7 +2,8 @@ import tokens from "../tokens.json" with { type: "json" };
 
 /**
  * Design tokens partages (mobile, web). Source de verite : tokens.json (ADR-0009).
- * Mode nuit uniquement. Aucune valeur visuelle ne doit etre definie ailleurs.
+ * Le mode nuit est la reference ; `color.light` en est la contrepartie jour (ADR-0023),
+ * appliquee par l'application selon le reglage de l'appareil. Aucune valeur visuelle ailleurs.
  */
 export const designTokens = tokens;
 export type DesignTokens = typeof tokens;
@@ -56,6 +57,35 @@ export const theme = {
 } as const;
 
 export type Theme = typeof theme;
+export type ColorKey = keyof Theme["colors"];
 
-/** Conserve pour compatibilite ; le theme est unique (nuit). */
-export const lightTheme = theme;
+/** Palette jour : les memes cles que le mode nuit, valeurs de `color.light`. */
+const light = tokens.color.light;
+export const lightColors: Record<ColorKey, string> = {
+  background: light.ground["1"],
+  backgroundDeep: light.ground["0"],
+  surface: light.ground["2"],
+  surfaceRaised: light.ground["3"],
+  surfaceHigh: light.ground["4"],
+  border: light.ground["5"],
+  text: light.text.primary,
+  textMuted: light.text.muted,
+  textDim: light.text.dim,
+  textInverse: light.text.inverse,
+  placeholder: light.text.placeholder,
+  accent: light.red.DEFAULT,
+  accentDark: light.red.dark,
+  accentTint: light.red.tint,
+  accentSoft: light.red.soft,
+  success: light.success.DEFAULT,
+  successSoft: light.success.soft,
+  warning: light.warning.DEFAULT,
+  warningSoft: light.warning.soft,
+  danger: light.danger.DEFAULT,
+  dangerSoft: light.danger.soft,
+  overlay: light.overlay,
+  glass: light.glass,
+  glassBorder: light.glassBorder,
+};
+
+export const lightTheme = { ...theme, colors: lightColors };

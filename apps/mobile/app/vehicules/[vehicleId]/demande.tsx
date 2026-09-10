@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Animated, StyleSheet, View } from "react-native";
 import * as Crypto from "expo-crypto";
 import { ArrowRight, Info } from "lucide-react-native";
 import type { Quote } from "@lv/contracts";
@@ -53,15 +53,34 @@ export default function BookingRequestScreen() {
   // Une cle d'idempotence par tentative d'envoi : un retry reseau ne cree jamais deux demandes.
   const idempotencyKey = useMemo(() => Crypto.randomUUID(), []);
 
+  // Le devis precedent reste affiche pendant le recalcul, avec une pulsation (retour fondateur, 2026-09-10).
+  const pulse = useRef(new Animated.Value(1)).current;
+  const refreshing = createQuote.isPending && quote !== null;
+  useEffect(() => {
+    if (!refreshing) {
+      pulse.stopAnimation();
+      Animated.timing(pulse, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.45, duration: 420, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 420, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [refreshing, pulse]);
+
   useEffect(() => {
     setError(null);
     setBlocker(null);
-    setQuote(null);
     createQuote.mutate(
       { vehicleId, from: period.from, to: period.to },
       {
         onSuccess: setQuote,
         onError: (e) => {
+          setQuote(null);
           setError(e instanceof ApiRequestError ? e.message : "Impossible de calculer le prix.");
           const d = e instanceof ApiRequestError ? e.body?.error.details : undefined;
           const kind = typeof d?.["blocker"] === "string" ? d["blocker"] : null;
@@ -138,7 +157,7 @@ export default function BookingRequestScreen() {
         </View>
       </Card>
 
-      {createQuote.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
+      {createQuote.isPending && !quote ? <ActivityIndicator color={theme.colors.accent} /> : null}
       {error && !quote ? (
         <EmptyState
           title={
@@ -173,39 +192,49 @@ export default function BookingRequestScreen() {
         />
       ) : null}
       {quote ? (
-        <Card style={styles.quote}>
-          {quote.lines.map((l, i) => (
-            <View key={i} style={styles.line}>
-              <Text variant="sm" tone={l.kind === "discount" ? "success" : "muted"}>
-                {l.kind === "discount"
-                  ? l.label
-                  : `${l.quantity} × ${l.label.toLowerCase()} à ${formatEuros(l.unit.cents)}`}
-              </Text>
-              <Text variant="smStrong" tone={l.kind === "discount" ? "success" : "default"}>
-                {l.kind === "discount"
-                  ? `− ${formatEuros(l.amount.cents)}`
-                  : formatEuros(l.amount.cents)}
-              </Text>
+        <Animated.View style={{ opacity: pulse }}>
+          <Card style={styles.quote}>
+            {refreshing ? (
+              <View style={styles.refreshing}>
+                <ActivityIndicator size="small" color={theme.colors.textMuted} />
+                <Text variant="small" tone="muted">
+                  Actualisation du prix
+                </Text>
+              </View>
+            ) : null}
+            {quote.lines.map((l, i) => (
+              <View key={i} style={styles.line}>
+                <Text variant="sm" tone={l.kind === "discount" ? "success" : "muted"}>
+                  {l.kind === "discount"
+                    ? l.label
+                    : `${l.quantity} × ${l.label.toLowerCase()} à ${formatEuros(l.unit.cents)}`}
+                </Text>
+                <Text variant="smStrong" tone={l.kind === "discount" ? "success" : "default"}>
+                  {l.kind === "discount"
+                    ? `− ${formatEuros(l.amount.cents)}`
+                    : formatEuros(l.amount.cents)}
+                </Text>
+              </View>
+            ))}
+            <View style={styles.divider} />
+            <View style={styles.line}>
+              <Text variant="bodyStrong">Total à régler à l'agence</Text>
+              <Text variant="bodyStrong">{formatEuros(quote.total.cents)}</Text>
             </View>
-          ))}
-          <View style={styles.divider} />
-          <View style={styles.line}>
-            <Text variant="bodyStrong">Total à régler à l'agence</Text>
-            <Text variant="bodyStrong">{formatEuros(quote.total.cents)}</Text>
-          </View>
-          <View style={styles.line}>
-            <Text variant="sm" tone="muted">
-              Caution (empreinte sur place)
-            </Text>
-            <Text variant="sm">{formatEuros(quote.deposit.cents)}</Text>
-          </View>
-          {quote.kmIncludedPerDay != null ? (
-            <Text variant="small" tone="dim">
-              {quote.kmIncludedPerDay} km/jour inclus
-              {quote.extraKmCents != null ? `, puis ${formatEuros(quote.extraKmCents)}/km` : ""}
-            </Text>
-          ) : null}
-        </Card>
+            <View style={styles.line}>
+              <Text variant="sm" tone="muted">
+                Caution (empreinte sur place)
+              </Text>
+              <Text variant="sm">{formatEuros(quote.deposit.cents)}</Text>
+            </View>
+            {quote.kmIncludedPerDay != null ? (
+              <Text variant="small" tone="dim">
+                {quote.kmIncludedPerDay} km/jour inclus
+                {quote.extraKmCents != null ? `, puis ${formatEuros(quote.extraKmCents)}/km` : ""}
+              </Text>
+            ) : null}
+          </Card>
+        </Animated.View>
       ) : null}
 
       <Input
@@ -278,6 +307,7 @@ const styles = StyleSheet.create({
   },
   rowTexts: { flex: 1, gap: 2 },
   quote: { gap: theme.space["2"] },
+  refreshing: { flexDirection: "row", alignItems: "center", gap: theme.space["2"] },
   line: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View, type ColorValue } from "react-native";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { theme } from "@/theme";
@@ -20,7 +20,7 @@ export const DAY_STATE_LABEL: Record<DayState, string> = {
   blocked: "Bloqué",
 };
 
-export const DAY_STATE_COLOR: Record<DayState, string> = {
+export const DAY_STATE_COLOR: Record<DayState, ColorValue> = {
   unavailable: theme.colors.textDim,
   requested: theme.colors.warning,
   confirmed: theme.colors.accent,

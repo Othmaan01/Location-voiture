@@ -37,6 +37,8 @@ export const ConversationSchema = z
     lastMessagePreview: z.string().nullable(),
     /** Messages non lus pour le lecteur courant. */
     unreadCount: z.number().int(),
+    /** Derniere lecture par l'autre partie : un message envoye avant est « lu » (statut facon iMessage). */
+    otherReadAt: IsoDateTimeSchema.nullable(),
     createdAt: IsoDateTimeSchema,
   })
   .strict();
