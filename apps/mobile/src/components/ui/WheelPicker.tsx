@@ -8,24 +8,24 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import * as Haptics from "expo-haptics";
+import { ChevronsUpDown } from "lucide-react-native";
 
 import { theme } from "@/theme";
 
 import { Text } from "./Text";
 
-const ITEM = 26;
-const VISIBLE = 3;
+const ITEM = 28;
 
 /**
- * Petite roulette (retour fondateur, 2026-09-10) : trois lignes visibles, la valeur au centre,
- * un cran par valeur. Assez discrete pour tenir a cote d'un titre de section.
+ * Petite roulette (retour fondateur, 2026-09-10) : une seule ligne, la valeur choisie, un cran
+ * par valeur au glissement. Assez discrete pour tenir a cote d'un titre de section.
  */
 export function WheelPicker({
   items,
   index,
   onChange,
   label,
-  width = 68,
+  width = 76,
 }: {
   items: string[];
   index: number;
@@ -61,15 +61,14 @@ export function WheelPicker({
         </Text>
       ) : null}
       <View style={styles.wheel}>
-        <View pointerEvents="none" style={styles.band} />
         <ScrollView
           ref={ref}
+          style={styles.flex}
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM}
           decelerationRate="fast"
           nestedScrollEnabled
           contentOffset={{ x: 0, y: index * ITEM }}
-          contentContainerStyle={styles.content}
           // Position initiale garantie une fois le contenu mesure (contentOffset seul est parfois ignore).
           onContentSizeChange={() =>
             ref.current?.scrollTo({ y: settled.current * ITEM, animated: false })
@@ -92,8 +91,7 @@ export function WheelPicker({
             </Pressable>
           ))}
         </ScrollView>
-        <View pointerEvents="none" style={[styles.fade, styles.fadeTop]} />
-        <View pointerEvents="none" style={[styles.fade, styles.fadeBottom]} />
+        <ChevronsUpDown size={13} color={theme.colors.textDim} />
       </View>
     </View>
   );
@@ -101,34 +99,18 @@ export function WheelPicker({
 
 const styles = StyleSheet.create({
   wrap: { alignItems: "center", gap: 2 },
+  flex: { flex: 1 },
   wheel: {
-    height: ITEM * VISIBLE,
+    height: ITEM,
     alignSelf: "stretch",
-    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingRight: 4,
+    borderRadius: 10,
     backgroundColor: theme.colors.surfaceRaised,
     borderWidth: 1,
     borderColor: theme.colors.border,
     overflow: "hidden",
   },
-  band: {
-    position: "absolute",
-    left: 4,
-    right: 4,
-    top: ITEM,
-    height: ITEM,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surfaceHigh,
-  },
-  content: { paddingVertical: ITEM },
-  item: { height: ITEM, alignItems: "center", justifyContent: "center" },
-  fade: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: ITEM,
-    backgroundColor: theme.colors.surfaceRaised,
-    opacity: 0.55,
-  },
-  fadeTop: { top: 0 },
-  fadeBottom: { bottom: 0 },
+  item: { height: ITEM, alignItems: "center", justifyContent: "center", paddingLeft: 4 },
 });

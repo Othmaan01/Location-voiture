@@ -105,7 +105,7 @@ export default function VehicleScreen() {
   const [index, setIndex] = useState(0);
   const [contact, setContact] = useState(false);
   const [viewer, setViewer] = useState<number | null>(null);
-  const [tarifOpen, setTarifOpen] = useState(false);
+  const [open, setOpen] = useState<"description" | "tarif" | null>(null);
   const [reviewScope, setReviewScope] = useState<"vehicle" | "agency">("vehicle");
   const [reviewIndex, setReviewIndex] = useState(0);
   const listRef = useRef<FlatList<string>>(null);
@@ -234,8 +234,8 @@ export default function VehicleScreen() {
   const shownReviews = reviewScope === "vehicle" ? vehicleReviews : allReviews;
   const reviewW = Math.round(galleryW * 0.84);
   const reviewGap = theme.space["3"];
-  const toggleTarif = () => {
-    setTarifOpen((o) => !o);
+  const toggleTile = (kind: "description" | "tarif") => {
+    setOpen((o) => (o === kind ? null : kind));
     // Animation de depliage quand la plateforme la permet ; jamais bloquante.
     try {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -243,6 +243,8 @@ export default function VehicleScreen() {
       // sans animation
     }
   };
+  // Dates changees : la fiche reste affichee, la disponibilite se verifie en arriere-plan.
+  const checking = vehicle.isPlaceholderData || vehicle.isFetching;
   const tarifSummary = [
     v.dailyCents !== null ? `${formatEuros(v.dailyCents)} / jour` : "Sur demande",
     v.depositCents !== null ? `caution ${formatEuros(v.depositCents)}` : null,
@@ -251,6 +253,7 @@ export default function VehicleScreen() {
     .join(" · ");
 
   const specs: { icon: typeof Car; label: string }[] = [
+    { icon: Car, label: CATEGORY_LABEL[v.category] ?? v.category },
     { icon: Settings2, label: TRANSMISSION_LABEL[v.transmission] ?? v.transmission },
     { icon: Fuel, label: FUEL_LABEL[v.fuel] ?? v.fuel },
     { icon: Users, label: `${v.seats} places` },
@@ -391,13 +394,7 @@ export default function VehicleScreen() {
                 Tarif sur demande
               </Text>
             )}
-            <Badge label={CATEGORY_LABEL[v.category] ?? v.category} tone="neutral" />
           </View>
-          {v.available === false ? (
-            <Badge label="Indisponible sur vos dates" tone="warning" />
-          ) : v.available === true ? (
-            <Badge label={`Disponible · ${formatPeriod(from!, to!)}`} tone="success" />
-          ) : null}
         </View>
 
         <View style={styles.specs}>
@@ -409,27 +406,8 @@ export default function VehicleScreen() {
           ))}
         </View>
 
-        {v.description ? (
-          <Section title="À propos de ce véhicule">
-            <Text variant="body" tone="muted">
-              {v.description}
-            </Text>
-          </Section>
-        ) : null}
-        {v.options.length > 0 ? (
-          <Section title="Équipements">
-            <View style={styles.chips}>
-              {v.options.map((o) => (
-                <View key={o} style={styles.chip}>
-                  <Text variant="sm">{o}</Text>
-                </View>
-              ))}
-            </View>
-          </Section>
-        ) : null}
-
         <Section
-          title="Disponibilités"
+          title="Vos dates"
           right={
             <View style={styles.wheels}>
               <WheelPicker
@@ -459,37 +437,69 @@ export default function VehicleScreen() {
               compact
             />
             <CalendarLegend states={dayStates.size > 0 ? ["unavailable"] : []} />
-            <Text variant="small" tone="dim">
-              {pickStart && pickEnd
-                ? `Vos dates : ${formatPeriod(withSlot(pickStart, startSlot).toISOString(), withSlot(pickEnd, endSlot).toISOString())} · ${formatSlot(startSlot)} → ${formatSlot(endSlot)}${estimate?.days ? ` · ${estimate.days} jour${estimate.days > 1 ? "s" : ""}` : ""}`
-                : pickStart
-                  ? "Touchez maintenant le jour de retour."
-                  : "Touchez le jour de retrait, puis le jour de retour. Les jours barrés sont déjà pris."}
-            </Text>
+            <View style={styles.status}>
+              {pickStart && pickEnd ? (
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor: checking
+                        ? theme.colors.textDim
+                        : v.available === false
+                          ? theme.colors.warning
+                          : theme.colors.success,
+                    },
+                  ]}
+                />
+              ) : null}
+              <Text
+                variant="small"
+                tone={
+                  pickStart && pickEnd
+                    ? checking
+                      ? "muted"
+                      : v.available === false
+                        ? "warning"
+                        : "success"
+                    : "dim"
+                }
+                style={styles.flex}
+              >
+                {pickStart && pickEnd
+                  ? `${checking ? "Vérification" : v.available === false ? "Indisponible" : "Disponible"} · ${formatPeriod(withSlot(pickStart, startSlot).toISOString(), withSlot(pickEnd, endSlot).toISOString())} · ${formatSlot(startSlot)} → ${formatSlot(endSlot)}${estimate?.days ? ` · ${estimate.days} jour${estimate.days > 1 ? "s" : ""}` : ""}${!checking && v.available === false ? ". Choisissez d'autres jours." : ""}`
+                  : pickStart
+                    ? "Touchez maintenant le jour de retour."
+                    : "Touchez le jour de retrait, puis le jour de retour. Les jours barrés sont déjà pris."}
+              </Text>
+            </View>
           </Card>
         </Section>
 
         <View style={styles.section}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: tarifOpen }}
-            accessibilityLabel={tarifOpen ? "Replier le tarif" : "Voir le tarif détaillé"}
-            onPress={toggleTarif}
-            style={styles.accordionHead}
-          >
-            <View style={styles.flex}>
-              <Text variant="h2">Tarif</Text>
-              {!tarifOpen ? (
-                <Text variant="sm" tone="muted">
-                  {tarifSummary}
-                </Text>
-              ) : null}
-            </View>
-            <View style={[styles.chevron, tarifOpen ? styles.chevronOpen : null]}>
-              <ChevronDown size={18} color={theme.colors.text} />
-            </View>
-          </Pressable>
-          {tarifOpen ? (
+          <View style={styles.tiles}>
+            {v.description ? (
+              <Tile
+                title="Description"
+                hint={v.description}
+                open={open === "description"}
+                onPress={() => toggleTile("description")}
+              />
+            ) : null}
+            <Tile
+              title="Tarif"
+              hint={tarifSummary}
+              open={open === "tarif"}
+              onPress={() => toggleTile("tarif")}
+            />
+          </View>
+          {open === "description" && v.description ? (
+            <Card>
+              <Text variant="body" tone="muted">
+                {v.description}
+              </Text>
+            </Card>
+          ) : null}
+          {open === "tarif" ? (
             <>
               <Card padded={false}>
                 <Row
@@ -538,7 +548,19 @@ export default function VehicleScreen() {
           ) : null}
         </View>
 
-        <Section title="Retrait">
+        {v.options.length > 0 ? (
+          <Section title="Équipements">
+            <View style={styles.chips}>
+              {v.options.map((o) => (
+                <View key={o} style={styles.chip}>
+                  <Text variant="sm">{o}</Text>
+                </View>
+              ))}
+            </View>
+          </Section>
+        ) : null}
+
+        <Section title="Lieu de retrait">
           <Card>
             <View style={styles.agencyRow}>
               <MapPin size={20} color={theme.colors.accentTint} />
@@ -571,7 +593,7 @@ export default function VehicleScreen() {
           </Card>
         </Section>
 
-        <Section title="Loueur">
+        <Section title="Le loueur">
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push(`/loueurs/${v.loueur.id}`)}
@@ -834,6 +856,41 @@ function PhotoViewer({
   );
 }
 
+/** Tuile repliable (Description, Tarif) : titre, resume sur une ligne, fleche ; le detail s'ouvre dessous. */
+function Tile({
+  title,
+  hint,
+  open,
+  onPress,
+}: {
+  title: string;
+  hint: string;
+  open: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`${open ? "Replier" : "Voir"} : ${title}`}
+      onPress={onPress}
+      style={[styles.tile, open ? styles.tileOn : null]}
+    >
+      <View style={styles.tileHead}>
+        <Text variant="bodyStrong" style={styles.flex}>
+          {title}
+        </Text>
+        <View style={[styles.chevron, open ? styles.chevronOpen : null]}>
+          <ChevronDown size={16} color={theme.colors.text} />
+        </View>
+      </View>
+      <Text variant="small" tone="muted" numberOfLines={1}>
+        {hint}
+      </Text>
+    </Pressable>
+  );
+}
+
 function Section({
   title,
   right,
@@ -974,15 +1031,23 @@ const styles = StyleSheet.create({
   section: { gap: theme.space["3"] },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
   wheels: { flexDirection: "row", gap: theme.space["2"] },
-  accordionHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space["3"],
-    minHeight: theme.touch.minTarget,
+  tiles: { flexDirection: "row", gap: theme.space["2"] },
+  tile: {
+    flex: 1,
+    gap: 4,
+    padding: theme.space["3"],
+    borderRadius: theme.radius.card,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
+  tileOn: { borderColor: theme.colors.text },
+  tileHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+  status: { flexDirection: "row", alignItems: "center", gap: 8 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
   chevron: {
-    width: 34,
-    height: 34,
+    width: 28,
+    height: 28,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.surfaceRaised,
     alignItems: "center",
