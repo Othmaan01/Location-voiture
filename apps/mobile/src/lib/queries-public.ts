@@ -8,6 +8,7 @@ import {
 import { z } from "zod";
 import {
   CitiesResponseSchema,
+  FavoriteGroupSchema,
   FavoritesResponseSchema,
   FeedResponseSchema,
   LoueurProfileSchema,
@@ -148,11 +149,50 @@ export function useFavorites() {
   });
 }
 
-export function useToggleFavorite() {
+/** Enregistre un favori, dans un groupe si demande (`null` = sans groupe, `undefined` = inchange). */
+export function useSaveFavorite() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({ vehicleId, on }: { vehicleId: string; on: boolean }) =>
-      apiRequest(`/v1/me/favorites/${vehicleId}`, Empty, { method: on ? "PUT" : "DELETE" }),
+    mutationFn: ({ vehicleId, groupId }: { vehicleId: string; groupId?: string | null }) =>
+      apiRequest(`/v1/me/favorites/${vehicleId}`, Empty, {
+        method: "PUT",
+        body: groupId === undefined ? {} : { groupId },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: publicKeys.favorites }),
+  });
+}
+export function useRemoveFavorite() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (vehicleId: string) =>
+      apiRequest(`/v1/me/favorites/${vehicleId}`, Empty, { method: "DELETE" }),
+    onSuccess: () => client.invalidateQueries({ queryKey: publicKeys.favorites }),
+  });
+}
+export function useCreateFavoriteGroup() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) =>
+      apiRequest("/v1/me/favorite-groups", FavoriteGroupSchema, { method: "POST", body: { name } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: publicKeys.favorites }),
+  });
+}
+export function useRenameFavoriteGroup() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, name }: { groupId: string; name: string }) =>
+      apiRequest(`/v1/me/favorite-groups/${groupId}`, FavoriteGroupSchema, {
+        method: "PATCH",
+        body: { name },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: publicKeys.favorites }),
+  });
+}
+export function useDeleteFavoriteGroup() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (groupId: string) =>
+      apiRequest(`/v1/me/favorite-groups/${groupId}`, Empty, { method: "DELETE" }),
     onSuccess: () => client.invalidateQueries({ queryKey: publicKeys.favorites }),
   });
 }

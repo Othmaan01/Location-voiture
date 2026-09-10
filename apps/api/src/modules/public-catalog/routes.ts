@@ -11,6 +11,9 @@ import {
   SearchResponseSchema,
   UuidSchema,
   VehicleAvailabilitySchema,
+  FavoriteGroupBodySchema,
+  FavoriteGroupSchema,
+  SaveFavoriteBodySchema,
 } from "@lv/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
@@ -105,7 +108,7 @@ export const publicCatalogRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: { tags: ["favorites"], response: { 200: FavoritesResponseSchema } },
       onRequest: [app.requireAuth],
     },
-    async (request) => ({ vehicles: await service.listFavorites(request.actor) }),
+    async (request) => service.listFavorites(request.actor),
   );
   app.put(
     "/v1/me/favorites/:vehicleId",
@@ -113,12 +116,55 @@ export const publicCatalogRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ["favorites"],
         params: z.object({ vehicleId: UuidSchema }).strict(),
+        body: SaveFavoriteBodySchema.nullish(),
         response: { 204: z.null() },
       },
       onRequest: [app.requireAuth],
     },
     async (request, reply) => {
-      await service.addFavorite(request.actor, request.params.vehicleId);
+      await service.addFavorite(request.actor, request.params.vehicleId, request.body?.groupId);
+      return reply.code(204).send(null);
+    },
+  );
+  app.post(
+    "/v1/me/favorite-groups",
+    {
+      schema: {
+        tags: ["favorites"],
+        body: FavoriteGroupBodySchema,
+        response: { 201: FavoriteGroupSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request, reply) =>
+      reply.code(201).send(await service.createFavoriteGroup(request.actor, request.body.name)),
+  );
+  app.patch(
+    "/v1/me/favorite-groups/:groupId",
+    {
+      schema: {
+        tags: ["favorites"],
+        params: z.object({ groupId: UuidSchema }).strict(),
+        body: FavoriteGroupBodySchema,
+        response: { 200: FavoriteGroupSchema },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request) =>
+      service.renameFavoriteGroup(request.actor, request.params.groupId, request.body.name),
+  );
+  app.delete(
+    "/v1/me/favorite-groups/:groupId",
+    {
+      schema: {
+        tags: ["favorites"],
+        params: z.object({ groupId: UuidSchema }).strict(),
+        response: { 204: z.null() },
+      },
+      onRequest: [app.requireAuth],
+    },
+    async (request, reply) => {
+      await service.deleteFavoriteGroup(request.actor, request.params.groupId);
       return reply.code(204).send(null);
     },
   );

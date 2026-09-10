@@ -12,7 +12,8 @@ import { ReportSheet } from "@/features/reports/ReportSheet";
 import { VehicleCard } from "@/features/client/VehicleCard";
 import { ACCENT_COLOR } from "@/features/client/accent";
 import { formatPeriod, useSearchState } from "@/features/client/search-state";
-import { useFavorites, useLoueur, useToggleFavorite } from "@/lib/queries-public";
+import { useLoueur } from "@/lib/queries-public";
+import { useFavoriteAction } from "@/features/client/favorites";
 import { useLoueurReviews } from "@/lib/queries-reviews";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
@@ -43,8 +44,7 @@ export function LoueurProfile({
   const { from, to } = useSearchState();
   const period = from && to ? { from, to } : null;
   const loueur = useLoueur(loueurId, period);
-  const favorites = useFavorites();
-  const toggle = useToggleFavorite();
+  const fav = useFavoriteAction();
   const [selected, setSelected] = useState<PublicVehicleCard | null>(null);
   const [tab, setTab] = useState<"vehicles" | "reviews" | "info">("vehicles");
   const [contact, setContact] = useState<{ vehicleId?: string } | null>(null);
@@ -74,7 +74,6 @@ export function LoueurProfile({
   const l = loueur.data;
   const accent = ACCENT_COLOR[l.accent];
   const mainAgency = l.agencies[0] ?? null;
-  const favSet = new Set(favorites.data?.vehicles.map((v) => v.id) ?? []);
   const call = () =>
     mainAgency?.phone
       ? void Linking.openURL(`tel:${mainAgency.phone.replace(/\s/g, "")}`)
@@ -91,13 +90,6 @@ export function LoueurProfile({
     void Linking.openURL(
       `https://maps.apple.com/?daddr=${mainAgency.latitude},${mainAgency.longitude}`,
     );
-  };
-  const onToggleFavorite = (vehicleId: string) => {
-    if (!session) {
-      router.push("/(auth)/sign-in");
-      return;
-    }
-    toggle.mutate({ vehicleId, on: !favSet.has(vehicleId) });
   };
 
   return (
@@ -204,8 +196,8 @@ export function LoueurProfile({
                 vehicle={v}
                 onPress={() => router.push(`/vehicules/${v.id}`)}
                 onAction={() => setSelected(v)}
-                favorite={favSet.has(v.id)}
-                onToggleFavorite={() => onToggleFavorite(v.id)}
+                favorite={fav.isFavorite(v.id)}
+                onToggleFavorite={() => fav.toggle(v.id)}
               />
             ))}
           </View>

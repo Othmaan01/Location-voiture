@@ -16,12 +16,8 @@ import {
   FUEL_OPTIONS,
   TRANSMISSION_OPTIONS,
 } from "@/features/pro/labels";
-import {
-  useFavorites,
-  useSearch,
-  useToggleFavorite,
-  type SearchParams,
-} from "@/lib/queries-public";
+import { useSearch, type SearchParams } from "@/lib/queries-public";
+import { useFavoriteAction } from "@/features/client/favorites";
 import { useSession } from "@/lib/session";
 import { fontFamily, theme } from "@/theme";
 
@@ -62,9 +58,7 @@ export function ExplorerPanel({
   const [selected, setSelected] = useState<
     (PublicVehicleCard & { loueurName: string; loueurId: string }) | null
   >(null);
-  const favorites = useFavorites();
-  const toggle = useToggleFavorite();
-  const favSet = new Set(favorites.data?.vehicles.map((v) => v.id) ?? []);
+  const fav = useFavoriteAction();
 
   const hasPlace = !!citySlug || !!origin;
   // Loupe : marque ou modele, envoye au moteur apres une courte pause de frappe.
@@ -192,12 +186,8 @@ export function ExplorerPanel({
                 vehicle={v}
                 onPress={() => router.push(`/vehicules/${v.id}`)}
                 onAction={() => setSelected(v)}
-                favorite={favSet.has(v.id)}
-                onToggleFavorite={() =>
-                  session
-                    ? toggle.mutate({ vehicleId: v.id, on: !favSet.has(v.id) })
-                    : router.push("/(auth)/sign-in")
-                }
+                favorite={fav.isFavorite(v.id)}
+                onToggleFavorite={() => fav.toggle(v.id)}
               />
             ))}
           </View>

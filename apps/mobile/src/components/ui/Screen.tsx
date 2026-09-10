@@ -119,7 +119,8 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: theme.space["4"],
     paddingTop: theme.space["3"],
-    gap: theme.space["4"],
+    // Sections aerees (retour fondateur, 2026-09-10 : « moins compact »).
+    gap: theme.space["5"],
   },
   header: {
     flexDirection: "row",

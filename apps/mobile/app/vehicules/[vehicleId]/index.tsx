@@ -63,12 +63,8 @@ import {
 } from "@/features/client/slots";
 import { ContactSheet } from "@/features/messaging/ContactSheet";
 import { formatOffer } from "@/lib/queries-offers";
-import {
-  useFavorites,
-  useToggleFavorite,
-  useVehicle,
-  useVehicleAvailability,
-} from "@/lib/queries-public";
+import { useVehicle, useVehicleAvailability } from "@/lib/queries-public";
+import { useFavoriteAction } from "@/features/client/favorites";
 import { useLoueurReviews } from "@/lib/queries-reviews";
 import { useSession } from "@/lib/session";
 import { theme } from "@/theme";
@@ -96,8 +92,7 @@ export default function VehicleScreen() {
   const { from, to, setPeriod } = useSearchState();
   const period = from && to ? { from, to } : null;
   const vehicle = useVehicle(vehicleId, period);
-  const favorites = useFavorites();
-  const toggle = useToggleFavorite();
+  const fav = useFavoriteAction();
   const reviews = useLoueurReviews(vehicle.data?.loueur.id ?? "", !!vehicle.data);
   const [index, setIndex] = useState(0);
   const [contact, setContact] = useState(false);
@@ -219,7 +214,7 @@ export default function VehicleScreen() {
   }
   const v = vehicle.data;
   const accent = ACCENT_COLOR[v.loueur.accent];
-  const favorite = !!favorites.data?.vehicles.some((f) => f.id === v.id);
+  const favorite = fav.isFavorite(v.id);
   const photos = v.photos.length > 0 ? v.photos : [];
   const galleryW = width - 2 * theme.space["4"];
   const galleryH = Math.round(galleryW / GALLERY_RATIO);
@@ -311,11 +306,7 @@ export default function VehicleScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-                onPress={() =>
-                  session
-                    ? toggle.mutate({ vehicleId: v.id, on: !favorite })
-                    : router.push("/(auth)/sign-in")
-                }
+                onPress={() => fav.toggle(v.id)}
                 style={styles.roundBtn}
               >
                 <Heart

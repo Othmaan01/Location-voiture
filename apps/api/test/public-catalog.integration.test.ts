@@ -271,6 +271,57 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
     ).toBe(204);
   });
 
+  it("groupes de favoris : creation, rangement, suppression sans perdre le favori", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/me/favorite-groups",
+      headers: auth(customerToken),
+      payload: { name: "Mariage Mejdi 2027" },
+    });
+    expect(created.statusCode).toBe(201);
+    const groupId = created.json().id as string;
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: `/v1/me/favorites/${vehicleId}`,
+          headers: auth(customerToken),
+          payload: { groupId },
+        })
+      ).statusCode,
+    ).toBe(204);
+    let list = (
+      await app.inject({ method: "GET", url: "/v1/me/favorites", headers: auth(customerToken) })
+    ).json();
+    expect(list.groups).toEqual([{ id: groupId, name: "Mariage Mejdi 2027", count: 1 }]);
+    expect(list.vehicles.find((v: { id: string }) => v.id === vehicleId)?.groupId).toBe(groupId);
+    // Meme nom deux fois : refuse proprement.
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/v1/me/favorite-groups",
+          headers: auth(customerToken),
+          payload: { name: "Mariage Mejdi 2027" },
+        })
+      ).statusCode,
+    ).toBe(409);
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/v1/me/favorite-groups/${groupId}`,
+          headers: auth(customerToken),
+        })
+      ).statusCode,
+    ).toBe(204);
+    list = (
+      await app.inject({ method: "GET", url: "/v1/me/favorites", headers: auth(customerToken) })
+    ).json();
+    expect(list.groups).toEqual([]);
+    expect(list.vehicles.find((v: { id: string }) => v.id === vehicleId)?.groupId).toBeNull();
+  });
+
   it("favoris : reserve aux connectes, uniquement des vehicules publies", async () => {
     expect(
       (await app.inject({ method: "PUT", url: `/v1/me/favorites/${vehicleId}` })).statusCode,

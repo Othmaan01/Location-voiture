@@ -96,11 +96,22 @@ export const deviceTokens = pgTable("device_tokens", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const favoriteGroups = pgTable("favorite_groups", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`public.uuid_generate_v7()`),
+  userId: uuid("user_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const favorites = pgTable(
   "favorites",
   {
     userId: uuid("user_id").notNull(),
     vehicleId: uuid("vehicle_id").notNull(),
+    /** Groupe de favoris (« Mariage Mejdi 2027 »), facultatif. */
+    groupId: uuid("group_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.vehicleId] })],

@@ -247,7 +247,26 @@ export const CitiesResponseSchema = z.object({ cities: z.array(CitySchema) }).st
 // ---------------------------------------------------------------------
 // Favoris
 // ---------------------------------------------------------------------
-export const FavoritesResponseSchema = z.object({ vehicles: z.array(SearchResultSchema) }).strict();
+/** Groupe de favoris (retour fondateur, 2026-09-10) : un nom libre, ex. « Mariage Mejdi 2027 ». */
+export const FavoriteGroupSchema = z
+  .object({ id: UuidSchema, name: z.string(), count: z.number().int() })
+  .strict();
+export type FavoriteGroup = z.infer<typeof FavoriteGroupSchema>;
+
+export const FavoriteVehicleSchema = SearchResultSchema.extend({ groupId: UuidSchema.nullable() });
+export type FavoriteVehicle = z.infer<typeof FavoriteVehicleSchema>;
+
+export const FavoritesResponseSchema = z
+  .object({ vehicles: z.array(FavoriteVehicleSchema), groups: z.array(FavoriteGroupSchema) })
+  .strict();
+
+/** Enregistrer un favori, eventuellement dans un groupe ; `null` = sans groupe. */
+export const SaveFavoriteBodySchema = z
+  .object({ groupId: UuidSchema.nullable().optional() })
+  .strict();
+export const FavoriteGroupBodySchema = z
+  .object({ name: z.string().trim().min(1, "Nom requis").max(40, "40 caractères maximum") })
+  .strict();
 
 /** Disponibilite publique d'un vehicule : intervalles occupes (reservations fermes et blocages), sans detail. */
 export const VehicleAvailabilitySchema = z

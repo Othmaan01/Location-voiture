@@ -9,6 +9,8 @@ import type {
   SearchQuery,
   SearchResult,
   VehicleAvailability,
+  FavoriteGroup,
+  FavoriteVehicle,
 } from "@lv/contracts";
 
 import type { Database } from "../../db/client.js";
@@ -22,8 +24,10 @@ import {
   ratePlans,
   vehiclePhotos,
   vehicles,
+  favoriteGroups,
 } from "../../db/schema.js";
 import { assertCan, type Actor } from "../../shared/authz.js";
+import { translateDbError } from "../../shared/db-errors.js";
 import { notFound } from "../../shared/errors.js";
 import type { StorageClient } from "../../shared/storage.js";
 import {
@@ -67,9 +71,12 @@ export interface PublicCatalogService {
       longitude: number;
     }[]
   >;
-  listFavorites(actor: Actor): Promise<SearchResult[]>;
-  addFavorite(actor: Actor, vehicleId: string): Promise<void>;
+  listFavorites(actor: Actor): Promise<{ vehicles: FavoriteVehicle[]; groups: FavoriteGroup[] }>;
+  addFavorite(actor: Actor, vehicleId: string, groupId?: string | null): Promise<void>;
   removeFavorite(actor: Actor, vehicleId: string): Promise<void>;
+  createFavoriteGroup(actor: Actor, name: string): Promise<FavoriteGroup>;
+  renameFavoriteGroup(actor: Actor, groupId: string, name: string): Promise<FavoriteGroup>;
+  deleteFavoriteGroup(actor: Actor, groupId: string): Promise<void>;
 }
 
 export function createPublicCatalogService(
@@ -80,6 +87,18 @@ export function createPublicCatalogService(
     path ? storage.publicUrl(PHOTOS_BUCKET, path) : null;
 
   /** Premiere photo et plan actif de chaque vehicule, en deux requetes groupees. */
+  /** Groupe de favoris appartenant a l'acteur, sinon 404 (jamais celui d'un autre). */
+  async function ownGroup(actor: Actor, groupId: string) {
+    assertCan(actor, "booking.read_own");
+    const [g] = await db
+      .select()
+      .from(favoriteGroups)
+      .where(and(eq(favoriteGroups.id, groupId), eq(favoriteGroups.userId, actor.userId!)))
+      .limit(1);
+    if (!g) throw notFound("Groupe de favoris");
+    return g;
+  }
+
   async function decorate(rows: VehicleRow[]) {
     if (rows.length === 0)
       return {
@@ -601,12 +620,25 @@ export function createPublicCatalogService(
 
     async listFavorites(actor) {
       assertCan(actor, "booking.read_own");
-      const favRows = await db
-        .select({ vehicleId: favorites.vehicleId })
-        .from(favorites)
-        .where(eq(favorites.userId, actor.userId!))
-        .orderBy(favorites.createdAt);
-      if (favRows.length === 0) return [];
+      const [favRows, groupRows] = await Promise.all([
+        db
+          .select({ vehicleId: favorites.vehicleId, groupId: favorites.groupId })
+          .from(favorites)
+          .where(eq(favorites.userId, actor.userId!))
+          .orderBy(favorites.createdAt),
+        db
+          .select()
+          .from(favoriteGroups)
+          .where(eq(favoriteGroups.userId, actor.userId!))
+          .orderBy(favoriteGroups.createdAt),
+      ]);
+      const groupOf = new Map(favRows.map((f) => [f.vehicleId, f.groupId]));
+      const groups: FavoriteGroup[] = groupRows.map((g) => ({
+        id: g.id,
+        name: g.name,
+        count: favRows.filter((f) => f.groupId === g.id).length,
+      }));
+      if (favRows.length === 0) return { vehicles: [], groups };
       const ids = favRows.map((f) => f.vehicleId);
       const rows = await db
         .select({ v: vehicles, orgName: organizations.name, agency: agencies })
@@ -631,10 +663,11 @@ export function createPublicCatalogService(
         );
       const { photos, plans, offers: favOffers } = await decorate(rows.map((r) => r.v));
       const byId = new Map(rows.map((r) => [r.v.id, r]));
-      return ids
+      const vehiclesOut = ids
         .map((id) => byId.get(id))
         .filter((r): r is NonNullable<typeof r> => r !== undefined)
-        .map(({ v, orgName, agency }): SearchResult => ({
+        .map(({ v, orgName, agency }): FavoriteVehicle => ({
+          groupId: groupOf.get(v.id) ?? null,
           id: v.id,
           brand: v.brand,
           model: v.model,
@@ -664,9 +697,10 @@ export function createPublicCatalogService(
           totalCents: null,
           days: null,
         }));
+      return { vehicles: vehiclesOut, groups };
     },
 
-    async addFavorite(actor, vehicleId) {
+    async addFavorite(actor, vehicleId, groupId) {
       assertCan(actor, "booking.read_own");
       const [row] = await db
         .select({ id: vehicles.id })
@@ -674,7 +708,52 @@ export function createPublicCatalogService(
         .where(and(eq(vehicles.id, vehicleId), publishedVehicleFilter()))
         .limit(1);
       if (!row) throw notFound("Vehicule");
-      await db.insert(favorites).values({ userId: actor.userId!, vehicleId }).onConflictDoNothing();
+      if (groupId) await ownGroup(actor, groupId);
+      // Deja favori : on change seulement de groupe quand un groupe est indique.
+      await db
+        .insert(favorites)
+        .values({ userId: actor.userId!, vehicleId, groupId: groupId ?? null })
+        .onConflictDoUpdate({
+          target: [favorites.userId, favorites.vehicleId],
+          set: groupId === undefined ? { vehicleId } : { groupId },
+        });
+    },
+
+    async createFavoriteGroup(actor, name) {
+      assertCan(actor, "booking.read_own");
+      try {
+        const [g] = await db
+          .insert(favoriteGroups)
+          .values({ userId: actor.userId!, name: name.trim() })
+          .returning();
+        return { id: g!.id, name: g!.name, count: 0 };
+      } catch (error) {
+        return translateDbError(error, "Vous avez deja un groupe avec ce nom.");
+      }
+    },
+
+    async renameFavoriteGroup(actor, groupId, name) {
+      const g = await ownGroup(actor, groupId);
+      try {
+        const [updated] = await db
+          .update(favoriteGroups)
+          .set({ name: name.trim() })
+          .where(eq(favoriteGroups.id, g.id))
+          .returning();
+        const counted = await db
+          .select({ n: sql<number>`count(*)::int` })
+          .from(favorites)
+          .where(eq(favorites.groupId, g.id));
+        return { id: updated!.id, name: updated!.name, count: counted[0]?.n ?? 0 };
+      } catch (error) {
+        return translateDbError(error, "Vous avez deja un groupe avec ce nom.");
+      }
+    },
+
+    async deleteFavoriteGroup(actor, groupId) {
+      const g = await ownGroup(actor, groupId);
+      // Les favoris restent, simplement sans groupe (cle etrangere « on delete set null »).
+      await db.delete(favoriteGroups).where(eq(favoriteGroups.id, g.id));
     },
 
     async removeFavorite(actor, vehicleId) {

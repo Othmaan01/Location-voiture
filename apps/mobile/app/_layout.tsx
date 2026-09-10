@@ -14,6 +14,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppLockGate } from "@/components/AppLockGate";
 import { Celebration } from "@/components/Celebration";
+import { FavoriteGroupSheet } from "@/features/client/FavoriteGroupSheet";
 import { ApiRequestError } from "@/lib/api";
 import { PushListener } from "@/lib/push-listener";
 import { SessionProvider } from "@/lib/session";
@@ -82,6 +83,7 @@ export default function RootLayout() {
             </Stack>
           </AppLockGate>
           <Celebration />
+          <FavoriteGroupSheet />
         </QueryClientProvider>
       </SessionProvider>
     </SafeAreaProvider>
