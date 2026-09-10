@@ -32,8 +32,13 @@ export function defaultPeriod(): { from: string; to: string } {
   return nextDefaultPeriod();
 }
 
+/** « 14 → 27 sept. » dans le meme mois, sinon « 29 sept. → 5 oct. » : court, lisible dans une puce. */
 export function formatPeriod(from: string | null, to: string | null): string {
   if (!from || !to) return "Dates";
+  const a = new Date(from);
+  const b = new Date(to);
   const f = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
-  return `${f.format(new Date(from))} → ${f.format(new Date(to))}`;
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear())
+    return `${a.getDate()} → ${f.format(b)}`;
+  return `${f.format(a)} → ${f.format(b)}`;
 }

@@ -8,11 +8,11 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Search } from "lucide-react-native";
 import * as Location from "expo-location";
 import type { FeedTab } from "@lv/contracts";
 
 import { Button, EmptyState, Screen, Text } from "@/components/ui";
+import { ExplorerPanel } from "@/features/client/ExplorerPanel";
 import { LoueurCard } from "@/features/client/LoueurCard";
 import { useSearchState } from "@/features/client/search-state";
 import { useFeed } from "@/lib/queries-public";
@@ -29,10 +29,16 @@ const TABS: { key: FeedTab; label: string }[] = [
   { key: "new", label: "Nouveaux" },
 ].filter((t) => !HIDDEN_TABS.has(t.key as FeedTab)) as { key: FeedTab; label: string }[];
 
-/** Accueil = feed des loueurs avec onglets (ADR-0009). */
+/**
+ * Accueil = feed des loueurs avec onglets (ADR-0009). L'onglet « Tous » porte aussi la recherche
+ * (loupe, lieu, dates, filtres) : des qu'elle est active, ses resultats remplacent le fil
+ * (retour fondateur, 2026-09-10).
+ */
 export default function HomeScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<FeedTab>("all");
+  const [searchActive, setSearchActive] = useState(false);
+  const showFeed = !(tab === "all" && searchActive);
   const { origin, setOrigin, cityName } = useSearchState();
   const [locating, setLocating] = useState(false);
   const feed = useFeed(tab, origin);
@@ -64,16 +70,6 @@ export default function HomeScreen() {
       scroll={false}
       bleed
       contentStyle={styles.content}
-      headerRight={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Rechercher"
-          onPress={() => router.push("/(tabs)/explorer")}
-          style={styles.round}
-        >
-          <Search size={20} color={theme.colors.text} />
-        </Pressable>
-      }
     >
       <View>
         <ScrollView
@@ -113,11 +109,13 @@ export default function HomeScreen() {
           if (nearEnd && feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
         }}
         scrollEventThrottle={200}
+        keyboardShouldPersistTaps="handled"
       >
-        {feed.isPending || locating ? (
+        {tab === "all" ? <ExplorerPanel embedded onActiveChange={setSearchActive} /> : null}
+        {showFeed && (feed.isPending || locating) ? (
           <ActivityIndicator color={theme.colors.accent} style={styles.spinner} />
         ) : null}
-        {feed.isError ? (
+        {showFeed && feed.isError ? (
           <EmptyState
             title="Impossible de charger les loueurs"
             description="Vérifiez votre connexion."
@@ -126,13 +124,13 @@ export default function HomeScreen() {
             }
           />
         ) : null}
-        {tab === "nearby" && !origin && !locating ? (
+        {showFeed && tab === "nearby" && !origin && !locating ? (
           <EmptyState
             title="Position non disponible"
-            description="Autorisez la localisation ou choisissez une ville dans Explorer."
+            description="Autorisez la localisation ou choisissez une ville dans l'onglet Tous."
           />
         ) : null}
-        {feed.data && items.length === 0 && !(tab === "nearby" && !origin) ? (
+        {showFeed && feed.data && items.length === 0 && !(tab === "nearby" && !origin) ? (
           <EmptyState
             title="Aucun loueur pour l'instant"
             description={
@@ -144,10 +142,14 @@ export default function HomeScreen() {
             }
           />
         ) : null}
-        {items.map((l) => (
-          <LoueurCard key={l.id} loueur={l} onPress={() => router.push(`/loueurs/${l.id}`)} />
-        ))}
-        {feed.isFetchingNextPage ? <ActivityIndicator color={theme.colors.accent} /> : null}
+        {showFeed
+          ? items.map((l) => (
+              <LoueurCard key={l.id} loueur={l} onPress={() => router.push(`/loueurs/${l.id}`)} />
+            ))
+          : null}
+        {showFeed && feed.isFetchingNextPage ? (
+          <ActivityIndicator color={theme.colors.accent} />
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -155,16 +157,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: theme.space["3"] },
-  round: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   tabs: { gap: theme.space["4"], paddingRight: theme.space["4"] },
   tab: {
     paddingBottom: 10,
