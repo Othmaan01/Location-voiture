@@ -21,6 +21,7 @@ import { availabilityRoutes } from "./modules/availability/routes.js";
 import { bookingsRoutes } from "./modules/bookings/routes.js";
 import { companiesRoutes } from "./modules/companies/routes.js";
 import { devicesRoutes } from "./modules/devices/routes.js";
+import { notificationsRoutes } from "./modules/notifications/routes.js";
 import { documentsRoutes } from "./modules/documents/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { identityRoutes } from "./modules/identity/routes.js";
@@ -176,6 +177,7 @@ export async function buildServer(opts: BuildServerOptions) {
   await app.register(authRoutes, { supabaseAdmin: opts.supabaseAdmin });
   await app.register(identityRoutes);
   await app.register(devicesRoutes);
+  await app.register(notificationsRoutes);
   await app.register(organizationsRoutes, { deepLinkScheme: opts.env.APP_DEEP_LINK_SCHEME });
   await app.register(agenciesRoutes);
   await app.register(companiesRoutes);

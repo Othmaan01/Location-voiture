@@ -86,7 +86,7 @@ const STEPS = [
 const FAQ = [
   {
     q: "Combien ça coûte vraiment ?",
-    a: "Un abonnement mensuel hors taxes selon le nombre de véhicules publiés : Starter 29 € (1 à 3), Pro 79 € (4 à 10), Business 179 € (11 à 30), sur devis au-delà. Aucune commission, aucun frais d'inscription. 14 jours d'essai gratuit, résiliable à tout moment.",
+    a: "Un abonnement mensuel hors taxes selon le nombre de véhicules publiés : Standard 29 € (1 à 3), Premium 79 € (4 à 10), Ultra 179 € (11 à 30), Flotte sur devis au-delà. Aucune commission, aucun frais d'inscription. 14 jours d'essai gratuit, résiliable à tout moment.",
   },
   {
     q: "Qui encaisse la location ?",

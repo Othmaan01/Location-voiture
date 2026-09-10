@@ -13,7 +13,14 @@ import {
   useReorderPhotos,
   useVehicle,
 } from "@/lib/queries-catalog";
-import { UploadError, pickAndPrepareImage, uploadToSignedUrl } from "@/lib/upload";
+import { ImageCropper } from "@/components/ImageCropper";
+import {
+  UploadError,
+  pickImageAsset,
+  prepareImage,
+  uploadToSignedUrl,
+  type ImageAsset,
+} from "@/lib/upload";
 import { theme } from "@/theme";
 
 /** Photos du vehicule : ajout (galerie, redimensionnee), ordre, suppression. La premiere est la vignette. */
@@ -28,13 +35,18 @@ export default function VehiclePhotosScreen() {
   const reorder = useReorderPhotos(organizationId, vehicleId);
   const remove = useDeletePhoto(organizationId, vehicleId);
   const [uploading, setUploading] = useState(false);
+  const [cropSource, setCropSource] = useState<ImageAsset | null>(null);
   const photos = vehicle.data?.photos ?? [];
 
+  // Galerie -> recadrage a la main (4:3) -> reduction -> envoi.
   const addPhoto = async () => {
+    const asset = await pickImageAsset();
+    if (asset) setCropSource(asset);
+  };
+  const uploadCropped = async (asset: ImageAsset) => {
     try {
-      const picked = await pickAndPrepareImage();
-      if (!picked) return;
       setUploading(true);
+      const picked = await prepareImage(asset);
       const signed = await uploadUrl.mutateAsync({
         mimeType: picked.mimeType,
         sizeBytes: picked.sizeBytes,
@@ -135,6 +147,15 @@ export default function VehiclePhotosScreen() {
       {photos.length === 0 && !vehicle.isPending ? (
         <Button label="Ajouter une photo" loading={uploading} onPress={() => void addPhoto()} />
       ) : null}
+      <ImageCropper
+        source={cropSource}
+        aspect={4 / 3}
+        onCancel={() => setCropSource(null)}
+        onDone={(r) => {
+          setCropSource(null);
+          void uploadCropped(r);
+        }}
+      />
     </Screen>
   );
 }

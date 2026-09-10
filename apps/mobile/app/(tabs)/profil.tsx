@@ -15,10 +15,11 @@ import {
   UserRound,
 } from "lucide-react-native";
 
-import { Avatar, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
+import { Avatar, Badge, Button, Card, EmptyState, ListItem, Screen, Text } from "@/components/ui";
 import { ApiRequestError } from "@/lib/api";
 import { useAppLockSetting } from "@/lib/app-lock";
 import { MODE_HOME, MODE_LABEL, useMode, type AppMode } from "@/lib/mode";
+import { useNotifications } from "@/lib/queries-notifications";
 import { useMe } from "@/lib/queries";
 import { useMyReviews } from "@/lib/queries-customer-reviews";
 import { ProfileHero } from "@/features/client/ProfileHero";
@@ -29,6 +30,8 @@ import { theme } from "@/theme";
 export default function ProfileScreen() {
   const { session, loading } = useSession();
   const router = useRouter();
+  const notifications = useNotifications();
+  const unreadNotifications = notifications.data?.unreadCount ?? 0;
   const me = useMe();
   const reviews = useMyReviews(!!session);
   const appLock = useAppLockSetting();
@@ -180,7 +183,17 @@ export default function ProfileScreen() {
         <ListItem
           icon={<Bell size={22} color={theme.colors.text} />}
           title="Notifications"
-          subtitle="Réponses des loueurs, rappels"
+          subtitle={
+            unreadNotifications > 0
+              ? `${unreadNotifications} non lue${unreadNotifications > 1 ? "s" : ""}`
+              : "Réponses des loueurs, messages, rappels"
+          }
+          onPress={() => router.push("/profil/notifications")}
+          right={
+            unreadNotifications > 0 ? (
+              <Badge label={String(unreadNotifications)} tone="accent" />
+            ) : undefined
+          }
         />
         <ListItem
           icon={<KeyRound size={22} color={theme.colors.text} />}

@@ -10,7 +10,7 @@ Ce document explique **ce que fait le produit, comment il est construit, comment
 
 **Mise en relation** entre des **loueurs de voitures professionnels** (agences, indépendants) et des **clients**. La plateforme **n'encaisse jamais la location** : le client paie le loueur, à l'agence, selon ses conditions (carte, virement, espèces dans la limite légale). **Aucune commission**, ni côté client, ni côté loueur.
 
-**Modèle économique** : abonnement mensuel du loueur, indexé sur le nombre de véhicules publiés (Starter 1–3 véhicules 29 € HT, Pro 4–10 79 €, Business 11–30 179 €, Flotte sur devis), 14 jours d'essai. Inclus : page publique sur le site web et référencement local.
+**Modèle économique** : abonnement mensuel du loueur, indexé sur le nombre de véhicules publiés (Standard 1–3 véhicules 29 € HT, Premium 4–10 79 €, Ultra 11–30 179 €, Flotte sur devis), 14 jours d'essai. Inclus : page publique sur le site web et référencement local.
 
 **Trois espaces dans une seule application** (un compte, un « mode ») :
 

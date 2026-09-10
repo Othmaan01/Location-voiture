@@ -57,6 +57,18 @@ export interface PickedImage {
  * On ne televerse jamais une photo 4K pour afficher une miniature (brief § 32).
  */
 export async function pickAndPrepareImage(): Promise<PickedImage | null> {
+  const asset = await pickImageAsset();
+  return asset ? prepareImage(asset) : null;
+}
+
+export interface ImageAsset {
+  uri: string;
+  width: number;
+  height: number;
+}
+
+/** Choisit une photo dans la galerie, telle quelle (pour un recadrage a la main avant preparation). */
+export async function pickImageAsset(): Promise<ImageAsset | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) return null;
   const result = await ImagePicker.launchImageLibraryAsync({
@@ -65,8 +77,9 @@ export async function pickAndPrepareImage(): Promise<PickedImage | null> {
     allowsMultipleSelection: false,
     exif: false,
   });
-  if (result.canceled || !result.assets[0]) return null;
-  return prepareImage(result.assets[0]);
+  const a = result.canceled ? null : result.assets[0];
+  if (!a) return null;
+  return { uri: a.uri, width: a.width ?? 1600, height: a.height ?? 1200 };
 }
 
 export type CapturedMedia =
@@ -79,7 +92,8 @@ export type CapturedMedia =
       durationSeconds: number;
     };
 
-async function prepareImage(asset: ImagePicker.ImagePickerAsset): Promise<PickedImage> {
+/** Reduit a 1600 px de large max, JPEG 82 % ; renvoie le poids reel a declarer a l'API. */
+export async function prepareImage(asset: { uri: string; width?: number }): Promise<PickedImage> {
   const targetWidth = Math.min(asset.width ?? 1600, 1600);
   const manipulated = await ImageManipulator.manipulateAsync(
     asset.uri,
