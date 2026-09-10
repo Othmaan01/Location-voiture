@@ -18,14 +18,11 @@ import {
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Briefcase,
   Car,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  DoorOpen,
   Fuel,
-  Gauge,
   Heart,
   MapPin,
   MessageCircle,
@@ -252,14 +249,18 @@ export default function VehicleScreen() {
     .filter(Boolean)
     .join(" · ");
 
+  // Trois vignettes seulement, les plus utiles (retour fondateur) ; le reste dans « Description ».
   const specs: { icon: typeof Car; label: string }[] = [
-    { icon: Car, label: CATEGORY_LABEL[v.category] ?? v.category },
     { icon: Settings2, label: TRANSMISSION_LABEL[v.transmission] ?? v.transmission },
     { icon: Fuel, label: FUEL_LABEL[v.fuel] ?? v.fuel },
     { icon: Users, label: `${v.seats} places` },
-    ...(v.doors ? [{ icon: DoorOpen, label: `${v.doors} portes` }] : []),
-    ...(v.luggage ? [{ icon: Briefcase, label: `${v.luggage} bagages` }] : []),
-    ...(v.year ? [{ icon: Gauge, label: String(v.year) }] : []),
+  ];
+  const details: { label: string; value: string }[] = [
+    { label: "Catégorie", value: CATEGORY_LABEL[v.category] ?? v.category },
+    ...(v.year ? [{ label: "Année", value: String(v.year) }] : []),
+    ...(v.doors ? [{ label: "Portes", value: String(v.doors) }] : []),
+    ...(v.luggage ? [{ label: "Bagages", value: String(v.luggage) }] : []),
+    ...(v.color ? [{ label: "Couleur", value: v.color }] : []),
   ];
 
   return (
@@ -478,14 +479,12 @@ export default function VehicleScreen() {
 
         <View style={styles.section}>
           <View style={styles.tiles}>
-            {v.description ? (
-              <Tile
-                title="Description"
-                hint={v.description}
-                open={open === "description"}
-                onPress={() => toggleTile("description")}
-              />
-            ) : null}
+            <Tile
+              title="Description"
+              hint={v.description ?? details.map((d) => d.value).join(" · ")}
+              open={open === "description"}
+              onPress={() => toggleTile("description")}
+            />
             <Tile
               title="Tarif"
               hint={tarifSummary}
@@ -493,11 +492,23 @@ export default function VehicleScreen() {
               onPress={() => toggleTile("tarif")}
             />
           </View>
-          {open === "description" && v.description ? (
-            <Card>
-              <Text variant="body" tone="muted">
-                {v.description}
-              </Text>
+          {open === "description" ? (
+            <Card padded={false}>
+              {v.description ? (
+                <View style={styles.descriptionText}>
+                  <Text variant="body" tone="muted">
+                    {v.description}
+                  </Text>
+                </View>
+              ) : null}
+              {details.map((d, i) => (
+                <Row
+                  key={d.label}
+                  label={d.label}
+                  value={d.value}
+                  last={i === details.length - 1}
+                />
+              ))}
             </Card>
           ) : null}
           {open === "tarif" ? (
@@ -1033,6 +1044,11 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: "row", alignItems: "center", gap: theme.space["3"] },
   wheels: { flexDirection: "row", gap: theme.space["2"] },
   tiles: { flexDirection: "row", gap: theme.space["2"] },
+  descriptionText: {
+    padding: theme.space["4"],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
   tile: {
     flex: 1,
     gap: 4,
