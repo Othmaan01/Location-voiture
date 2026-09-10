@@ -437,6 +437,7 @@ export default function VehicleScreen() {
               compact
             />
             <CalendarLegend states={dayStates.size > 0 ? ["unavailable"] : []} />
+            <View style={styles.statusRule} />
             <View style={styles.status}>
               {pickStart && pickEnd ? (
                 <View
@@ -1043,7 +1044,14 @@ const styles = StyleSheet.create({
   },
   tileOn: { borderColor: theme.colors.text },
   tileHead: { flexDirection: "row", alignItems: "center", gap: 6 },
-  status: { flexDirection: "row", alignItems: "center", gap: 8 },
+  statusRule: { height: 1, backgroundColor: theme.colors.border, marginTop: theme.space["2"] },
+  status: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: theme.space["1"],
+    paddingBottom: theme.space["1"],
+  },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   chevron: {
     width: 28,
