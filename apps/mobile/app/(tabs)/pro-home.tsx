@@ -271,7 +271,7 @@ function Kpi({
         <Text variant="h2" tone={accent ? "accent" : "default"}>
           {value}
         </Text>
-        <Text variant="small" tone="muted">
+        <Text variant="small" tone="muted" numberOfLines={2}>
           {label}
         </Text>
       </Card>
@@ -285,6 +285,7 @@ const styles = StyleSheet.create({
   callout: { borderColor: theme.colors.accentDark, gap: theme.space["2"] },
   kpis: { flexDirection: "row", gap: theme.space["2"] },
   kpiWrap: { flex: 1 },
-  kpi: { gap: 2, minHeight: 84, justifyContent: "center" },
+  // Toutes les tuiles a la meme hauteur (retour fondateur, 2026-09-10).
+  kpi: { gap: 2, height: 104, justifyContent: "center" },
   kpiAccent: { borderColor: theme.colors.accentDark },
 });
