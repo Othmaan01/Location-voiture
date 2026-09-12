@@ -11,11 +11,11 @@
       "bundleIdentifier": "fr.locationvoiture.app",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement a trouver des vehicules autour de vous lorsque vous le demandez.",
+        "NSLocationWhenInUseUsageDescription": "Votre position sert uniquement à trouver des loueurs autour de vous lorsque vous le demandez.",
         "NSFaceIDUsageDescription": "Face ID sert uniquement à déverrouiller l'application sur cet appareil.",
-        "NSCameraUsageDescription": "La caméra sert à filmer ou photographier une story en direct.",
-        "NSMicrophoneUsageDescription": "Le micro enregistre le son de vos stories vidéo.",
-        "NSPhotoLibraryUsageDescription": "Vos photos servent à illustrer vos véhicules, votre logo et vos stories."
+        "NSCameraUsageDescription": "La caméra sert à photographier vos véhicules et vos états des lieux.",
+        "NSMicrophoneUsageDescription": "Le micro sert uniquement si vous enregistrez une vidéo dans l'application.",
+        "NSPhotoLibraryUsageDescription": "Vos photos servent à illustrer vos véhicules, votre logo et votre profil."
       },
       "config": {
         "usesNonExemptEncryption": false

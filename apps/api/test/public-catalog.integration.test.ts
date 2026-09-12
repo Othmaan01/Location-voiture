@@ -279,7 +279,7 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
       payload: { name: "Mariage Mejdi 2027" },
     });
     expect(created.statusCode).toBe(201);
-    const groupId = created.json().id as string;
+    const groupId = created.json<{ id: string }>().id;
     expect(
       (
         await app.inject({
@@ -290,11 +290,15 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
         })
       ).statusCode,
     ).toBe(204);
+    type FavoritesList = {
+      groups: { id: string; name: string; count: number }[];
+      vehicles: { id: string; groupId: string | null }[];
+    };
     let list = (
       await app.inject({ method: "GET", url: "/v1/me/favorites", headers: auth(customerToken) })
-    ).json();
+    ).json<FavoritesList>();
     expect(list.groups).toEqual([{ id: groupId, name: "Mariage Mejdi 2027", count: 1 }]);
-    expect(list.vehicles.find((v: { id: string }) => v.id === vehicleId)?.groupId).toBe(groupId);
+    expect(list.vehicles.find((v) => v.id === vehicleId)?.groupId).toBe(groupId);
     // Meme nom deux fois : refuse proprement.
     expect(
       (
@@ -317,9 +321,9 @@ describe.skipIf(!testDatabaseUrl)("catalogue public", () => {
     ).toBe(204);
     list = (
       await app.inject({ method: "GET", url: "/v1/me/favorites", headers: auth(customerToken) })
-    ).json();
+    ).json<FavoritesList>();
     expect(list.groups).toEqual([]);
-    expect(list.vehicles.find((v: { id: string }) => v.id === vehicleId)?.groupId).toBeNull();
+    expect(list.vehicles.find((v) => v.id === vehicleId)?.groupId).toBeNull();
   });
 
   it("favoris : reserve aux connectes, uniquement des vehicules publies", async () => {
