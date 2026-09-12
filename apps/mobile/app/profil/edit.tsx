@@ -88,7 +88,7 @@ export default function EditProfileScreen() {
           render={({ field, fieldState }) => (
             <Input
               label="Téléphone"
-              hint="Transmis au loueur uniquement après confirmation d'une réservation"
+              hint="Transmis à l'agence uniquement après confirmation d'une réservation"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}

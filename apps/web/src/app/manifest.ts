@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: `${publicEnv.siteName} - Location de voiture pres de chez vous`,
     short_name: publicEnv.siteName,
     description:
-      "Des loueurs de voitures professionnels vérifiés près de chez vous. Contact direct, sans commission.",
+      "Des agences de location vérifiées près de chez vous. Contact direct, sans commission.",
     lang: "fr",
     start_url: "/",
     scope: "/",
@@ -28,7 +28,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Rechercher un vehicule", url: "/recherche" },
+      { name: "Rechercher un véhicule", url: "/recherche" },
       { name: "Toutes les villes", url: "/villes" },
     ],
   };

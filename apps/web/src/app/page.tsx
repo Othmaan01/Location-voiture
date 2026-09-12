@@ -34,12 +34,12 @@ const STEPS = [
   {
     Icon: Search,
     title: "Trouvez",
-    text: "Les loueurs pros vérifiés autour de vous, leurs véhicules et leurs vrais prix, en un coup d'œil.",
+    text: "Les agences pros vérifiées autour de vous, leurs véhicules et leurs vrais prix, en un coup d'œil.",
   },
   {
     Icon: CalendarCheck,
     title: "Demandez",
-    text: "Choisissez vos dates. Le loueur confirme rapidement, ou la demande s'efface d'elle-même.",
+    text: "Choisissez vos dates. L'agence confirme rapidement, ou la demande s'efface d'elle-même.",
   },
   {
     Icon: MessageCircle,
@@ -51,13 +51,13 @@ const STEPS = [
 const PROMISES = [
   {
     Icon: ShieldCheck,
-    title: "Chaque loueur est contrôlé",
+    title: "Chaque agence est contrôlée",
     text: "Kbis, assurance flotte et SIRET vérifiés à la main avant qu'un seul véhicule soit visible.",
   },
   {
     Icon: Wallet,
     title: "Le prix affiché est le prix payé",
-    text: "Nous ne prenons aucune commission sur votre location. Vous réglez le loueur, directement.",
+    text: "Nous ne prenons aucune commission sur votre location. Vous réglez l'agence, directement.",
   },
   {
     Icon: MessageCircle,
@@ -67,7 +67,7 @@ const PROMISES = [
   {
     Icon: Star,
     title: "Des avis de vrais clients",
-    text: "Seuls les clients qui ont réellement loué peuvent noter. Le loueur répond publiquement.",
+    text: "Seuls les clients qui ont réellement loué peuvent noter. L'agence répond publiquement.",
   },
 ];
 
@@ -85,7 +85,7 @@ const MOMENTS = [
   {
     Icon: Plane,
     title: "Un week-end, des vacances",
-    text: "Un SUV pour la montagne, un cabriolet pour la côte. Le prix du loueur, aucune commission, kilomètres clairs.",
+    text: "Un SUV pour la montagne, un cabriolet pour la côte. Le prix de l'agence, aucune commission, kilomètres clairs.",
   },
   {
     Icon: Briefcase,
@@ -97,31 +97,31 @@ const MOMENTS = [
 const FAQ = [
   {
     q: "Est-ce que je paie quelque chose à la plateforme ?",
-    a: "Non. L'application est gratuite pour les clients et nous ne prenons aucune commission, ni sur vous, ni sur le loueur. Vous payez le loueur, au prix qu'il affiche, directement à l'agence, par carte, virement ou espèces selon ses conditions, dans la limite légale.",
+    a: "Non. L'application est gratuite pour les clients et nous ne prenons aucune commission, ni sur vous, ni sur l'agence. Vous payez l'agence, au prix qu'il affiche, directement à l'agence, par carte, virement ou espèces selon ses conditions, dans la limite légale.",
   },
   {
-    q: "Louer chez un loueur professionnel, c'est plus cher qu'entre particuliers ?",
+    q: "Louer dans une agence professionnelle, c'est plus cher qu'entre particuliers ?",
     a: "Souvent moins, à prestation égale : pas de commission de plateforme, un véhicule entretenu et assuré par une entreprise, un vrai contrat et une caution encadrée. Et le prix affiché est le prix payé.",
   },
   {
-    q: "Comment savez-vous qu'un loueur est sérieux ?",
+    q: "Comment savez-vous qu'une agence est sérieuse ?",
     a: "Avant publication, nous vérifions son immatriculation (Kbis), son assurance flotte et le SIRET de chaque agence. Ensuite, ce sont les avis des clients qui ont vraiment loué qui font foi.",
   },
   {
     q: "Que se passe-t-il après ma demande ?",
-    a: "Le loueur reçoit une notification et vous répond dans l'application. Une fois confirmé, vous recevez l'adresse et le téléphone de l'agence, puis vous suivez votre location jusqu'au retour.",
+    a: "L'agence reçoit une notification et vous répond dans l'application. Une fois confirmé, vous recevez l'adresse et le téléphone de l'agence, puis vous suivez votre location jusqu'au retour.",
   },
   {
     q: "Puis-je annuler ?",
-    a: "Oui, tant que la location n'a pas commencé, depuis l'application. Le loueur est prévenu immédiatement.",
+    a: "Oui, tant que la location n'a pas commencé, depuis l'application. L'agence est prévenuee immédiatement.",
   },
   {
     q: "L'application est-elle disponible sur iPhone et Android ?",
-    a: "Oui, sur l'App Store et Google Play. Le site vous permet de découvrir les loueurs ; la réservation et les messages se font dans l'application.",
+    a: "Oui, sur l'App Store et Google Play. Le site vous permet de découvrir les agences ; la réservation et les messages se font dans l'application.",
   },
 ];
 
-/** Accueil : promesse en une phrase, preuves, feed des loueurs, parcours, engagements, loueurs, FAQ. */
+/** Accueil : promesse en une phrase, preuves, feed des agences, parcours, engagements, loueurs, FAQ. */
 export default async function HomePage() {
   const [feed, cities] = await Promise.all([api.feed("all", 6), api.cities()]);
   const items = feed?.items ?? [];
@@ -134,7 +134,7 @@ export default async function HomePage() {
           <Reveal className="space-y-7">
             <p className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-brand/40 bg-brand-soft/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-tint sm:text-xs">
               <span className="ring-pulse size-1.5 rounded-full bg-brand" /> Location de voiture ·
-              loueurs pros vérifiés · 0 % commission
+              agences pros vérifiées · 0 % commission
             </p>
             <h1 className="text-4xl font-extrabold leading-[1.05] md:text-6xl">
               <span className="text-ink-900">Louez une voiture</span>
@@ -145,7 +145,7 @@ export default async function HomePage() {
             </h1>
             <p className="max-w-xl text-lg text-ink-600 md:text-xl">
               Pas de comparateur, pas de commission, pas de paperasse inutile. Vous choisissez, le
-              loueur vérifié confirme, vous récupérez les clés. Même à la dernière minute.
+              agence vérifiée confirme, vous récupérez les clés. Même à la dernière minute.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <StoreBadges size="lg" />
@@ -159,7 +159,7 @@ export default async function HomePage() {
               </Link>
               <span className="hidden h-4 w-px bg-ink-300 sm:block" />
               <Link href="/pro" className="font-semibold text-ink-900 hover:text-brand-tint">
-                Je suis loueur
+                Je suis une agence
               </Link>
             </div>
           </Reveal>
@@ -237,7 +237,7 @@ export default async function HomePage() {
         <Reveal className="mb-6 flex items-end justify-between gap-4">
           <SectionTitle
             eyebrow="En ce moment"
-            title="Des loueurs, pas des annonces."
+            title="Des agences, pas des annonces."
             text="Chaque profil est une vraie entreprise, avec ses agences, sa flotte et ses avis."
           />
           <Link
@@ -250,8 +250,8 @@ export default async function HomePage() {
         {items.length === 0 ? (
           <Reveal>
             <EmptyState
-              title="Les premiers loueurs arrivent"
-              description="Les loueurs vérifiés apparaîtront ici dès la publication de leur flotte."
+              title="Les premières agences arrivent"
+              description="Les agences vérifiées apparaîtront ici dès la publication de leur flotte."
               action={<ButtonLink href="/pro">Publier ma flotte</ButtonLink>}
             />
           </Reveal>
@@ -273,7 +273,7 @@ export default async function HomePage() {
           <SectionTitle
             eyebrow="Il y a toujours une bonne raison"
             title="Une voiture quand vous en avez besoin. Pas quand le comptoir ouvre."
-            text="Louer une voiture ne devrait pas être une corvée. Des loueurs professionnels près de chez vous, disponibles pour un jour, un week-end ou un mois."
+            text="Louer une voiture ne devrait pas être une corvée. Des agences professionnelles près de chez vous, disponibles pour un jour, un week-end ou un mois."
           />
         </Reveal>
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -305,7 +305,7 @@ export default async function HomePage() {
               <BadgeCheck className="size-8 shrink-0 text-brand-tint" />
               <p className="text-sm text-ink-600">
                 <span className="font-bold text-ink-900">Zéro commission, c&apos;est écrit.</span>{" "}
-                Notre revenu vient de l&apos;abonnement des loueurs, jamais de vos locations.
+                Notre revenu vient de l&apos;abonnement des agences, jamais de vos locations.
               </p>
             </div>
           </Reveal>
@@ -343,7 +343,7 @@ export default async function HomePage() {
                 </p>
                 <div className="flex flex-wrap gap-3 pt-2">
                   <ButtonLink href="/pro" size="lg" className="btn-glow">
-                    Découvrir l&apos;offre loueur <ArrowRight />
+                    Découvrir l&apos;offre pro <ArrowRight />
                   </ButtonLink>
                   <ButtonLink href="/tarifs" variant="outline" size="lg">
                     Voir les tarifs
@@ -392,19 +392,19 @@ export default async function HomePage() {
         <Reveal>
           <div className="max-w-3xl space-y-4 text-sm leading-relaxed text-ink-500">
             <h2 className="text-lg font-bold text-ink-700">
-              Location de voiture près de chez vous, avec des loueurs professionnels
+              Location de voiture près de chez vous, avec des agences professionnelles
             </h2>
             <p>
               Louer une voiture pour un mariage, un week-end, des vacances, un déplacement
               professionnel ou pendant que la vôtre est au garage : notre plateforme réunit des
-              loueurs de voitures professionnels vérifiés dans toute la France. Citadines, berlines,
-              SUV, familiales, cabriolets ou véhicules de prestige, chaque véhicule est proposé au
-              prix du loueur, sans commission de plateforme.
+              agences de location vérifiées dans toute la France. Citadines, berlines, SUV,
+              familiales, cabriolets ou véhicules de prestige, chaque véhicule est proposé au prix
+              de l&apos;agence, sans commission de plateforme.
             </p>
             <p>
               Contrairement à un comparateur ou à une location entre particuliers, vous traitez
               directement avec une agence de location : contrat, assurance, caution et paiement se
-              font chez le loueur, en toute transparence. Recherchez par ville, comparez les tarifs
+              font à l&apos;agence, en toute transparence. Recherchez par ville, comparez les tarifs
               à la journée, envoyez votre demande de réservation depuis l&apos;application et suivez
               votre location jusqu&apos;au retour du véhicule.
             </p>
@@ -419,8 +419,8 @@ export default async function HomePage() {
               Votre prochaine voiture est à côté de chez vous.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ink-600 md:text-lg">
-              Téléchargez l&apos;application, trouvez un loueur vérifié et envoyez votre demande en
-              moins de deux minutes.
+              Téléchargez l&apos;application, trouvez une agence vérifiée et envoyez votre demande
+              en moins de deux minutes.
             </p>
             <StoreBadges size="lg" className="mt-8 justify-center" />
           </div>

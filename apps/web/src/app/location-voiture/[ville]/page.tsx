@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       null,
     ) ?? null;
   return {
-    title: `Location de voiture à ${data.city.name} : loueurs professionnels vérifiés`,
-    description: `${data.results?.total ?? 0} véhicule(s) à louer à ${data.city.name}${min !== null ? ` à partir de ${formatCents(min)} par jour` : ""}. Loueurs vérifiés, prix du loueur, contact direct sans commission.`,
+    title: `Location de voiture à ${data.city.name} : agences professionnelles vérifiées`,
+    description: `${data.results?.total ?? 0} véhicule(s) à louer à ${data.city.name}${min !== null ? ` à partir de ${formatCents(min)} par jour` : ""}. Agences vérifiées, prix de l'agence, contact direct sans commission.`,
   };
 }
 
@@ -57,7 +57,7 @@ export default async function CityPage({ params }: Params) {
       </p>
       <h1 className="mt-2 text-3xl font-extrabold text-ink-900">{data.city.name}</h1>
       <p className="mt-2 text-muted-foreground">
-        {items.length} véhicule{items.length > 1 ? "s" : ""} chez des loueurs professionnels
+        {items.length} véhicule{items.length > 1 ? "s" : ""} dans des agences professionnelles
         vérifiés, autour de {data.city.name}.
       </p>
       <div className="mt-8">

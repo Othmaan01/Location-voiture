@@ -33,7 +33,7 @@ export function ReviewCustomerSheet({
       {
         onSuccess: () => {
           onClose();
-          celebrate("Client noté", "Merci, ça aide les autres loueurs.");
+          celebrate("Client noté", "Merci, ça aide les autres agences.");
         },
         onError: (e) =>
           Alert.alert("Impossible", e instanceof ApiRequestError ? e.message : "Réessayez."),
@@ -65,7 +65,7 @@ export function ReviewCustomerSheet({
           : ["", "À éviter", "Moyen", "Correct", "Très bien", "Client idéal"][rating]}
       </Text>
       <Input
-        label="Un mot pour les autres loueurs (facultatif)"
+        label="Un mot pour les autres agences (facultatif)"
         value={comment}
         onChangeText={setComment}
         placeholder="Ex. Véhicule rendu propre et à l'heure."

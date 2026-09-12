@@ -22,13 +22,13 @@ export const metadata: Metadata = {
     template: `%s | ${publicEnv.siteName}`,
   },
   description:
-    "Trouvez un loueur de voitures professionnel vérifié près de chez vous, comparez les prix et réservez directement avec lui. Aucune commission sur la location.",
+    "Trouvez un agence de location vérifiée près de chez vous, comparez les prix et réservez directement avec lui. Aucune commission sur la location.",
   keywords: [
     "location de voiture",
-    "loueur de voiture",
+    "agence de location de voiture",
     "agence de location",
     "louer une voiture",
-    "loueur vérifié",
+    "agence vérifiée",
   ],
   openGraph: {
     type: "website",

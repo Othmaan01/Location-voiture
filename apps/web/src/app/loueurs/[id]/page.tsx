@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-/** Profil public du loueur : en-tete, grille des vehicules, avis, agences (ADR-0009). */
+/** Profil public de l'agence : en-tete, grille des vehicules, avis, agences (ADR-0009). */
 export default async function LoueurPage({ params }: Params) {
   const { id } = await params;
   const [l, reviews] = await Promise.all([api.loueur(id), api.reviews(id)]);

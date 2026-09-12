@@ -12,7 +12,7 @@ export type AppMode = "client" | "pro" | "admin";
 
 export const MODE_LABEL: Record<AppMode, string> = {
   client: "Client",
-  pro: "Loueur",
+  pro: "Pro",
   admin: "Admin",
 };
 

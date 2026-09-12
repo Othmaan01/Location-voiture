@@ -20,9 +20,9 @@ import { StoreBadges } from "@/components/marketing/store-badges";
 import { ButtonLink } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Loueurs : vos véhicules devant des clients, sans commission",
+  title: "Agences : vos véhicules devant des clients, sans commission",
   description:
-    "Loueurs de voitures : publiez votre flotte, recevez des demandes et encaissez comme vous voulez. 0 % de commission, page web dédiée et référencement local offerts, abonnement fixe dès 29 € HT, 14 jours d'essai.",
+    "Agences de voitures : publiez votre flotte, recevez des demandes et encaissez comme vous voulez. 0 % de commission, page web dédiée et référencement local offerts, abonnement fixe dès 29 € HT, 14 jours d'essai.",
 };
 
 const BENEFITS = [
@@ -113,7 +113,7 @@ export default function ProPage() {
         <div className="container-page grid gap-10 py-16 [&>*]:min-w-0 md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-24">
           <Reveal className="space-y-6">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-tint">
-              Loueurs professionnels
+              Agences professionnelles
             </p>
             <h1 className="text-4xl font-extrabold leading-[1.05] md:text-6xl">
               <span className="glow-text">Des clients près de chez vous.</span>
@@ -219,7 +219,7 @@ export default function ProPage() {
           <Reveal delay={200} className="mt-10">
             <div className="glass rounded-card p-8 text-center">
               <p className="text-2xl font-extrabold text-ink-900">
-                Créez votre espace loueur dans l&apos;application
+                Créez votre espace pro dans l&apos;application
               </p>
               <p className="mx-auto mt-2 max-w-lg text-ink-600">
                 Choisissez « Je loue mes véhicules » à l&apos;inscription. Votre essai gratuit
@@ -231,7 +231,7 @@ export default function ProPage() {
         </div>
       </section>
 
-      <Faq items={FAQ} title="Questions des loueurs" />
+      <Faq items={FAQ} title="Questions des agences" />
     </>
   );
 }

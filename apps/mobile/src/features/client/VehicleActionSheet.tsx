@@ -78,7 +78,7 @@ export function VehicleActionSheet({
               onPress={onRequest}
             />
             <Button
-              label="Contacter le loueur"
+              label="Contacter l'agence"
               variant="ghost"
               icon={<MessageCircle size={20} color={theme.colors.text} strokeWidth={2} />}
               onPress={onMessage}

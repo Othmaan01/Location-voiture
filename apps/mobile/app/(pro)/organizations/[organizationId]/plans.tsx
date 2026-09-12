@@ -92,7 +92,7 @@ export default function PlansScreen() {
           return;
         }
         celebrate(
-          reason === "limit" ? "Forfait mis à jour" : "Bienvenue dans votre espace loueur",
+          reason === "limit" ? "Forfait mis à jour" : "Bienvenue dans votre espace pro",
           reason === "limit"
             ? "Vous pouvez publier vos véhicules supplémentaires."
             : "Votre essai gratuit de 14 jours commence maintenant.",

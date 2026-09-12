@@ -12,12 +12,12 @@ export function NoOrganization({ title }: { title: string }) {
   const { session } = useSession();
   const me = useMe();
   return (
-    <Screen eyebrow="Espace loueur" title={title} dock scroll={false}>
+    <Screen eyebrow="Espace pro" title={title} dock scroll={false}>
       {session && me.isPending ? (
         <ActivityIndicator color={theme.colors.accent} />
       ) : (
         <EmptyState
-          title="Votre espace loueur"
+          title="Votre espace pro"
           description="Créez votre organisation pour publier votre flotte, recevoir des demandes et gérer votre planning."
           action={
             <Button

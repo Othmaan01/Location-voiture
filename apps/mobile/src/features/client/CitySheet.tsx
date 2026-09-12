@@ -69,7 +69,7 @@ export function CitySheet({ visible, onClose, onPickCity, onPickLocation }: Prop
         {cities.data && filtered.length === 0 ? (
           <View style={styles.row}>
             <Text variant="sm" tone="muted">
-              Aucune ville. D'autres villes seront ajoutées avec les premiers loueurs.
+              Aucune ville. D'autres villes seront ajoutées avec les premières agences.
             </Text>
           </View>
         ) : null}

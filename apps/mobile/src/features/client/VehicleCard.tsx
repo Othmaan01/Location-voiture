@@ -115,7 +115,7 @@ export function VehicleCard({ vehicle, onPress, onAction, favorite, onToggleFavo
       {onAction ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Demander une réservation ou contacter le loueur"
+          accessibilityLabel="Demander une réservation ou contacter l'agence"
           onPress={onAction}
           hitSlop={6}
           style={styles.action}

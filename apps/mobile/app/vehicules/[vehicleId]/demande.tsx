@@ -108,7 +108,7 @@ export default function BookingRequestScreen() {
       { quoteId: quote.id, message: message.trim() || undefined, idempotencyKey },
       {
         onSuccess: (b) => {
-          celebrate("Demande envoyée", "Le loueur est prévenu et vous répond ici.");
+          celebrate("Demande envoyée", "L'agence est prévenue et vous répond ici.");
           router.replace(`/reservations/${b.id}`);
         },
         onError: (e) => {
@@ -238,7 +238,7 @@ export default function BookingRequestScreen() {
       ) : null}
 
       <Input
-        label="Message au loueur (optionnel)"
+        label="Message à l'agence (optionnel)"
         value={message}
         onChangeText={setMessage}
         placeholder="Heure d'arrivée, siège bébé, question…"

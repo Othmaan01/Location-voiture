@@ -90,14 +90,14 @@ export default function RentalsScreen() {
           }
           description={
             scope === "current"
-              ? "Votre location apparaît ici dès que le loueur vous remet le véhicule."
+              ? "Votre location apparaît ici dès que l'agence vous remet le véhicule."
               : scope === "upcoming"
-                ? "Trouvez un loueur près de chez vous et envoyez votre première demande."
+                ? "Trouvez une agence près de chez vous et envoyez votre première demande."
                 : "Vos locations terminées apparaîtront ici."
           }
           action={
             <Button
-              label="Voir les loueurs"
+              label="Voir les agences"
               variant="ghost"
               onPress={() => router.navigate("/(tabs)")}
             />

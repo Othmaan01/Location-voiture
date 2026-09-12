@@ -12,7 +12,7 @@ export const BOOKING_STATUS: Record<
   requested: {
     label: "En attente",
     tone: "warning",
-    customer: "Le loueur a 24 h pour répondre.",
+    customer: "L'agence a 24 h pour répondre.",
     pro: "À traiter",
   },
   confirmed: {
@@ -26,13 +26,13 @@ export const BOOKING_STATUS: Record<
   declined: {
     label: "Refusée",
     tone: "neutral",
-    customer: "Le loueur n'a pas pu accepter.",
+    customer: "L'agence n'a pas pu accepter.",
     pro: "Refusée",
   },
   expired: {
     label: "Expirée",
     tone: "neutral",
-    customer: "Sans réponse du loueur dans le délai.",
+    customer: "Sans réponse de l'agence dans le délai.",
     pro: "Expirée",
   },
   cancelled: {
@@ -53,10 +53,10 @@ export const BOOKING_STATUS: Record<
 
 export const EVENT_LABEL: Record<BookingStatus, string> = {
   requested: "Demande envoyée",
-  confirmed: "Confirmée par le loueur",
+  confirmed: "Confirmée par l'agence",
   active: "Véhicule retiré",
   completed: "Véhicule rendu",
-  declined: "Refusée par le loueur",
+  declined: "Refusée par l'agence",
   expired: "Expirée sans réponse",
   cancelled: "Annulée",
   no_show: "Client non présenté",

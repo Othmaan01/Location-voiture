@@ -3,8 +3,8 @@ import { Lock, MapPinned, ShieldCheck, Wallet } from "lucide-react";
 /** Rangee de preuves : pas de chiffres inventes, des engagements verifiables. */
 export function TrustRow() {
   const items = [
-    { Icon: ShieldCheck, label: "Loueurs vérifiés", sub: "Kbis, assurance, SIRET" },
-    { Icon: Wallet, label: "0 % de commission", sub: "Le prix du loueur, rien de plus" },
+    { Icon: ShieldCheck, label: "Agences vérifiées", sub: "Kbis, assurance, SIRET" },
+    { Icon: Wallet, label: "0 % de commission", sub: "Le prix de l'agence, rien de plus" },
     { Icon: Lock, label: "Données protégées", sub: "Hébergées en Europe, RGPD" },
     { Icon: MapPinned, label: "Partout en France", sub: "Des pros près de chez vous" },
   ];

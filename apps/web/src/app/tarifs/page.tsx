@@ -9,9 +9,9 @@ import { formatCents } from "@/lib/utils";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Abonnement loueur : tarifs",
+  title: "Abonnement pro : tarifs",
   description:
-    "Abonnement loueur : un prix fixe selon vos véhicules publiés, 0 % de commission, encaissement libre, page web et référencement local offerts, 14 jours d'essai.",
+    "Abonnement pro : un prix fixe selon vos véhicules publiés, 0 % de commission, encaissement libre, page web et référencement local offerts, 14 jours d'essai.",
 };
 
 export default async function PricingPage() {
@@ -19,7 +19,7 @@ export default async function PricingPage() {
   return (
     <div className="container-page py-12">
       <div className="max-w-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-tint">Loueurs</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-tint">Agences</p>
         <h1 className="mt-2 text-3xl font-extrabold text-ink-900">
           Un abonnement simple, aucune commission
         </h1>

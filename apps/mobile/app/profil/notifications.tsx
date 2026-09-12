@@ -115,7 +115,7 @@ export default function NotificationsScreen() {
             <Text variant="bodyStrong">Sur ce téléphone</Text>
             <Text variant="small" tone="muted">
               {push === "on"
-                ? "Réponses des loueurs, rappels de retrait et de retour."
+                ? "Réponses des agences, rappels de retrait et de retour."
                 : push === "denied"
                   ? "Refusées dans les réglages de l'iPhone."
                   : "Activez-les pour être prévenu sans ouvrir l'application."}
@@ -156,7 +156,7 @@ export default function NotificationsScreen() {
       {list.data && list.data.notifications.length === 0 ? (
         <EmptyState
           title="Rien pour le moment"
-          description="Vous verrez ici les réponses des loueurs et vos rappels. Les messages ont leur propre bulle en bas."
+          description="Vous verrez ici les réponses des agences et vos rappels. Les messages ont leur propre bulle en bas."
         />
       ) : null}
       {list.data && list.data.notifications.length > 0 ? (

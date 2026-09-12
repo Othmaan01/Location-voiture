@@ -8,7 +8,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Location de voiture par ville",
-  description: "Toutes les villes où trouver un loueur de voitures professionnel vérifié.",
+  description: "Toutes les villes où trouver un agence de location vérifiée.",
 };
 
 export default async function CitiesPage() {

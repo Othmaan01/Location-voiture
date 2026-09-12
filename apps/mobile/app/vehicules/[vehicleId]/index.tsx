@@ -596,7 +596,7 @@ export default function VehicleScreen() {
           </Card>
         </Section>
 
-        <Section title="Le loueur">
+        <Section title="L'agence">
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push(`/loueurs/${v.loueur.id}`)}
@@ -697,7 +697,7 @@ export default function VehicleScreen() {
       <View style={[styles.bar, { paddingBottom: insets.bottom + theme.space["3"] }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Écrire au loueur"
+          accessibilityLabel="Écrire à l'agence"
           onPress={() => (session ? setContact(true) : router.push("/(auth)/sign-in"))}
           style={styles.barGhost}
         >

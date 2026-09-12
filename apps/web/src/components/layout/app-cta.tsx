@@ -8,8 +8,8 @@ export function AppCta({ title = "Réservez dans l'application" }: { title?: str
         <div className="space-y-1">
           <p className="text-lg font-bold text-ink-900">{title}</p>
           <p className="max-w-xl text-sm text-ink-700">
-            Demande de réservation, messages avec le loueur, suivi de la location et avis : tout se
-            passe dans l&apos;application, gratuite pour les clients.
+            Demande de réservation, messages avec l&apos;agence, suivi de la location et avis : tout
+            se passe dans l&apos;application, gratuite pour les clients.
           </p>
         </div>
         <StoreBadges />

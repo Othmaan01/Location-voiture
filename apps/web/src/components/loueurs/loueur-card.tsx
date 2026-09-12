@@ -72,7 +72,7 @@ export function LoueurCard({ loueur }: { loueur: LoueurSummary }) {
           href={`/loueurs/${loueur.id}`}
           className="inline-flex items-center gap-1 font-semibold text-brand-tint"
         >
-          Voir le loueur <ChevronRight className="size-4" />
+          Voir l&apos;agence <ChevronRight className="size-4" />
         </Link>
       </div>
     </Card>

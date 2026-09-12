@@ -14,8 +14,8 @@ export default function MessagesTab() {
     return (
       <Screen title="Messages" dock scroll={false}>
         <EmptyState
-          title="Vos échanges avec les loueurs"
-          description="Connectez-vous pour écrire à un loueur et suivre ses réponses."
+          title="Vos échanges avec les agences"
+          description="Connectez-vous pour écrire à une agence et suivre ses réponses."
           action={<Button label="Se connecter" onPress={() => router.push("/(auth)/sign-in")} />}
         />
       </Screen>
@@ -27,7 +27,7 @@ export default function MessagesTab() {
         conversations={conversations.data?.conversations ?? []}
         side="customer"
         pending={conversations.isPending}
-        emptyDescription="Depuis un véhicule, touchez « Contacter le loueur » : votre échange apparaîtra ici."
+        emptyDescription="Depuis un véhicule, touchez « Contacter l'agence » : votre échange apparaîtra ici."
       />
     </Screen>
   );

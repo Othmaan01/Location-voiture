@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contactez l'equipe RentMap.",
+  description: "Contactez l'équipe KARSON.",
 };
 
 export default function ContactPage() {
@@ -13,12 +13,12 @@ export default function ContactPage() {
       title="Nous contacter"
       sections={[
         {
-          heading: "Vous etes loueur professionnel",
-          body: "Pour referencer votre agence, creez directement votre compte depuis l'espace pro. Pour toute question sur les paliers ou la facturation, ecrivez a pro@rentmap.fr (adresse a remplacer par la votre).",
+          heading: "Vous êtes une agence de location",
+          body: "Pour référencer votre agence, créez directement votre compte depuis l'espace pro de l'application. Pour toute question sur les forfaits ou la facturation, écrivez à sav@karson.fr.",
         },
         {
-          heading: "Vous cherchez a louer un vehicule",
-          body: "Les demandes de location se font directement aupres des agences, via le formulaire present sur chaque fiche. Nous n'intervenons pas dans la reservation.",
+          heading: "Vous cherchez à louer un véhicule",
+          body: "Les demandes de location se font directement auprès des agences, depuis l'application. Nous n'intervenons pas dans la réservation.",
         },
         {
           heading: "Presse et partenariats",

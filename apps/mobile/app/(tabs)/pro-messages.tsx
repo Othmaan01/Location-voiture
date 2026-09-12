@@ -13,7 +13,7 @@ export default function ProMessagesTab() {
 function OrgMessages({ organizationId }: { organizationId: string }) {
   const conversations = useOrgConversations(organizationId);
   return (
-    <Screen eyebrow="Espace loueur" title="Messages" dock>
+    <Screen eyebrow="Espace pro" title="Messages" dock>
       <ConversationList
         conversations={conversations.data?.conversations ?? []}
         side="organization"

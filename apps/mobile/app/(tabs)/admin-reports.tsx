@@ -185,7 +185,7 @@ export default function AdminReportsTab() {
           />
         </View>
         <Text variant="small" tone="dim">
-          Pour suspendre un loueur ou masquer un avis, passez par l'onglet Loueurs ou la
+          Pour suspendre une agence ou masquer un avis, passez par l'onglet Agences ou la
           réservation.
         </Text>
       </Sheet>

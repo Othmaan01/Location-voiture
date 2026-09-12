@@ -65,7 +65,7 @@ export default function HomeScreen() {
   return (
     <Screen
       eyebrow={cityName ?? (origin ? "Autour de vous" : "France")}
-      title="Loueurs"
+      title="Agences"
       dock
       scroll={false}
       bleed
@@ -117,7 +117,7 @@ export default function HomeScreen() {
         ) : null}
         {showFeed && feed.isError ? (
           <EmptyState
-            title="Impossible de charger les loueurs"
+            title="Impossible de charger les agences"
             description="Vérifiez votre connexion."
             action={
               <Button label="Réessayer" variant="ghost" onPress={() => void feed.refetch()} />
@@ -132,10 +132,10 @@ export default function HomeScreen() {
         ) : null}
         {showFeed && feed.data && items.length === 0 && !(tab === "nearby" && !origin) ? (
           <EmptyState
-            title="Aucun loueur pour l'instant"
+            title="Aucune agence pour l'instant"
             description={
               tab === "all"
-                ? "Les premiers loueurs vérifiés apparaîtront ici."
+                ? "Les premières agences vérifiées apparaîtront ici."
                 : tab === "offers"
                   ? "Aucune offre en cours pour le moment. Revenez bientôt."
                   : "Essayez un autre onglet."

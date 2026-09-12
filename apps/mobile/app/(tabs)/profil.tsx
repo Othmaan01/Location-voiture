@@ -121,7 +121,7 @@ export default function ProfileScreen() {
       )}
       {reviews.data && reviews.data.count > 0 ? (
         <Card style={styles.reviewsCard}>
-          <Text variant="bodyStrong">Ce que disent les loueurs</Text>
+          <Text variant="bodyStrong">Ce que disent les agences</Text>
           {reviews.data.reviews.slice(0, 5).map((r) => (
             <View key={r.id} style={styles.review}>
               <View style={styles.reviewHead}>
@@ -177,7 +177,7 @@ export default function ProfileScreen() {
               ? "Chercher et réserver des véhicules."
               : mode === "pro"
                 ? "Gérer votre flotte, vos agences et vos demandes."
-                : "Vérifier et administrer les loueurs."}
+                : "Vérifier et administrer les agences."}
           </Text>
         </Card>
       ) : null}
@@ -195,7 +195,7 @@ export default function ProfileScreen() {
           subtitle={
             unreadNotifications > 0
               ? `${unreadNotifications} non lue${unreadNotifications > 1 ? "s" : ""}`
-              : "Réponses des loueurs, rappels"
+              : "Réponses des agences, rappels"
           }
           onPress={() => router.push("/profil/notifications")}
           right={unreadNotifications > 0 ? <CountBadge count={unreadNotifications} /> : undefined}
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
           <ListItem
             icon={<ShieldAlert size={22} color={theme.colors.accentTint} />}
             title="Administration"
-            subtitle="Vérification des loueurs"
+            subtitle="Vérification des agences"
             onPress={() => router.push("/(admin)/verifications")}
             last
           />

@@ -65,7 +65,7 @@ export function VerificationsView({ embedded = false }: { embedded?: boolean }) 
       {queue.data && queue.data.items.length === 0 ? (
         <EmptyState
           title="Rien à vérifier"
-          description="Les dossiers soumis par les loueurs apparaîtront ici."
+          description="Les dossiers soumis par les agences apparaîtront ici."
         />
       ) : null}
       {queue.data?.items.map((item) => (
@@ -140,7 +140,7 @@ export function VerificationsView({ embedded = false }: { embedded?: boolean }) 
 
       <Sheet visible={rejecting !== null} onClose={() => setRejecting(null)} title="Motif du refus">
         <Input
-          label="Motif montré au loueur"
+          label="Motif montré à l'agence"
           value={reason}
           onChangeText={setReason}
           multiline

@@ -54,7 +54,7 @@ export default function AdminLoueursTab() {
     );
 
   return (
-    <Screen eyebrow="Administration" title="Loueurs" dock>
+    <Screen eyebrow="Administration" title="Agences" dock>
       <Input
         label="Rechercher"
         placeholder="Nom, raison sociale ou SIREN"
@@ -78,7 +78,7 @@ export default function AdminLoueursTab() {
         ))}
       </View>
       {list.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
-      {list.data && list.data.items.length === 0 ? <EmptyState title="Aucun loueur" /> : null}
+      {list.data && list.data.items.length === 0 ? <EmptyState title="Aucune agence" /> : null}
       {list.data && list.data.items.length > 0 ? (
         <Card padded={false}>
           {list.data.items.map((o, i) => {

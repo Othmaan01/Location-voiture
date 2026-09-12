@@ -235,7 +235,7 @@ function Story({
           </Text>
         ) : null}
         <Button
-          label={item.kind === "story" ? "Voir le loueur" : "Voir et réserver"}
+          label={item.kind === "story" ? "Voir l'agence" : "Voir et réserver"}
           variant="primary"
           icon={<ChevronRight size={18} color={theme.colors.textInverse} />}
           onPress={onOpenLoueur}

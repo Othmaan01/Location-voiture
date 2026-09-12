@@ -215,7 +215,7 @@ export default function BookingScreen() {
         </Card>
       ) : (
         <Text variant="small" tone="muted">
-          Les coordonnées de l'agence vous seront communiquées dès que le loueur aura confirmé.
+          Les coordonnées de l'agence vous seront communiquées dès que l'agence aura confirmé.
         </Text>
       )}
 
@@ -240,7 +240,7 @@ export default function BookingScreen() {
         </View>
       </Card>
       <Button
-        label="Écrire au loueur"
+        label="Écrire à l'agence"
         variant="ghost"
         icon={<MessageCircle size={18} color={theme.colors.text} strokeWidth={2} />}
         onPress={() => setContactOpen(true)}
@@ -348,7 +348,7 @@ export default function BookingScreen() {
         <Text variant="sm" tone="muted">
           {b.status === "disputed"
             ? "Votre décision est envoyée au client et au loueur."
-            : "Décrivez le problème : le loueur est prévenu et notre équipe peut intervenir."}
+            : "Décrivez le problème : l'agence est prévenue et notre équipe peut intervenir."}
         </Text>
         <Input
           label="Motif"
@@ -397,8 +397,8 @@ export default function BookingScreen() {
         title={b.status === "confirmed" ? "Annuler cette réservation ?" : "Retirer votre demande ?"}
         message={
           b.status === "confirmed"
-            ? "Le loueur sera prévenu immédiatement. Cette action est définitive."
-            : "Le loueur ne verra plus votre demande. Vous pourrez en refaire une plus tard."
+            ? "L'agence sera prévenue immédiatement. Cette action est définitive."
+            : "L'agence ne verra plus votre demande. Vous pourrez en refaire une plus tard."
         }
         confirmLabel={
           b.status === "confirmed" ? "Oui, annuler la réservation" : "Oui, retirer ma demande"
@@ -452,7 +452,7 @@ function stepState(
             title: `Confirmée par ${b.loueurName}`,
             subtitle: formatDateTime(ev("confirmed")!.createdAt),
           }
-        : { state: "todo", title: "Confirmation du loueur", subtitle: "" };
+        : { state: "todo", title: "Confirmation de l'agence", subtitle: "" };
     case "pickedUp":
       if (active)
         return {
@@ -500,7 +500,7 @@ function Countdown({ booking: b }: { booking: Booking }) {
       ? "avant le retour"
       : b.status === "confirmed"
         ? "avant le retrait"
-        : "pour la réponse du loueur";
+        : "pour la réponse de l'agence";
   const remaining = target ? formatRemaining(target) : null;
   const progress =
     b.status === "active"

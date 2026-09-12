@@ -18,7 +18,7 @@ export function organizationSchema() {
     name: publicEnv.siteName,
     url: publicEnv.siteUrl,
     description:
-      "Plateforme de mise en relation avec des loueurs de voitures professionnels vérifiés. Sans commission sur la location.",
+      "Plateforme de mise en relation avec des agences de location vérifiées. Sans commission sur la location.",
   };
 }
 

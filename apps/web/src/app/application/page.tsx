@@ -11,24 +11,24 @@ import { publicEnv } from "@/lib/env";
 export const metadata: Metadata = {
   title: "L'application",
   description:
-    "Trouvez un loueur vérifié, demandez une réservation, échangez et suivez votre location depuis l'application iPhone et Android.",
+    "Trouvez une agence vérifiée, demandez une réservation, échangez et suivez votre location depuis l'application iPhone et Android.",
 };
 
 const FEATURES = [
   {
     Icon: Search,
-    title: "Feed des loueurs",
+    title: "Fil des agences",
     text: "Les pros près de vous, leurs flottes et leurs prix, sans créer de compte.",
   },
   {
     Icon: CalendarCheck,
     title: "Demande en deux minutes",
-    text: "Dates, message, envoi. Le loueur confirme ou la demande expire d'elle-même.",
+    text: "Dates, message, envoi. L'agence confirme ou la demande expire d'elle-même.",
   },
   {
     Icon: MessageCircle,
     title: "Messages directs",
-    text: "Un fil avec le loueur, avant et pendant la location.",
+    text: "Un fil avec l'agence, avant et pendant la location.",
   },
   {
     Icon: Bell,
@@ -38,7 +38,7 @@ const FEATURES = [
   {
     Icon: Star,
     title: "Avis vérifiés",
-    text: "Seuls les clients ayant loué peuvent noter. Le loueur répond.",
+    text: "Seuls les clients ayant loué peuvent noter. L'agence répond.",
   },
   {
     Icon: LockKeyhole,

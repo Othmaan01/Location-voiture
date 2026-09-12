@@ -5,8 +5,8 @@ import { SHOWCASE } from "@/lib/showcase";
 import { cn } from "@/lib/utils";
 
 /**
- * Maquette de telephone en pur HTML : l'accueil de l'application (feed des loueurs, capsule
- * de navigation), avec de vraies photos de vehicules. Loueurs fictifs, a titre d'illustration.
+ * Maquette de telephone en pur HTML : l'accueil de l'application (feed des agences, capsule
+ * de navigation), avec de vraies photos de vehicules. Agences fictifs, a titre d'illustration.
  */
 export function PhoneMockup({ className }: { className?: string }) {
   return (
@@ -19,7 +19,7 @@ export function PhoneMockup({ className }: { className?: string }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-tint">
               France
             </p>
-            <p className="text-xl font-extrabold text-ink-900">Loueurs</p>
+            <p className="text-xl font-extrabold text-ink-900">Agences</p>
             <div className="mt-3 flex gap-3 text-[11px] font-semibold">
               <span className="border-b-2 border-brand pb-1 text-ink-900">Tous</span>
               <span className="pb-1 text-ink-500">Près de moi</span>

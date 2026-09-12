@@ -441,7 +441,7 @@ export default function OrgBookingScreen() {
         visible={paperFor !== null}
         onClose={() => setPaperFor(null)}
         title="État des lieux de retour non fait ici"
-        message="L'état des lieux protège le loueur et le client. L'avez-vous fait sur papier ?"
+        message="L'état des lieux protège l'agence et le client. L'avez-vous fait sur papier ?"
         confirmLabel="Oui, sur papier : valider"
         destructive={false}
         secondaryLabel="Le faire dans l'application"

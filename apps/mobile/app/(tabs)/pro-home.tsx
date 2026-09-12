@@ -46,7 +46,7 @@ function Dashboard({ organizationId }: { organizationId: string }) {
 
   if (org.isPending) {
     return (
-      <Screen eyebrow="Espace loueur" title="Tableau de bord" dock scroll={false}>
+      <Screen eyebrow="Espace pro" title="Tableau de bord" dock scroll={false}>
         <ActivityIndicator color={theme.colors.accent} />
       </Screen>
     );
@@ -78,7 +78,7 @@ function Dashboard({ organizationId }: { organizationId: string }) {
 
   return (
     <Screen
-      eyebrow="Espace loueur"
+      eyebrow="Espace pro"
       title="Tableau de bord"
       dock
       headerRight={

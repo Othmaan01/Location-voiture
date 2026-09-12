@@ -6,7 +6,7 @@ import { SHOWCASE } from "@/lib/showcase";
 
 /**
  * Version telephone de la maquette : un carrousel de vehicules qui defile au doigt, avec le
- * loueur et le prix, comme dans l'application. Loueurs fictifs, photos reelles.
+ * loueur et le prix, comme dans l'application. Agences fictifs, photos reelles.
  */
 export function MobileShowcase() {
   const cards = SHOWCASE.flatMap((l) =>

@@ -4,7 +4,7 @@ import type { SearchResult } from "@lv/contracts";
 import { VehicleCard } from "@/components/loueurs/vehicle-card";
 import { EmptyState } from "@/components/ui/card";
 
-/** Grille de resultats : chaque carte pointe vers le loueur (le detail se fait dans l'application). */
+/** Grille de resultats : chaque carte pointe vers l'agence (le detail se fait dans l'application). */
 export function SearchResults({ items }: { items: SearchResult[] }) {
   if (items.length === 0)
     return (

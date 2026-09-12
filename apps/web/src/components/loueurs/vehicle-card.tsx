@@ -4,7 +4,7 @@ import type { PublicVehicleCard } from "@lv/contracts";
 import { Card } from "@/components/ui/card";
 import { CATEGORY_LABEL, TRANSMISSION_LABEL, formatCents } from "@/lib/utils";
 
-/** Carte vehicule de la grille publique : prix du loueur, deux actions dans l'application. */
+/** Carte vehicule de la grille publique : prix de l'agence, deux actions dans l'application. */
 export function VehicleCard({ vehicle, appHref }: { vehicle: PublicVehicleCard; appHref: string }) {
   return (
     <Card className="flex flex-col overflow-hidden">

@@ -68,7 +68,7 @@ export function AppNudges() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-ink-900">Une voiture ce week-end ?</p>
             <p className="mt-0.5 text-xs text-ink-600">
-              Les loueurs vérifiés près de vous répondent en général en quelques heures.
+              Les agences vérifiées près de vous répondent en général en quelques heures.
             </p>
             <Link
               href="/recherche"

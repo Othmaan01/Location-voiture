@@ -14,7 +14,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     ],
   },
   {
-    title: "Loueurs",
+    title: "Agences",
     links: [
       { href: "/pro", label: "Publier ma flotte" },
       { href: "/tarifs", label: "Abonnement et paliers" },
@@ -39,8 +39,8 @@ export function SiteFooter() {
         <div className="space-y-4">
           <Logo />
           <p className="max-w-xs text-sm text-muted-foreground">
-            La mise en relation directe avec des loueurs de voitures professionnels vérifiés. Aucune
-            commission : vous réglez le loueur, jamais la plateforme.
+            La mise en relation directe avec des agences de location vérifiées. Aucune commission :
+            vous réglez l&apos;agence, jamais la plateforme.
           </p>
           <StoreBadges />
         </div>

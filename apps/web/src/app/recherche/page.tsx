@@ -9,7 +9,7 @@ import { CATEGORY_LABEL } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Rechercher un véhicule",
   description:
-    "Recherchez un véhicule chez des loueurs professionnels vérifiés : ville, catégorie, boîte, prix.",
+    "Recherchez un véhicule chez des agences professionnelles vérifiées : ville, catégorie, boîte, prix.",
 };
 
 const HIDDEN = new Set(["utilitaire", "minibus"]);

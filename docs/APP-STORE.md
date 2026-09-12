@@ -19,21 +19,21 @@ Tout ce que Apple demande, déjà rédigé. Ce qui reste à faire côté humain 
 Louez chez un pro, sans frais
 
 **Texte promotionnel (170 caractères max)**
-Des loueurs professionnels vérifiés partout en France. Zéro commission, paiement en agence, réservation en trois minutes.
+Des agences de location vérifiées partout en France. Zéro commission, paiement en agence, réservation en trois minutes.
 
 **Description**
 
-KARSON met en relation les particuliers et les loueurs professionnels vérifiés, partout en France. Vous réservez en trois minutes, vous payez le loueur directement, sans commission ajoutée.
+KARSON met en relation les particuliers et les agences de location vérifiées, partout en France. Vous réservez en trois minutes, vous payez l'agence directement, sans commission ajoutée.
 
 Pourquoi l'application
 
-- Des loueurs professionnels vérifiés : SIREN contrôlé, documents vérifiés par notre équipe.
-- Aucune commission, ni pour vous, ni pour le loueur. Le prix affiché est le prix payé.
-- Le paiement se fait auprès du loueur, y compris en espèces s'il l'accepte, dans la limite légale.
-- Les offres du moment et les nouveautés des loueurs, en un coup d'œil.
+- Des agences vérifiées : SIREN contrôlé, documents vérifiés par notre équipe.
+- Aucune commission, ni pour vous, ni pour l'agence. Le prix affiché est le prix payé.
+- Le paiement se fait auprès de l'agence, y compris en espèces s'il l'accepte, dans la limite légale.
+- Les offres du moment et les nouveautés des agences, en un coup d'œil.
 - Une messagerie directe avec l'agence, et vos réservations suivies de bout en bout.
 
-Pour les loueurs professionnels
+Pour les agences professionnels
 
 - Publiez votre flotte, vos tarifs et vos agences en quelques minutes.
 - Recevez les demandes, confirmez, suivez départs et retours depuis un tableau de bord.
@@ -68,7 +68,7 @@ Aucun traceur publicitaire, aucun partage avec des courtiers en données.
 
 À coller dans « App Review Information » :
 
-> L'application fonctionne sans compte pour parcourir les loueurs et les véhicules. Un compte est nécessaire pour réserver et pour l'espace professionnel. Un compte de démonstration est fourni ci-dessous, avec un loueur vérifié, des véhicules, une offre en cours et une story. Le paiement se fait hors application, directement auprès du loueur : l'application ne vend aucun bien ou service numérique.
+> L'application fonctionne sans compte pour parcourir les agences et les véhicules. Un compte est nécessaire pour réserver et pour l'espace professionnel. Un compte de démonstration est fourni ci-dessous, avec une agence vérifié, des véhicules, une offre en cours et une story. Le paiement se fait hors application, directement auprès de l'agence : l'application ne vend aucun bien ou service numérique.
 
 **À FAIRE** : créer le compte de démonstration et coller ses identifiants dans App Store Connect.
 
