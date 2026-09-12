@@ -19,7 +19,7 @@ export function LoueurCard({ loueur, onPress }: { loueur: LoueurSummary; onPress
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Voir le loueur ${loueur.name}`}
+      accessibilityLabel={`Voir l'agence ${loueur.name}`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
     >
@@ -90,7 +90,7 @@ export function LoueurCard({ loueur, onPress }: { loueur: LoueurSummary; onPress
         </Text>
         <View style={styles.cta}>
           <Text variant="smStrong" tone="accent">
-            Voir le loueur
+            Voir l'agence
           </Text>
           <ChevronRight size={16} color={theme.colors.accentTint} strokeWidth={2.5} />
         </View>

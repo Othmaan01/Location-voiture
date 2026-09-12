@@ -65,7 +65,7 @@ export function LoueurProfile({
     return (
       <Screen {...frame} scroll={false}>
         <EmptyState
-          title="Loueur introuvable"
+          title="Agence introuvable"
           description="Il n'est plus disponible sur l'application."
         />
       </Screen>
@@ -77,7 +77,7 @@ export function LoueurProfile({
   const call = () =>
     mainAgency?.phone
       ? void Linking.openURL(`tel:${mainAgency.phone.replace(/\s/g, "")}`)
-      : Alert.alert("Contact", "Ce loueur n'a pas renseigné de téléphone.");
+      : Alert.alert("Contact", "Cette agence n'a pas renseigné de téléphone.");
   const openContact = (vehicleId?: string) => {
     if (!session) {
       router.push("/(auth)/sign-in");
@@ -326,7 +326,7 @@ export function LoueurProfile({
       />
       {tab === "info" ? (
         <Button
-          label="Signaler ce loueur"
+          label="Signaler cette agence"
           variant="ghost"
           size="sm"
           onPress={() =>
