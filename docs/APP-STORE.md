@@ -6,7 +6,7 @@ Tout ce que Apple demande, déjà rédigé. Ce qui reste à faire côté humain 
 
 | Élément               | Valeur                                                        |
 | --------------------- | ------------------------------------------------------------- |
-| Nom de l'app          | Location Voiture                                              |
+| Nom de l'app          | KARSON                                              |
 | Identifiant du paquet | `fr.locationvoiture.app`                                      |
 | Version               | 0.1.0 (numéro de build géré automatiquement par EAS)          |
 | Compte Expo           | `othmanb`, projet `@othmanb/location-voiture`                 |
@@ -23,7 +23,7 @@ Des loueurs professionnels vérifiés partout en France. Zéro commission, paiem
 
 **Description**
 
-Location Voiture met en relation les particuliers et les loueurs professionnels vérifiés, partout en France. Vous réservez en trois minutes, vous payez le loueur directement, sans commission ajoutée.
+KARSON met en relation les particuliers et les loueurs professionnels vérifiés, partout en France. Vous réservez en trois minutes, vous payez le loueur directement, sans commission ajoutée.
 
 Pourquoi l'application
 

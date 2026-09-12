@@ -9,7 +9,7 @@ export const publicEnv = {
     "",
   ),
   siteUrl: read("NEXT_PUBLIC_SITE_URL", "http://localhost:3000").replace(/\/$/, ""),
-  siteName: read("NEXT_PUBLIC_SITE_NAME", "Location Voiture"),
+  siteName: read("NEXT_PUBLIC_SITE_NAME", "KARSON"),
   /** Liens des stores : vides tant que l'app n'est pas publiee (les badges affichent "bientot"). */
   appStoreUrl: read("NEXT_PUBLIC_APP_STORE_URL"),
   playStoreUrl: read("NEXT_PUBLIC_PLAY_STORE_URL"),

@@ -48,7 +48,7 @@ const EnvSchema = z.object({
   STRIPE_SECRET_KEY: z.string().min(16).optional(),
   /** Envoi d'e-mails (etats des lieux) via Resend ; absent = e-mails desactives, PDF toujours produit. */
   RESEND_API_KEY: z.string().min(10).optional(),
-  EMAIL_FROM: z.string().default("Location Voiture <onboarding@resend.dev>"),
+  EMAIL_FROM: z.string().default("KARSON <onboarding@resend.dev>"),
   STRIPE_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 

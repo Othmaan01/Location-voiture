@@ -7,7 +7,7 @@ primary_region = "cdg"
   [build.args]
     NEXT_PUBLIC_API_URL = "https://location-voiture-api-staging.fly.dev"
     NEXT_PUBLIC_SITE_URL = "https://location-voiture-web-staging.fly.dev"
-    NEXT_PUBLIC_SITE_NAME = "Location Voiture"
+    NEXT_PUBLIC_SITE_NAME = "KARSON"
 
 [http_service]
   internal_port = 3000

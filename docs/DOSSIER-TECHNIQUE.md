@@ -1,4 +1,4 @@
-# Dossier technique — plateforme de location de voiture (nom provisoire « Location Voiture »)
+# Dossier technique — plateforme de location de voiture (nom : KARSON, choisi le 12 septembre 2026 ; logo en cours de validation)
 
 Version du 7 septembre 2026 · destiné à un développeur qui reprend ou rejoint le projet.
 

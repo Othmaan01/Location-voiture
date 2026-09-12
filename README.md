@@ -1,4 +1,4 @@
-# Location Voiture — plateforme de réservation entre loueurs professionnels et clients
+# KARSON — plateforme de réservation entre loueurs professionnels et clients
 
 Les clients trouvent et réservent un véhicule près de chez eux, à des dates précises, auprès de loueurs professionnels vérifiés. Les loueurs paient un abonnement mensuel indexé sur le nombre de véhicules publiés ; aucune commission n'est prélevée sur les clients ([ADR-0008](docs/adr/0008-monetisation-abonnement-par-vehicule.md)).
 
