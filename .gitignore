@@ -34,3 +34,6 @@ android/
 AuthKey_*.p8
 docs/compte-demo-apple.md
 docs/compte-admin.md
+
+# Netlify (etat local du lien de site)
+.netlify/
