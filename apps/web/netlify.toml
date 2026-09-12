@@ -1,10 +1,14 @@
+# Site web KARSON sur Netlify. Depot en monorepo pnpm : on installe depuis la racine, on construit le paquet web.
+# Deploiement : `netlify deploy --build --prod` depuis apps/web (jeton NETLIFY_AUTH_TOKEN dans .env.local, jamais dans le depot).
 [build]
-  command = "npm run build"
+  base = "apps/web"
+  command = "cd ../.. && corepack pnpm install --frozen-lockfile && corepack pnpm --filter @lv/web build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NEXT_PUBLIC_API_URL = "https://location-voiture-api-staging.fly.dev"
+  NEXT_PUBLIC_SITE_NAME = "KARSON"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
