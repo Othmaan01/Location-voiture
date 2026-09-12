@@ -19,7 +19,7 @@ Référence : [docs/phase-0/03-securite.md](docs/phase-0/03-securite.md) (rôles
 
 - Le rôle plateforme (`platform_roles`, valeurs `support`, `admin`, `superadmin`) n'est **jamais** écrit par l'application ni par l'API : seule une requête SQL avec la clé de service peut l'attribuer. La table est protégée par RLS (lecture de sa propre ligne uniquement, aucune écriture).
 - Le mode Admin de l'application n'apparaît que si le serveur renvoie un rôle plateforme ; il ne se choisit pas à l'inscription (`PreferredModeSchema` ne connaît que `client` et `pro`).
-- Un seul compte porte `superadmin` : `othman.belhamid+admin@gmail.com`, dédié à l'administration, distinct du compte quotidien du fondateur. Ses identifiants sont dans `docs/compte-admin.md`, fichier local ignoré par git.
+- Un seul compte porte `superadmin` : `sav@karson.fr`, dédié à l'administration, distinct du compte quotidien du fondateur. Ses identifiants sont dans `docs/compte-admin.md`, fichier local ignoré par git.
 - En production, les routes admin exigent la double authentification (`API_ADMIN_REQUIRE_MFA`, actif par défaut) : activer TOTP sur ce compte depuis Profil > Sécurité avant le lancement.
 - Pour donner ou retirer le rôle : `insert into public.platform_roles (user_id, role) values ('<uuid>', 'admin');` / `delete from public.platform_roles where user_id = '<uuid>';` via l'éditeur SQL Supabase, jamais depuis l'application.
 
