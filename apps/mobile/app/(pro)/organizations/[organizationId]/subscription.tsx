@@ -172,7 +172,7 @@ export default function SubscriptionScreen() {
                 label="Nous contacter"
                 variant="ghost"
                 size="sm"
-                onPress={() => void Linking.openURL("mailto:contact@locationvoiture.app")}
+                onPress={() => void Linking.openURL("mailto:sav@karson.fr")}
               />
             ) : s.billingEnabled &&
               (!current || s.status === "canceled" || s.status === "trial_expired") ? (

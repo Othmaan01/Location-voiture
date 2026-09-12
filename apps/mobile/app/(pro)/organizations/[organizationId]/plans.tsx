@@ -210,7 +210,7 @@ export default function PlansScreen() {
           label={`Plus de ${plans[plans.length - 1]?.maxVehicles ?? 30} véhicules ? Parlons-en`}
           variant="ghost"
           size="sm"
-          onPress={() => void Linking.openURL("mailto:contact@locationvoiture.app")}
+          onPress={() => void Linking.openURL("mailto:sav@karson.fr")}
         />
       ) : null}
       <Text variant="small" tone="dim">

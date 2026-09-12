@@ -22,7 +22,7 @@ export default function ContactPage() {
         },
         {
           heading: "Presse et partenariats",
-          body: "contact@rentmap.fr (adresse a remplacer par la votre).",
+          body: "sav@karson.fr",
         },
       ]}
     />
