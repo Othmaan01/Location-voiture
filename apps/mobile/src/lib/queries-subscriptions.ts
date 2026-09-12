@@ -56,10 +56,21 @@ export function useChoosePlan(orgId: string) {
         method: "POST",
         body: { planCode },
       }),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: ["organizations", orgId] });
-      void client.invalidateQueries({ queryKey: ["organizations", orgId, "subscription"] });
-      void client.invalidateQueries({ queryKey: ["me"] });
+    // Le garde-fou des forfaits lit `planChosenAt` sur l'organisation : on le met a jour tout de
+    // suite dans le cache, puis on attend la relecture avant de laisser l'ecran naviguer
+    // (sinon il renvoyait vers les forfaits et il fallait valider deux fois).
+    onSuccess: async () => {
+      client.setQueriesData(
+        { queryKey: ["organizations", orgId], exact: true },
+        (prev: { planChosenAt?: string | null } | undefined) =>
+          prev && prev.planChosenAt === null
+            ? { ...prev, planChosenAt: new Date().toISOString() }
+            : prev,
+      );
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["organizations", orgId] }),
+        client.invalidateQueries({ queryKey: ["me"] }),
+      ]);
     },
   });
 }
