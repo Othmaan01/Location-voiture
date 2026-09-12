@@ -47,9 +47,9 @@ location voiture,louer,agence,auto,véhicule,utilitaire,réservation,loueur,sans
 
 **Catégorie** : Voyage (principale), Style de vie (secondaire)
 **Classification par âge** : 4+
-**URL d'assistance** : https://location-voiture-web-staging.fly.dev/contact
-**URL de politique de confidentialité** : https://location-voiture-web-staging.fly.dev/confidentialite
-**URL marketing** : https://location-voiture-web-staging.fly.dev
+**URL d'assistance** : https://karson.fr/contact
+**URL de politique de confidentialité** : https://karson.fr/confidentialite
+**URL marketing** : https://karson.fr
 
 ## Confidentialité (questionnaire App Store)
 
