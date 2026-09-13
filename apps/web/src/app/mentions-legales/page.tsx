@@ -12,7 +12,7 @@ export default function LegalNoticePage() {
   return (
     <LegalPage
       title="Mentions legales"
-      intro="Informations légales de l'éditeur du site et de l'application KARSON."
+      intro="Informations légales de l'éditeur du site et de l'application Karson."
       sections={[
         {
           heading: "Crédits photos",
@@ -28,7 +28,7 @@ export default function LegalNoticePage() {
         },
         {
           heading: "Rôle de la plateforme",
-          body: "KARSON est un annuaire et un service de mise en relation. La plateforme n'est ni loueur, ni intermédiaire commercial dans les contrats de location. Chaque contrat est conclu directement entre le particulier et l'agence. Les informations publiees (prix, disponibilites, conditions) relevent de la responsabilite de l'agence qui les publie.",
+          body: "Karson est un annuaire et un service de mise en relation. La plateforme n'est ni loueur, ni intermédiaire commercial dans les contrats de location. Chaque contrat est conclu directement entre le particulier et l'agence. Les informations publiees (prix, disponibilites, conditions) relevent de la responsabilite de l'agence qui les publie.",
         },
         {
           heading: "Propriété intellectuelle",

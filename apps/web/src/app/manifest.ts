@@ -24,8 +24,8 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#0e0e11",
     categories: ["travel", "shopping", "navigation"],
     icons: [
-      { src: "/icon-512.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
-      { src: "/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
       { name: "Rechercher un véhicule", url: "/recherche" },

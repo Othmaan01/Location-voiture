@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "KARSON",
+    "name": "Karson",
     "slug": "location-voiture",
     "scheme": "lv",
     "version": "0.1.0",
@@ -25,7 +25,7 @@
       "package": "fr.locationvoiture.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0e0e11"
+        "backgroundColor": "#030303"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -39,7 +39,7 @@
         {
           "image": "./assets/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#0e0e11"
+          "backgroundColor": "#030303"
         }
       ],
       "expo-secure-store",

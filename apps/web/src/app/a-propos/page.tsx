@@ -5,13 +5,13 @@ import { LegalPage } from "@/components/layout/legal-page";
 export const metadata: Metadata = {
   title: "À propos",
   description:
-    "KARSON referencie les agences de location ville par ville et met les particuliers en relation directe avec les agences, sans commission.",
+    "Karson referencie les agences de location ville par ville et met les particuliers en relation directe avec les agences, sans commission.",
 };
 
 export default function AboutPage() {
   return (
     <LegalPage
-      title="A propos de KARSON"
+      title="A propos de Karson"
       intro="Rendre visible chaque agence de location de voitures, partout en France."
       sections={[
         {
@@ -28,7 +28,7 @@ export default function AboutPage() {
         },
         {
           heading: "Ce projet est en construction",
-          body: "KARSON est en cours de développement. Les fonctionnalités évoluent rapidement : si vous êtes une agence et souhaitez participer aux premiers retours, écrivez-nous à sav@karson.fr.",
+          body: "Karson est en cours de développement. Les fonctionnalités évoluent rapidement : si vous êtes une agence et souhaitez participer aux premiers retours, écrivez-nous à sav@karson.fr.",
         },
       ]}
     />

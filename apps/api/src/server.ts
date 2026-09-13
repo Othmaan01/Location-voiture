@@ -103,7 +103,7 @@ export async function buildServer(opts: BuildServerOptions) {
   });
   await app.register(swagger, {
     openapi: {
-      info: { title: "KARSON API", version: opts.env.API_VERSION },
+      info: { title: "Karson API", version: opts.env.API_VERSION },
       components: {
         securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } },
       },

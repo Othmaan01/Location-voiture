@@ -12,11 +12,11 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Politique de confidentialité"
-      intro="KARSON met en relation des particuliers et des agences de location de voitures. Voici, en clair, les données que nous traitons, pourquoi, combien de temps, et vos droits. Mise à jour le 12 septembre 2026."
+      intro="Karson met en relation des particuliers et des agences de location de voitures. Voici, en clair, les données que nous traitons, pourquoi, combien de temps, et vos droits. Mise à jour le 12 septembre 2026."
       sections={[
         {
           heading: "Responsable du traitement",
-          body: "KARSON, éditeur du site karson.fr et de l'application KARSON. Contact pour toute question relative à vos données : sav@karson.fr.",
+          body: "Karson, éditeur du site karson.fr et de l'application Karson. Contact pour toute question relative à vos données : sav@karson.fr.",
         },
         {
           heading: "Données collectées",

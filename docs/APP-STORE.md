@@ -6,7 +6,7 @@ Tout ce que Apple demande, déjà rédigé. Ce qui reste à faire côté humain 
 
 | Élément               | Valeur                                                        |
 | --------------------- | ------------------------------------------------------------- |
-| Nom de l'app          | KARSON                                                        |
+| Nom de l'app          | Karson                                                        |
 | Identifiant du paquet | `fr.locationvoiture.app`                                      |
 | Version               | 0.1.0 (numéro de build géré automatiquement par EAS)          |
 | Compte Expo           | `othmanb`, projet `@othmanb/location-voiture`                 |
@@ -23,7 +23,7 @@ Des agences de location vérifiées partout en France. Zéro commission, paiemen
 
 **Description**
 
-KARSON met en relation les particuliers et les agences de location vérifiées, partout en France. Vous réservez en trois minutes, vous payez l'agence directement, sans commission ajoutée.
+Karson met en relation les particuliers et les agences de location vérifiées, partout en France. Vous réservez en trois minutes, vous payez l'agence directement, sans commission ajoutée.
 
 Pourquoi l'application
 

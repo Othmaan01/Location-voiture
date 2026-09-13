@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contactez l'équipe KARSON.",
+  description: "Contactez l'équipe Karson.",
 };
 
 export default function ContactPage() {
