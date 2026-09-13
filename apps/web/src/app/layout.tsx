@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     template: `%s | ${publicEnv.siteName}`,
   },
   description:
-    "Trouvez un agence de location vérifiée près de chez vous, comparez les prix et réservez directement avec lui. Aucune commission sur la location.",
+    "Trouvez une agence de location vérifiée près de chez vous, comparez les prix et réservez directement avec elle. Aucune commission sur la location.",
   keywords: [
     "location de voiture",
     "agence de location de voiture",

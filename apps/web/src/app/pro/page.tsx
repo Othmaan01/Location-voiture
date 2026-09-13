@@ -22,13 +22,13 @@ import { ButtonLink } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Agences : vos véhicules devant des clients, sans commission",
   description:
-    "Agences de voitures : publiez votre flotte, recevez des demandes et encaissez comme vous voulez. 0 % de commission, page web dédiée et référencement local offerts, abonnement fixe dès 29 € HT, 14 jours d'essai.",
+    "Agences de voitures : publiez votre flotte, recevez des demandes et encaissez comme vous voulez. 0 % de commission, page web dédiée et référencement local offerts, abonnement fixe dès 29 € HT, 14 jours d'essai.",
 };
 
 const BENEFITS = [
   {
     Icon: Wallet,
-    title: "0 % de commission, des deux côtés",
+    title: "0 % de commission, des deux côtés",
     text: "Ni sur vos locations, ni sur vos clients. Un abonnement fixe et connu d'avance, c'est tout.",
   },
   {
@@ -64,7 +64,7 @@ const BENEFITS = [
 ];
 
 const COMPARE = [
-  ["Commission sur chaque location", "15 à 30 %", "0 %"],
+  ["Commission sur chaque location", "15 à 30 %", "0 %"],
   ["Frais facturés au client", "Oui, souvent cachés", "Aucun"],
   [
     "Encaissement",

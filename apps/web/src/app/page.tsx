@@ -44,7 +44,7 @@ const STEPS = [
   {
     Icon: MessageCircle,
     title: "Roulez",
-    text: "Vous échangez avec lui, récupérez le véhicule à l'agence et payez sur place. Sans surprise.",
+    text: "Vous échangez avec elle dans l'application, récupérez le véhicule sur place et payez à l'agence. Sans surprise.",
   },
 ];
 
@@ -134,7 +134,7 @@ export default async function HomePage() {
           <Reveal className="space-y-7">
             <p className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-brand/40 bg-brand-soft/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-tint sm:text-xs">
               <span className="ring-pulse size-1.5 rounded-full bg-brand" /> Location de voiture ·
-              agences pros vérifiées · 0 % commission
+              agences pros vérifiées · 0 % commission
             </p>
             <h1 className="text-4xl font-extrabold leading-[1.05] md:text-6xl">
               <span className="text-ink-900">Louez une voiture</span>
@@ -144,8 +144,8 @@ export default async function HomePage() {
               <span className="glow-text">chez un pro près de chez vous.</span>
             </h1>
             <p className="max-w-xl text-lg text-ink-600 md:text-xl">
-              Pas de comparateur, pas de commission, pas de paperasse inutile. Vous choisissez, le
-              agence vérifiée confirme, vous récupérez les clés. Même à la dernière minute.
+              Pas de comparateur, pas de commission, pas de paperasse inutile. Vous choisissez,
+              l&apos;agence vérifiée confirme, vous récupérez les clés. Même à la dernière minute.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <StoreBadges size="lg" />
@@ -352,7 +352,7 @@ export default async function HomePage() {
               </div>
               <dl className="grid grid-cols-3 gap-4 md:grid-cols-1">
                 {[
-                  ["0 %", "de commission, des deux côtés"],
+                  ["0 %", "de commission, des deux côtés"],
                   ["Offert", "page web + référencement local"],
                   ["dès 29 €", "par mois HT, 14 jours d'essai"],
                 ].map(([v, l]) => (

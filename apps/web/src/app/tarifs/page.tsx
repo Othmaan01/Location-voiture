@@ -11,7 +11,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Abonnement pro : tarifs",
   description:
-    "Abonnement pro : un prix fixe selon vos véhicules publiés, 0 % de commission, encaissement libre, page web et référencement local offerts, 14 jours d'essai.",
+    "Abonnement pro : un prix fixe selon vos véhicules publiés, 0 % de commission, encaissement libre, page web et référencement local offerts, 14 jours d'essai.",
 };
 
 export default async function PricingPage() {
@@ -53,7 +53,7 @@ export default async function PricingPage() {
             </p>
             <ul className="mt-5 space-y-2 text-sm text-ink-700">
               {[
-                "0 % de commission, des deux côtés",
+                "0 % de commission, des deux côtés",
                 "Encaissement direct, carte ou espèces (limite légale)",
                 "Page web dédiée + référencement local offerts",
                 "Profil et flotte dans l'application",

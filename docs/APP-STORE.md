@@ -29,7 +29,7 @@ Pourquoi l'application
 
 - Des agences vérifiées : SIREN contrôlé, documents vérifiés par notre équipe.
 - Aucune commission, ni pour vous, ni pour l'agence. Le prix affiché est le prix payé.
-- Le paiement se fait auprès de l'agence, y compris en espèces s'il l'accepte, dans la limite légale.
+- Le paiement se fait auprès de l'agence, y compris en espèces si elle l'accepte, dans la limite légale.
 - Les offres du moment et les nouveautés des agences, en un coup d'œil.
 - Une messagerie directe avec l'agence, et vos réservations suivies de bout en bout.
 
