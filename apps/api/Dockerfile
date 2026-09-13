@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-# Image de l'API. Le monorepo est copie en entier pour les packages partages ;
-# l'execution passe par tsx (les packages @lv/* sont des sources TypeScript).
-# TECH DEBT : produire un bundle JS unique (tsup) pour une image plus petite.
+# Image de l'API. Le monorepo est copie pour les packages partages (@lv/*, sources TypeScript),
+# puis l'API est compilee en un seul fichier JavaScript (scripts/bundle.mjs) : demarrage en 1 a 2 s
+# apres une mise en veille Fly, au lieu de ~11 s via tsx (le proxy Fly abandonne apres ~8 s).
 FROM node:22-alpine
 RUN corepack enable
 WORKDIR /repo
@@ -19,9 +19,11 @@ RUN pnpm install --frozen-lockfile --filter @lv/api...
 COPY packages ./packages
 COPY apps/api ./apps/api
 
+RUN node apps/api/scripts/bundle.mjs
+
 ENV NODE_ENV=production
 ENV API_HOST=0.0.0.0
 ENV API_PORT=4000
 EXPOSE 4000
 USER node
-CMD ["node", "--import", "tsx", "apps/api/src/main.ts"]
+CMD ["node", "--enable-source-maps", "apps/api/dist/main.mjs"]
