@@ -16,7 +16,10 @@ primary_region = "cdg"
 [http_service]
   internal_port = 4000
   force_https = true
-  auto_stop_machines = "stop"
+  # « suspend » plutot que « stop » : la memoire du processus est conservee pendant la veille, le reveil
+  # prend moins d'une seconde. Arretee, la machine rechargeait Node et ses dependances (~12 s) et le
+  # proxy Fly abandonnait apres ~8 s : les utilisateurs voyaient l'application echouer (2026-09-13).
+  auto_stop_machines = "suspend"
   auto_start_machines = true
   min_machines_running = 0
 

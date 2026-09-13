@@ -10,12 +10,13 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppLockGate } from "@/components/AppLockGate";
 import { Celebration } from "@/components/Celebration";
 import { FavoriteGroupSheet } from "@/features/client/FavoriteGroupSheet";
-import { ApiRequestError } from "@/lib/api";
+import { ApiRequestError, wakeServer } from "@/lib/api";
 import { PushListener } from "@/lib/push-listener";
 import { SessionProvider } from "@/lib/session";
 import { theme } from "@/theme";
@@ -46,6 +47,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontsError) void SplashScreen.hideAsync();
   }, [fontsLoaded, fontsError]);
+
+  // Le serveur se met en veille sans trafic : on le reveille des l'ouverture et au retour dans l'app.
+  useEffect(() => {
+    wakeServer();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") wakeServer();
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!fontsLoaded && !fontsError) return null;
 
