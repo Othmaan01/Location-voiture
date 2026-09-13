@@ -6,7 +6,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-dark.png",
     "ios": {
       "bundleIdentifier": "fr.locationvoiture.app",
       "supportsTablet": false,
@@ -19,13 +19,18 @@
       },
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "icon": {
+        "light": "./assets/icon-light.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
       }
     },
     "android": {
       "package": "fr.locationvoiture.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#030303"
+        "backgroundColor": "#000000"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -37,9 +42,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash.png",
+          "image": "./assets/splash-light.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#030303"
+          "backgroundColor": "#f4f4f6",
+          "dark": {
+            "image": "./assets/splash-dark.png",
+            "backgroundColor": "#0e0e11"
+          }
         }
       ],
       "expo-secure-store",

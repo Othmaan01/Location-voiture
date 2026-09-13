@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 import { publicEnv } from "@/lib/env";
 
-/** Marque Karson : le K du logo (damier rouge), lisible en petit ; le logo complet vit dans /brand. */
+/** Marque Karson : le K du logo sur fond transparent, pour les fonds sombres du site (brand/generate.py). */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <Image
@@ -13,7 +13,7 @@ export function LogoMark({ className }: { className?: string }) {
       width={64}
       height={64}
       priority
-      className={cn("size-8 rounded-[9px]", className)}
+      className={cn("size-9", className)}
     />
   );
 }

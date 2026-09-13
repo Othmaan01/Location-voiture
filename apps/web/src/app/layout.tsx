@@ -17,6 +17,24 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
+  // Favicon clair ou sombre selon le theme du navigateur ; raccourci d'ecran d'accueil iOS (brand/generate.py).
+  icons: {
+    icon: [
+      {
+        url: "/icon-light.png",
+        type: "image/png",
+        sizes: "512x512",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icon-dark.png",
+        type: "image/png",
+        sizes: "512x512",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    apple: { url: "/apple-icon.png", sizes: "180x180" },
+  },
   title: {
     default: `${publicEnv.siteName} — Location de voiture en 3 minutes, chez un pro près de chez vous`,
     template: `%s | ${publicEnv.siteName}`,
